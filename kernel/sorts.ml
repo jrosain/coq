@@ -104,13 +104,15 @@ module Quality = struct
     | (QProp | QSProp | QType), _ -> false
 
     let compare a b = match a, b with
-      | QProp, QProp -> 0
-      | QProp, _ -> -1
-      | _, QProp -> 1
       | QSProp, QSProp -> 0
       | QSProp, _ -> -1
       | _, QSProp -> 1
+      | QProp, QProp -> 0
+      | QProp, _ -> -1
+      | _, QProp -> 1
       | QType, QType -> 0
+
+    let leq a b = compare a b <= 0
 
     let pr = function
       | QProp -> Pp.str "Prop"
@@ -134,6 +136,12 @@ module Quality = struct
     | QVar _, _ -> -1
     | _, QVar _ -> 1
     | QConstant a, QConstant b -> Constants.compare a b
+
+  let leq a b = match a, b with
+    | _, QConstant QType -> true
+    | QVar q, QVar q' -> QVar.equal q q' (* FIXME *)
+    | QConstant a, QConstant b -> Constants.leq a b
+    | (QVar _ | QConstant _), _ -> false
 
   let pr prv = function
     | QVar v -> prv v

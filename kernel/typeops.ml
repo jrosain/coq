@@ -547,7 +547,7 @@ let type_of_case env (mib, mip as specif) ci u pms (pctx, pnas, p, rp, pt) iv c 
     if not (is_inversion = should_invert_case env rp ci)
     then error_bad_invert env
   in
-  let () = if not (is_allowed_elimination (specif,u) sp) then begin
+  let () = if not (is_allowed_elimination (is_squashed (specif,u)) sp) then begin
     let kinds = Some sp in
     error_elim_arity env (ind, u') c kinds
   end

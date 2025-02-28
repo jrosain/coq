@@ -387,47 +387,34 @@ let abstract_constructor_type_relatively_to_inductive_types_context ntyps mind t
 
 (* Get type of inductive, with parameters instantiated *)
 
-let quality_leq q q' =
-  let open Sorts.Quality in
-  match q, q' with
-  | QVar q, QVar q' -> Sorts.QVar.equal q q'
-  | QConstant q, QConstant q' ->
-    begin match q, q' with
-    | QSProp, _
-    | _, QType
-    | QProp, QProp
-      -> true
-    | (QProp|QType), _ -> false
-    end
-  | QVar _, QConstant QType -> true
-  | (QVar _|QConstant _), _ -> false
-
 type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
 
-let is_squashed ((_,mip),u) =
+let is_squashed ?(to_indq=Sorts.quality) ?(f=fun x -> x) ((_,mip),u) =
+  let open Sorts in
   let s = mip.mind_sort in
   match mip.mind_squashed with
   | None -> None
   | Some squash ->
-    let indq = Sorts.quality (UVars.subst_instance_sort u s) in
-    match squash with
-    | AlwaysSquashed -> begin match s with
-        | Sorts.Set -> Some SquashToSet
-        | _ -> Some (SquashToQuality indq)
-      end
-    | SometimesSquashed squash ->
-      (* impredicative set squashes are always AlwaysSquashed,
-         so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
-      if Sorts.Quality.Set.for_all (fun q ->
-          let q = UVars.subst_instance_quality u q in
-          quality_leq q indq)
-          squash
-      then None
-      else Some (SquashToQuality indq)
+     let indq = to_indq (UVars.subst_instance_sort u s) in (* FIXME: maybe we can factor quality out of to_indq *)
+     match squash with
+     | AlwaysSquashed -> begin match s with
+                         | Set -> Some SquashToSet
+                         | _ -> Some (SquashToQuality indq)
+                         end
+     | SometimesSquashed squash ->
+        (* FIXME: we will remove impredicative sets, so is this check needed? *)
+        (* impredicative set squashes are always quashed,
+           so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
+        if Quality.Set.for_all (fun q ->
+               let q = f (UVars.subst_instance_quality u q) in
+               Quality.leq q indq)
+             squash
+        then None
+        else Some (SquashToQuality indq)
 
-let is_allowed_elimination specifu s =
+let is_allowed_elimination is_squashed s =
   let open Sorts in
-  match is_squashed specifu with
+  match is_squashed with
   | None -> true
   | Some SquashToSet ->
     begin match s with
@@ -436,7 +423,7 @@ let is_allowed_elimination specifu s =
         (* XXX in [Type u] case, should we check [u == set] in the ugraph? *)
         false
     end
-  | Some (SquashToQuality indq) -> quality_leq (Sorts.quality s) indq
+  | Some (SquashToQuality indq) -> Quality.leq (quality s) indq
 
 let is_private (mib,_) = mib.mind_private = Some true
 let is_primitive_record (mib,_) =

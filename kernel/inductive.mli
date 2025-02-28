@@ -74,14 +74,15 @@ val type_of_inductive : mind_specif puniverses -> types
 val type_of_inductive_knowing_parameters :
   mind_specif puniverses -> param_univs -> types constrained
 
-val quality_leq : Sorts.Quality.t -> Sorts.Quality.t -> bool
 (** For squashing. *)
 
 type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
 
-val is_squashed : mind_specif puniverses -> squash option
+val is_squashed :
+  ?to_indq:(Sorts.t -> Sorts.Quality.t) -> ?f:(Sorts.Quality.t -> Sorts.Quality.t)
+  -> mind_specif puniverses -> squash option
 
-val is_allowed_elimination : mind_specif puniverses -> Sorts.t -> bool
+val is_allowed_elimination : squash option -> Sorts.t -> bool
 
 val is_private : mind_specif -> bool
 val is_primitive_record : mind_specif -> bool
