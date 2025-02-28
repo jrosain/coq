@@ -53,6 +53,7 @@ module Quality : sig
   module Constants : sig
     val equal : constant -> constant -> bool
     val compare : constant -> constant -> int
+    val leq : constant -> constant -> bool
     val pr : constant -> Pp.t
   end
 
@@ -68,6 +69,8 @@ module Quality : sig
   val equal : t -> t -> bool
 
   val compare : t -> t -> int
+
+  val leq : t -> t -> bool
 
   val pr : (QVar.t -> Pp.t) -> t -> Pp.t
 
@@ -90,6 +93,7 @@ module Quality : sig
     PQVar of int option | PQConstant of constant
 
   val pattern_match : pattern -> t -> ('t, t, 'u) Partial_subst.t -> ('t, t, 'u) Partial_subst.t option
+ 
 end
 
 module QConstraint : sig
@@ -191,3 +195,4 @@ type pattern =
   | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
 
 val pattern_match : pattern -> t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t option
+

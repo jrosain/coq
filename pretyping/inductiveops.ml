@@ -246,91 +246,50 @@ let inductive_has_local_defs env ind =
   let l2 = mib.mind_nparams + mip.mind_nrealargs in
   not (Int.equal l1 l2)
 
-(* XXX use above_prop from the ustate *)
-let quality_leq q q' =
-  let open Sorts.Quality in
-  match q, q' with
-  | QVar q, QVar q' -> Sorts.QVar.equal q q'
-  | QConstant q, QConstant q' ->
-    begin match q, q' with
-    | QSProp, _
-    | _, QType
-    | QProp, QProp
-      -> true
-    | (QProp|QType), _ -> false
-    end
-  | QVar _, QConstant QType -> true
-  | (QVar _|QConstant _), _ -> false
+let is_squashed sigma specifu =
+  (* FIXME: maybe these variables should be evaluated lazily *)
+  let ((x,mip),u) = specifu in
+  let u = EConstr.Unsafe.to_instance u in
+  let to_indq s = EConstr.ESorts.quality sigma (EConstr.ESorts.make @@ s)
+  in Inductive.is_squashed ~to_indq:to_indq ~f:(UState.nf_quality (Evd.ustate sigma)) ((x,mip),u)
 
-type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
-
-let is_squashed sigma ((_,mip),u) =
-  let s = mip.mind_sort in
-  match mip.mind_squashed with
-  | None -> None
-  | Some squash ->
-    let u = EConstr.Unsafe.to_instance u in
-    let indq = EConstr.ESorts.quality sigma
-        (EConstr.ESorts.make @@ UVars.subst_instance_sort u s)
-    in
-    match squash with
-    | AlwaysSquashed -> begin match s with
-        | Sorts.Set -> Some SquashToSet
-        | _ -> Some (SquashToQuality indq)
-      end
-    | SometimesSquashed squash ->
-      (* impredicative set squashes are always AlwaysSquashed,
-         so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
-      if Sorts.Quality.Set.for_all (fun q ->
-          let q = UVars.subst_instance_quality u q in
-          let q = UState.nf_quality (Evd.ustate sigma) q in
-          quality_leq q indq) squash
-      then None
-      else Some (SquashToQuality indq)
-
-let squash_elim_sort sigma squash rtnsort = match squash with
-| SquashToSet ->
-  (* Squashed inductive in Set, only happens with impredicative Set *)
-  begin match ESorts.kind sigma rtnsort with
-  | Set | SProp | Prop -> sigma
-  | QSort _ | Type _ ->
-    Evd.set_eq_sort sigma rtnsort ESorts.set
-  end
-| SquashToQuality (QConstant QProp) ->
-  (* Squashed inductive in Prop, return sort must be Prop or SProp *)
-  begin match ESorts.kind sigma rtnsort with
-  | SProp | Prop -> sigma
-  | QSort _ | Type _ | Set ->
-    Evd.set_eq_sort sigma rtnsort ESorts.prop
-  end
-| SquashToQuality (QConstant QSProp) ->
-  (* Squashed inductive in SProp, return sort must be SProp. *)
-  begin match ESorts.kind sigma rtnsort with
-  | SProp -> sigma
-  | Type _ | Set | Prop | QSort _ ->
-    Evd.set_eq_sort sigma rtnsort ESorts.sprop
-  end
-| SquashToQuality (QConstant QType) ->
-  (* Sort poly squash to type *)
-  Evd.set_leq_sort sigma ESorts.set rtnsort
-| SquashToQuality (QVar q) ->
-  Evd.set_leq_sort sigma (ESorts.make (Sorts.qsort q Univ.Universe.type0)) rtnsort
+let squash_elim_sort sigma squash rtnsort =
+  let open Inductive in
+  match squash with
+  | SquashToSet ->
+     (* Squashed inductive in Set, only happens with impredicative Set *)
+     begin match ESorts.kind sigma rtnsort with
+     | Set | SProp | Prop -> sigma
+     | QSort _ | Type _ ->
+        Evd.set_eq_sort sigma rtnsort ESorts.set
+     end
+  | SquashToQuality (QConstant QProp) ->
+     (* Squashed inductive in Prop, return sort must be Prop or SProp *)
+     begin match ESorts.kind sigma rtnsort with
+     | SProp | Prop -> sigma
+     | QSort _ | Type _ | Set ->
+        Evd.set_eq_sort sigma rtnsort ESorts.prop
+     end
+  | SquashToQuality (QConstant QSProp) ->
+     (* Squashed inductive in SProp, return sort must be SProp. *)
+     begin match ESorts.kind sigma rtnsort with
+     | SProp -> sigma
+     | Type _ | Set | Prop | QSort _ ->
+        Evd.set_eq_sort sigma rtnsort ESorts.sprop
+     end
+  | SquashToQuality (QConstant QType) ->
+     (* Sort poly squash to type *)
+     Evd.set_leq_sort sigma ESorts.set rtnsort
+  | SquashToQuality (QVar q) ->
+     Evd.set_leq_sort sigma (ESorts.make (Sorts.qsort q Univ.Universe.type0)) rtnsort
 
 let is_allowed_elimination sigma ((mib,_),_ as specifu) s =
-  let open Sorts in
   match mib.mind_record with
   | PrimRecord _ -> true
   | NotRecord | FakeRecord ->
-    match is_squashed sigma specifu with
-    | None -> true
-    | Some SquashToSet ->
-      begin match EConstr.ESorts.kind sigma s with
-      | SProp|Prop|Set -> true
-      | QSort _ | Type _ ->
-        (* XXX in [Type u] case, should we check [u == set] in the ugraph? *)
-        false
-      end
-    | Some (SquashToQuality indq) -> quality_leq (EConstr.ESorts.quality sigma s) indq
+     Inductive.is_allowed_elimination
+       (is_squashed sigma specifu)
+       (EConstr.ESorts.kind sigma s)
 
 let make_allowed_elimination env sigma ((mib,_),_ as specifu) s =
   let open Sorts in
@@ -348,7 +307,7 @@ let make_allowed_elimination env sigma ((mib,_),_ as specifu) s =
       end
     | Some (SquashToQuality indq) ->
       let sq = EConstr.ESorts.quality sigma s in
-      if quality_leq sq indq then Some sigma
+      if Sorts.Quality.leq sq indq then Some sigma
       else
         let mk q = ESorts.make @@ Sorts.make q Univ.Universe.type0 in
         try Some (Evd.set_leq_sort sigma (mk sq) (mk indq))
