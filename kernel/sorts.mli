@@ -53,7 +53,7 @@ module Quality : sig
   module Constants : sig
     val equal : constant -> constant -> bool
     val compare : constant -> constant -> int
-    val leq : constant -> constant -> bool
+    val eliminates_to : constant -> constant -> bool
     val pr : constant -> Pp.t
   end
 
@@ -70,7 +70,7 @@ module Quality : sig
 
   val compare : t -> t -> int
 
-  val leq : t -> t -> bool
+  val eliminates_to : t -> t -> bool
 
   val pr : (QVar.t -> Pp.t) -> t -> Pp.t
 
@@ -158,6 +158,7 @@ val is_prop : t -> bool
 val is_small : t -> bool
 val family : t -> family
 val quality : t -> Quality.t
+val eliminates_to : t -> t -> bool
 
 val hcons : t -> t
 
@@ -166,6 +167,7 @@ val family_equal : family -> family -> bool
 val family_leq : family -> family -> bool
 
 val sort_of_univ : Univ.Universe.t -> t
+(* TODO: univ_of_sort and update check_univ_leq *)
 
 val levels : t -> Univ.Level.Set.t
 

@@ -112,7 +112,11 @@ module Quality = struct
       | _, QProp -> 1
       | QType, QType -> 0
 
-    let leq a b = compare a b <= 0
+    let eliminates_to a b = match a, b with
+      | _, QSProp -> true
+      | (QProp | QType), QProp -> true
+      | QType, _ -> true
+      | _ -> false
 
     let pr = function
       | QProp -> Pp.str "Prop"
@@ -137,11 +141,11 @@ module Quality = struct
     | _, QVar _ -> 1
     | QConstant a, QConstant b -> Constants.compare a b
 
-  let leq a b = match a, b with
-    | _, QConstant QType -> true
+  let eliminates_to a b = match a, b with
+    | QConstant QType, _ -> true
     | QVar q, QVar q' -> QVar.equal q q' (* FIXME *)
-    | QConstant a, QConstant b -> Constants.leq a b
-    | (QVar _ | QConstant _), _ -> false
+    | QConstant a, QConstant b -> Constants.eliminates_to a b
+    | _, (QVar _ | QConstant _) -> false
 
   let pr prv = function
     | QVar v -> prv v
@@ -370,6 +374,8 @@ let quality = let open Quality in function
 | SProp -> QConstant QSProp
 | QSort (q, _) -> QVar q
 
+let eliminates_to a b = Quality.eliminates_to (quality b) (quality a)
+
 let family_compare a b = match a,b with
   | InSProp, InSProp -> 0
   | InSProp, _ -> -1
@@ -493,6 +499,7 @@ let extract_level u =
   | Some l -> l
   | None -> CErrors.anomaly Pp.(str "Tried to extract level of an algebraic universe")
 
+(* TODO: univ_of_sort *)
 let extract_sort_level = function
   | Type u
   | QSort (_, u) -> extract_level u

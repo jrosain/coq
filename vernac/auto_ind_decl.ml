@@ -1503,7 +1503,7 @@ let make_eq_decidability env handle mind =
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     raise DecidabilityMutualNotSupported;
   let ind = (mind,0) in
-  let nparrec = mib.mind_nparams_rec in
+p  let nparrec = mib.mind_nparams_rec in
 
   (* Setting universes *)
   let auctx = Declareops.universes_context mib.mind_universes in

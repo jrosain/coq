@@ -389,24 +389,23 @@ let abstract_constructor_type_relatively_to_inductive_types_context ntyps mind t
 
 type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
 
-let is_squashed ?(to_indq=Sorts.quality) ?(f=fun x -> x) ((_,mip),u) =
+let is_squashed ?(to_indq=fun x -> x) ?(to_quality=fun x -> x) ((_,mip),u) =
   let open Sorts in
   let s = mip.mind_sort in
   match mip.mind_squashed with
   | None -> None
   | Some squash ->
-     let indq = to_indq (UVars.subst_instance_sort u s) in (* FIXME: maybe we can factor quality out of to_indq *)
+     let indq = Sorts.quality (to_indq (UVars.subst_instance_sort u s)) in
      match squash with
      | AlwaysSquashed -> begin match s with
                          | Set -> Some SquashToSet
                          | _ -> Some (SquashToQuality indq)
                          end
      | SometimesSquashed squash ->
-        (* FIXME: we will remove impredicative sets, so is this check needed? *)
         (* impredicative set squashes are always quashed,
            so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
         if Quality.Set.for_all (fun q ->
-               let q = f (UVars.subst_instance_quality u q) in
+               let q = to_quality (UVars.subst_instance_quality u q) in
                Quality.leq q indq)
              squash
         then None
@@ -1605,8 +1604,11 @@ let inductive_of_mutfix ?evars env ((nvect,bodynum),(names,types,bodies as recde
       if Environ.is_type_in_type env (GlobRef.IndRef ind) then ()
       else match relevance_of_ind_body mip u with
         | Sorts.Irrelevant | Sorts.RelevanceVar _ as rind ->
-          if not (Sorts.relevance_equal names.(i).Context.binder_relevance rind)
-          then raise_err env i FixpointOnIrrelevantInductive
+           if not (Sorts.relevance_equal names.(i).Context.binder_relevance rind)
+                  (* TODO: here we should check whether rind can eliminate into binder_relevance *)
+                  (* Only special case should be prop as otherwise it's managed by eliminates_to *)
+                  (* And rename the error and change the error message to be more on point. *)
+           then raise_err env i FixpointOnIrrelevantInductive
         | Sorts.Relevant -> ()
     in
     res
