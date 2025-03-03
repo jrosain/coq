@@ -303,7 +303,6 @@ let check_type_fixpoint ?loc env sigma lna lar vdefj =
           i lna vdefj lar)
     sigma vdefj lar
 
-
 (* FIXME: might depend on the level of actual parameters!*)
 let check_allowed_sort env sigma ind c p =
   let specif = lookup_mind_specif env (fst ind) in

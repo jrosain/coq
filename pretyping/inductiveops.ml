@@ -247,11 +247,13 @@ let inductive_has_local_defs env ind =
   not (Int.equal l1 l2)
 
 let is_squashed sigma specifu =
-  (* FIXME: maybe these variables should be evaluated lazily *)
   let ((x,mip),u) = specifu in
   let u = EConstr.Unsafe.to_instance u in
-  let to_indq s = EConstr.ESorts.quality sigma (EConstr.ESorts.make @@ s)
-  in Inductive.is_squashed ~to_indq:to_indq ~f:(UState.nf_quality (Evd.ustate sigma)) ((x,mip),u)
+  let to_indq s = EConstr.ESorts.kind sigma (EConstr.ESorts.make @@ s)
+  in Inductive.is_squashed
+       ~to_indq:to_indq
+       ~to_quality:(UState.nf_quality (Evd.ustate sigma))
+       ((x,mip),u)
 
 let squash_elim_sort sigma squash rtnsort =
   let open Inductive in
@@ -315,7 +317,8 @@ let make_allowed_elimination env sigma ((mib,_),_ as specifu) s =
 
 (* XXX questionable for sort poly inductives *)
 let elim_sort (_,mip) =
-  if Option.is_empty mip.mind_squashed then Sorts.InType
+  if Option.is_empty mip.mind_squashed && (mip.mind_sort = Sorts.prop || mip.mind_sort = Sorts.set)
+  then Sorts.InType
   else Sorts.family mip.mind_sort
 
 let top_allowed_sort env (kn,i as ind) =
