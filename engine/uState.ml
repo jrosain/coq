@@ -746,7 +746,8 @@ let add_quconstraints uctx (qcstrs,ucstrs) =
   let cstrs = QConstraints.fold (fun (l,d,r) cstrs ->
       match d with
       | Equal -> UnivProblem.Set.add (QEq (l,r)) cstrs
-      | Leq -> UnivProblem.Set.add (QLeq (l,r)) cstrs)
+      | Leq -> UnivProblem.Set.add (QLeq (l,r)) cstrs
+      | Lt -> raise (Failure "add_quconstraints: Lt not supported"))
       qcstrs cstrs
   in
   add_universe_constraints uctx cstrs
@@ -760,7 +761,7 @@ let check_qconstraints uctx csts =
         | _, Equal, _ -> false
         | QConstant QProp, Leq, QConstant QType -> true
         | QConstant QProp, Leq, QVar q -> QState.is_above_prop q uctx.sort_variables
-        | _, Leq, _ -> false)
+        | _, (Leq|Lt), _ -> false)
     csts
 
 let check_universe_constraint uctx (c:UnivProblem.t) =
