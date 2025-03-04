@@ -220,7 +220,7 @@ module Quality = struct
 end
 
 module QConstraint = struct
-  type kind = Equal | Leq
+  type kind = Equal | Leq | Lt
 
   let eq_kind : kind -> kind -> bool = (=)
   let compare_kind : kind -> kind -> int = compare
@@ -228,6 +228,7 @@ module QConstraint = struct
   let pr_kind = function
     | Equal -> Pp.str "="
     | Leq -> Pp.str "<="
+    | Lt -> Pp.str "<"
 
   type t = Quality.t * kind * Quality.t
 
@@ -242,7 +243,7 @@ module QConstraint = struct
       if c <> 0 then c
       else Quality.compare b b'
 
-  let trivial (a,(Equal|Leq),b) = Quality.equal a b
+  let trivial (a,(Equal|Leq|Lt),b) = Quality.equal a b
 
   let pr prq (a,k,b) =
     let open Pp in

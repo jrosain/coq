@@ -441,7 +441,9 @@ let is_allowed_elimination_actions s =
   (* XXX in [Type u] case, should we check [u == set] in the ugraph? *)
   ; squashed_to_set_above = false
   ; squashed_to_quality
-    = fun indq -> Sorts.Quality.eliminates_to indq (Sorts.quality s) }
+    = fun indq -> 
+      let qgraph = QGraph.initial_quality_constraints in (* FIXME: This graph comes from somewher else *)
+      QGraph.is_allowed_elimination qgraph indq (Sorts.quality s)}
 
 let is_allowed_elimination specifu s =
   allowed_elimination_gen
