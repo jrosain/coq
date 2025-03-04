@@ -89,14 +89,17 @@ let glob_sort_eq (q1, l1) (q2, l2) =
          && Int.equal m n))
     l1 l2
 
-let glob_sort_family s =
-  let open Sorts in
-  if glob_sort_eq s glob_Type_sort then InType
+let glob_sort_quality s =
+  let open Sorts.Quality in
+  if glob_sort_eq s glob_Type_sort then qtype
   else match s with
     | None, UNamed [s, 0] -> begin match s with
-        | GSProp -> InSProp
-        | GProp -> InProp
-        | GSet -> InSet
+        | GSProp -> qsprop
+        | GProp -> qprop
+
+	(* TODO: should it be more precise (i.e., Type 0 instead of this *)
+        | GSet -> qtype
+
         | GUniv _ | GLocalUniv _ | GRawUniv _ -> raise ComplexSort
       end
     | _ -> raise ComplexSort

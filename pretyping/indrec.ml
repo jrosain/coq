@@ -16,9 +16,8 @@ open Pp
 open CErrors
 open Util
 open Names
-open Libnames
 open Nameops
-open Term
+open Libnames
 open Constr
 open EConstr
 open Context
@@ -623,10 +622,11 @@ let declare_prop_but_default_dependent_elim i =
 
 let is_prop_but_default_dependent_elim i = Indset_env.mem i !prop_but_default_dependent_elim
 
-let pseudo_sort_family_for_elim ind mip =
+let pseudo_sort_quality_for_elim ind mip =
   let s = mip.mind_sort in
-  if Sorts.is_prop s && is_prop_but_default_dependent_elim ind then InType
-  else Sorts.family s
+  if Sorts.is_prop s && is_prop_but_default_dependent_elim ind
+  then Sorts.Quality.qtype
+  else Sorts.quality s
 
 let is_in_prop mip =
   let s = mip.mind_sort in
@@ -692,11 +692,11 @@ let build_induction_scheme env sigma pind dep kind =
 
 (*s Eliminations. *)
 
-let elimination_suffix = function
-  | InSProp -> "_sind"
-  | InProp -> "_ind"
-  | InSet  -> "_rec"
-  | InType | InQSort -> "_rect"
+let elimination_suffix = let open Sorts.Quality in function
+  | QConstant QSProp -> "_sind"
+  | QConstant QProp -> "_ind"
+  | QConstant QType -> "_rect"
+  | QVar _ -> "_elim"
 
 let case_suffix = "_case"
 
@@ -726,5 +726,5 @@ let lookup_eliminator env ind_sp s =
         (strbrk "Cannot find the elimination combinator " ++
          Id.print id ++ strbrk ", the elimination of the inductive definition " ++
          Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef ind_sp) ++
-         strbrk " on sort " ++ Sorts.pr_sort_family s ++
+         strbrk " on sort " ++ Sorts.Quality.raw_pr s ++
          strbrk " is probably not allowed.")

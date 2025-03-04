@@ -37,7 +37,7 @@ val cases_pattern_eq : 'a cases_pattern_g -> 'a cases_pattern_g -> bool
 (** Expect a Prop/SProp/Set/Type universe; raise [ComplexSort] if
     contains a max, an increment, or a flexible universe *)
 exception ComplexSort
-val glob_sort_family : glob_sort -> Sorts.family
+val glob_sort_quality : glob_sort -> Sorts.Quality.t
 
 val alias_of_pat : 'a cases_pattern_g -> Name.t
 

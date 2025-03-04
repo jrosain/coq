@@ -406,7 +406,7 @@ let is_squashed ?(to_indq=fun x -> x) ?(to_quality=fun x -> x) ((_,mip),u) =
            so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
         if Quality.Set.for_all (fun q ->
                let q = to_quality (UVars.subst_instance_quality u q) in
-               Quality.leq q indq)
+               Quality.eliminates_to indq q)
              squash
         then None
         else Some (SquashToQuality indq)
@@ -422,7 +422,7 @@ let is_allowed_elimination is_squashed s =
         (* XXX in [Type u] case, should we check [u == set] in the ugraph? *)
         false
     end
-  | Some (SquashToQuality indq) -> Quality.leq (quality s) indq
+  | Some (SquashToQuality indq) -> Quality.eliminates_to indq (quality s)
 
 let is_private (mib,_) = mib.mind_private = Some true
 let is_primitive_record (mib,_) =
@@ -1602,7 +1602,8 @@ let inductive_of_mutfix ?evars env ((nvect,bodynum),(names,types,bodies as recde
     (* recursive sprop means non record with projections -> squashed *)
     let () =
       if Environ.is_type_in_type env (GlobRef.IndRef ind) then ()
-      else match relevance_of_ind_body mip u with
+      else
+	match relevance_of_ind_body mip u with
         | Sorts.Irrelevant | Sorts.RelevanceVar _ as rind ->
            if not (Sorts.relevance_equal names.(i).Context.binder_relevance rind)
                   (* TODO: here we should check whether rind can eliminate into binder_relevance *)

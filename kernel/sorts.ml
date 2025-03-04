@@ -10,10 +10,6 @@
 
 open Univ
 
-type family = InSProp | InProp | InSet | InType | InQSort
-
-let all_families = [InSProp; InProp; InSet; InType; InQSort]
-
 module QVar =
 struct
   type repr =
@@ -116,7 +112,7 @@ module Quality = struct
       | _, QSProp -> true
       | (QProp | QType), QProp -> true
       | QType, _ -> true
-      | _ -> false
+      | _, _ -> false
 
     let pr = function
       | QProp -> Pp.str "Prop"
@@ -146,6 +142,8 @@ module Quality = struct
     | QVar q, QVar q' -> QVar.equal q q' (* FIXME *)
     | QConstant a, QConstant b -> Constants.eliminates_to a b
     | _, (QVar _ | QConstant _) -> false
+
+  let all = [QConstant QSProp; QConstant QProp; QConstant QType; var 0]
 
   let pr prv = function
     | QVar v -> prv v
@@ -291,6 +289,11 @@ let qsort q u = QSort (q, u)
 let sort_of_univ u =
   if Universe.is_type0 u then set else Type u
 
+let univ_of_sort s =
+  match s with
+  | SProp | Prop | Set -> Universe.type0
+  | Type u | QSort (_, u) -> u
+
 let make q u =
   let open Quality in
   match q with
@@ -361,48 +364,13 @@ let subst_fn (fq,fu) = function
     | QConstant QProp -> prop
     | QConstant QType -> sort_of_univ (fu v)
 
-let family = function
-  | SProp -> InSProp
-  | Prop -> InProp
-  | Set -> InSet
-  | Type _ -> InType
-  | QSort _ -> InQSort
-
 let quality = let open Quality in function
 | Set | Type _ -> QConstant QType
 | Prop -> QConstant QProp
 | SProp -> QConstant QSProp
 | QSort (q, _) -> QVar q
 
-let eliminates_to a b = Quality.eliminates_to (quality b) (quality a)
-
-let family_compare a b = match a,b with
-  | InSProp, InSProp -> 0
-  | InSProp, _ -> -1
-  | _, InSProp -> 1
-  | InProp, InProp -> 0
-  | InProp, _ -> -1
-  | _, InProp -> 1
-  | InSet, InSet -> 0
-  | InSet, _ -> -1
-  | _, InSet -> 1
-  | InType, InType -> 0
-  | InType, _ -> -1
-  | _, InType -> 1
-  | InQSort, InQSort -> 0
-
-let family_equal a b =  match a, b with
-  | InSProp, InSProp | InProp, InProp | InSet, InSet | InType, InType -> true
-  | InQSort, InQSort -> true
-  | (InSProp | InProp | InSet | InType | InQSort), _ -> false
-
-let family_leq a b =
-  family_equal a b
-  || match a, b with
-  | InSProp, _ -> true
-  | InProp, InSet -> true
-  | _, InType -> true
-  | _ -> false
+let eliminates_to a b = Quality.eliminates_to (quality a) (quality b)
 
 open Hashset.Combine
 
@@ -452,10 +420,6 @@ let relevance_equal r1 r2 = match r1,r2 with
   | RelevanceVar q1, RelevanceVar q2 -> QVar.equal q1 q2
   | (Relevant | Irrelevant | RelevanceVar _), _ -> false
 
-let relevance_of_sort_family = function
-  | InSProp -> Irrelevant
-  | _ -> Relevant
-
 let relevance_hash = function
   | Relevant -> 0
   | Irrelevant -> 1
@@ -484,13 +448,6 @@ let debug_print = function
   | QSort (q, u) -> Pp.(str "QSort(" ++ QVar.raw_pr q ++ str ","
                         ++ spc() ++ Univ.Universe.raw_pr u ++ str ")")
 
-let pr_sort_family = function
-  | InSProp -> Pp.(str "SProp")
-  | InProp -> Pp.(str "Prop")
-  | InSet -> Pp.(str "Set")
-  | InType -> Pp.(str "Type")
-  | InQSort -> Pp.(str "Type") (* FIXME? *)
-
 type pattern =
   | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
 
@@ -499,7 +456,6 @@ let extract_level u =
   | Some l -> l
   | None -> CErrors.anomaly Pp.(str "Tried to extract level of an algebraic universe")
 
-(* TODO: univ_of_sort *)
 let extract_sort_level = function
   | Type u
   | QSort (_, u) -> extract_level u

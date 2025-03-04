@@ -10,10 +10,6 @@
 
 (** {6 The sorts of CCI. } *)
 
-type family = InSProp | InProp | InSet | InType | InQSort
-
-val all_families : family list
-
 module QVar :
 sig
   type t
@@ -72,6 +68,9 @@ module Quality : sig
 
   val eliminates_to : t -> t -> bool
 
+  val all : t list
+  (** This provides a list with all qualities, and a dummy QVar. *)
+
   val pr : (QVar.t -> Pp.t) -> t -> Pp.t
 
   val raw_pr : t -> Pp.t
@@ -93,7 +92,7 @@ module Quality : sig
     PQVar of int option | PQConstant of constant
 
   val pattern_match : pattern -> t -> ('t, t, 'u) Partial_subst.t -> ('t, t, 'u) Partial_subst.t option
- 
+
 end
 
 module QConstraint : sig
@@ -156,18 +155,13 @@ val is_sprop : t -> bool
 val is_set : t -> bool
 val is_prop : t -> bool
 val is_small : t -> bool
-val family : t -> family
 val quality : t -> Quality.t
 val eliminates_to : t -> t -> bool
 
 val hcons : t -> t
 
-val family_compare : family -> family -> int
-val family_equal : family -> family -> bool
-val family_leq : family -> family -> bool
-
 val sort_of_univ : Univ.Universe.t -> t
-(* TODO: univ_of_sort and update check_univ_leq *)
+val univ_of_sort : t -> Univ.Universe.t
 
 val levels : t -> Univ.Level.Set.t
 
@@ -187,11 +181,8 @@ val relevance_equal : relevance -> relevance -> bool
 val relevance_subst_fn : (QVar.t -> Quality.t) -> relevance -> relevance
 
 val relevance_of_sort : t -> relevance
-val relevance_of_sort_family : family -> relevance
 
 val debug_print : t -> Pp.t
-
-val pr_sort_family : family -> Pp.t
 
 type pattern =
   | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
