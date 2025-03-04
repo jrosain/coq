@@ -102,7 +102,7 @@ module Quality : sig
 end
 
 module QConstraint : sig
-  type kind = Equal | Leq
+  type kind = Equal | Leq | Lt
 
   val pr_kind : kind -> Pp.t
 
