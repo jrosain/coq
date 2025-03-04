@@ -1123,7 +1123,7 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
     in
     let statuslists,lhyp0,toclear,deps,avoid,dep_in_hyps = cook_sign hyp0 inhyps indvars env sigma in
     let tmpcl = it_mkNamedProd_or_LetIn sigma concl deps in
-    let s = Retyping.get_sort_family_of env sigma tmpcl in
+    let s = Retyping.get_sort_quality_of env sigma tmpcl in
     let deps_cstr =
       List.fold_left
         (fun a decl -> if NamedDecl.is_local_assum decl then (mkVar (NamedDecl.get_id decl))::a else a) [] deps in

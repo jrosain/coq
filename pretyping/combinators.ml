@@ -23,10 +23,10 @@ module RelDecl = Context.Rel.Declaration
 (** Telescope *)
 
 type family = SPropF | PropF | TypeF
-let family_of_sort_family = let open Sorts in function
-    | InSProp -> SPropF
-    | InProp -> PropF
-    | InSet | InType | InQSort -> TypeF
+let family_of_sort_quality = let open Sorts.Quality in function
+    | QConstant QSProp -> SPropF
+    | QConstant QProp -> PropF
+    | QConstant QType | QVar _ -> TypeF
 
 let get_sigmatypes sigma ~sort ~predsort =
   let open EConstr in
@@ -83,9 +83,9 @@ type telescope = {
 
 let telescope env sigma ctx =
   let ctx, _ = List.fold_right_map (fun d env ->
-      let s = Retyping.get_sort_family_of env sigma (RelDecl.get_type d) in
+      let s = Retyping.get_sort_quality_of env sigma (RelDecl.get_type d) in
       let env = EConstr.push_rel d env in
-      (d, family_of_sort_family s), env) ctx env
+      (d, family_of_sort_quality s), env) ctx env
   in
   let sigma, telescope_type, letcontext, telescope_value = telescope sigma ctx in
   sigma, letcontext, { telescope_type; telescope_value }

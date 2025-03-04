@@ -343,25 +343,26 @@ let retype ?metas ?(polyprop=true) sigma =
 
   in type_of, sort_of, type_of_global_reference_knowing_parameters
 
-let get_sort_family_of ?(polyprop=true) env sigma t =
+let get_sort_quality_of ?(polyprop=true) env sigma t =
+  let open Sorts.Quality in
   let type_of,_,type_of_global_reference_knowing_parameters = retype ~polyprop sigma in
-  let rec sort_family_of env t =
+  let rec sort_quality_of env t =
     match EConstr.kind sigma t with
-    | Cast (c,_, s) when isSort sigma s -> ESorts.family sigma (destSort sigma s)
-    | Sort _ -> InType
+    | Cast (c,_, s) when isSort sigma s -> ESorts.quality sigma (destSort sigma s)
+    | Sort _ -> qtype
     | Prod (name,t,c2) ->
-        let s2 = sort_family_of (push_rel (LocalAssum (name,t)) env) c2 in
+        let s2 = sort_quality_of (push_rel (LocalAssum (name,t)) env) c2 in
         if not (is_impredicative_set env) &&
-           s2 == InSet && sort_family_of env t == InType then InType else s2
+           (* s2 == InSet && *) sort_quality_of env t == qtype then qtype else s2
     | App(f,args) when Termops.is_template_polymorphic_ind env sigma f ->
         let t = type_of_global_reference_knowing_parameters env f args in
-        ESorts.family sigma (sort_of_atomic_type env sigma t args)
+        ESorts.quality sigma (sort_of_atomic_type env sigma t args)
     | App(f,args) ->
-        ESorts.family sigma (sort_of_atomic_type env sigma (type_of env f) args)
+        ESorts.quality sigma (sort_of_atomic_type env sigma (type_of env f) args)
     | Lambda _ | Fix _ | Construct _ -> retype_error NotAType
     | _ ->
-      ESorts.family sigma (decomp_sort env sigma (type_of env t))
-  in sort_family_of env t
+      ESorts.quality sigma (decomp_sort env sigma (type_of env t))
+  in sort_quality_of env t
 
 let get_sort_of ?(polyprop=true) env sigma t =
   let _,f,_ = retype ~polyprop sigma in anomaly_on_error (f env) t
@@ -469,4 +470,4 @@ let relevance_of_type env sigma t =
 
 let relevance_of_sort = ESorts.relevance_of_sort
 
-let relevance_of_sort_family sigma f = ERelevance.make (Sorts.relevance_of_sort_family f)
+(* let relevance_of_sort_family sigma f = ERelevance.make (Sorts.relevance_of_sort_family f) *)

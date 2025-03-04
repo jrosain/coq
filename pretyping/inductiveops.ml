@@ -309,7 +309,7 @@ let make_allowed_elimination env sigma ((mib,_),_ as specifu) s =
       end
     | Some (SquashToQuality indq) ->
       let sq = EConstr.ESorts.quality sigma s in
-      if Sorts.Quality.leq sq indq then Some sigma
+      if Sorts.Quality.eliminates_to indq sq then Some sigma
       else
         let mk q = ESorts.make @@ Sorts.make q Univ.Universe.type0 in
         try Some (Evd.set_leq_sort sigma (mk sq) (mk indq))
@@ -317,25 +317,20 @@ let make_allowed_elimination env sigma ((mib,_),_ as specifu) s =
 
 (* XXX questionable for sort poly inductives *)
 let elim_sort (_,mip) =
-  if Option.is_empty mip.mind_squashed && (mip.mind_sort = Sorts.prop || mip.mind_sort = Sorts.set)
-  then Sorts.InType
-  else Sorts.family mip.mind_sort
+  (* Always allow fixpoints on Prop and impredicative sets *)
+  if Option.is_empty mip.mind_squashed &&
+       (Sorts.is_prop mip.mind_sort || Sorts.is_set mip.mind_sort)
+  then Sorts.Quality.qtype
+  else Sorts.quality mip.mind_sort
 
 let top_allowed_sort env (kn,i as ind) =
   let specif = Inductive.lookup_mind_specif env ind in
   elim_sort specif
 
 let sorts_below top =
-  List.filter (fun s ->
-      Sorts.family_equal s top
-      || match s, top with
-      | InQSort, _ -> assert false
-      | _, InQSort -> false
-      | InSProp, _ -> true
-      | InProp, InSet -> true
-      | _, InType -> true
-      | (InProp|InSet|InType), _ -> false)
-    Sorts.[InSProp;InProp;InSet;InType]
+  List.filter
+	 (Sorts.Quality.eliminates_to top)
+	 (Sorts.Quality.[qsprop; qprop; qtype])
 
 let sorts_for_schemes specif =
   sorts_below (elim_sort specif)

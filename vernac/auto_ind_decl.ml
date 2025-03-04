@@ -841,7 +841,8 @@ let build_beq_scheme env handle kn =
          let cores = Array.init nb_ind make_one_eq in
          Array.init nb_ind (fun i ->
             let kelim = Inductiveops.elim_sort (mib,mib.mind_packets.(i)) in
-            if not (Sorts.family_leq InSet kelim) then
+	    (* JJJ is this the right condition? *)
+            if not (Sorts.Quality.eliminates_to kelim Sorts.Quality.qtype) then
               raise (NonSingletonProp (kn,i));
             let decrArg = Context.Rel.length nonrecparams_ctx_with_eqs in
             let fix = mkFix (((Array.make nb_ind decrArg),i),(names,types,cores)) in
@@ -851,7 +852,9 @@ let build_beq_scheme env handle kn =
          (* If the inductive type is not recursive, the fixpoint is
              not used, so let's replace it with garbage *)
          let kelim = Inductiveops.elim_sort (mib,mib.mind_packets.(0)) in
-         if not (Sorts.family_leq InSet kelim) then raise (NonSingletonProp (kn,0));
+	 (* JJJ same as above *)
+         if not (Sorts.Quality.eliminates_to kelim Sorts.Quality.qtype)
+	 then raise (NonSingletonProp (kn,0));
          [|Term.it_mkLambda_or_LetIn (make_one_eq 0) recparams_ctx_with_eqs|]
   in
 
@@ -1503,7 +1506,7 @@ let make_eq_decidability env handle mind =
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     raise DecidabilityMutualNotSupported;
   let ind = (mind,0) in
-p  let nparrec = mib.mind_nparams_rec in
+  let nparrec = mib.mind_nparams_rec in
 
   (* Setting universes *)
   let auctx = Declareops.universes_context mib.mind_universes in
