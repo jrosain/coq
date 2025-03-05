@@ -97,7 +97,8 @@ let glob_sort_quality s =
         | GSProp -> qsprop
         | GProp -> qprop
 
-	(* TODO: should it be more precise (i.e., Type 0 instead of this *)
+	(* There is some ad-hoc system to ensure that there is no impact on the
+	   performances because of this *)
         | GSet -> qtype
 
         | GUniv _ | GLocalUniv _ | GRawUniv _ -> raise ComplexSort

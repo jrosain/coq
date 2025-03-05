@@ -214,39 +214,21 @@ let check_universes_invariants g = G.check_invariants ~required_canonical:Level.
 
 open Sorts
 
-let get_algebraic = function
-| Prop | SProp -> assert false
-| Set -> Universe.type0
-| Type u | QSort (_, u) -> u
-
-let check_eq_sort ugraph s1 s2 = match s1, s2 with
-| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
-| (SProp, _) | (_, SProp) | (Prop, _) | (_, Prop) ->
-  type_in_type ugraph
-| (Type _ | Set), (Type _ | Set) ->
-  check_eq ugraph (get_algebraic s1) (get_algebraic s2)
-| QSort (q1, u1), QSort (q2, u2) ->
-  QVar.equal q1 q2 && check_eq ugraph u1 u2
-| (QSort _, (Type _ | Set)) | ((Type _ | Set), QSort _) -> false
+let check_eq_sort ugraph s1 s2 =
+  if type_in_type ugraph then true
+  else Sorts.Quality.equal (Sorts.quality s1) (Sorts.quality s2) &&
+	 check_eq ugraph (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2)
 
 let is_above_prop ugraph q =
   Sorts.QVar.Set.mem q ugraph.above_prop_qvars
 
-(* JJJ replace by check_univ_leq? *)
-let check_leq_sort ugraph s1 s2 = match s1, s2 with
-| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
-| (SProp, _) -> type_in_type ugraph
-| (Prop, SProp) -> type_in_type ugraph
-| (Prop, (Set | Type _)) -> true
-| (Prop, QSort (q,_)) -> is_above_prop ugraph q
-| (_, (SProp | Prop)) -> type_in_type ugraph
-| (Type _ | Set), (Type _ | Set) ->
-  check_leq ugraph (get_algebraic s1) (get_algebraic s2)
-| QSort (q1, u1), QSort (q2, u2) ->
-  QVar.equal q1 q2 && check_leq ugraph u1 u2
-| QSort (q, _), Set -> is_above_prop ugraph q
-| QSort (q, u1), Type u2 -> is_above_prop ugraph q && check_leq ugraph u1 u2
-| ((Type _ | Set), QSort _) -> false
+let check_leq_sort ugraph s1 s2 =
+  if type_in_type ugraph then true
+  else if Sorts.eliminates_to s2 s1
+  then check_leq ugraph (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2)
+  else match s1, s2 with
+       | (Prop, QSort (q,_)) -> is_above_prop ugraph q
+       | _ -> false
 
 (** Pretty-printing *)
 

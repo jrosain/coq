@@ -180,7 +180,7 @@ let locate_global_sort_inductive_or_constant env sigma qid =
     | Globnames.Abbrev kn ->
     match Abbreviation.search_abbreviation kn with
     | [], Notation_term.NSort r ->
-       let sigma,c = Evd.fresh_sort_quality sigma (Glob_ops.glob_sort_quality r) in
+       let sigma,c = Evd.fresh_sort_quality ~from_glob:true sigma (Glob_ops.glob_sort_quality r) in
        let c = EConstr.ESorts.kind sigma c in
        sigma, Constr.mkSort c
     | _ -> raise Not_found in
