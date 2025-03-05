@@ -68,8 +68,10 @@ val eq_named_context_val : named_context_val -> named_context_val -> bool
 val empty_env : env
 
 val universes     : env -> UGraph.t
+val qualities : env -> QGraph.t
+(** Return the graph of qualities. *)
 val quality_vars     : env -> Sorts.QVar.Set.t
-(** Return the set of qvars associated with the given environment. *)
+(** Return the set of qvars. *)
 val rel_context   : env -> Constr.rel_context
 val rel_context_val : env -> rel_context_val
 val named_context : env -> Constr.named_context

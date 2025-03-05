@@ -128,7 +128,7 @@ val inductive_has_local_defs : env -> inductive -> bool
 
 val sorts_for_schemes : mind_specif -> Sorts.Quality.t list
 
-val is_squashed : evar_map -> (mind_specif * EInstance.t) -> Inductive.squash option
+val is_squashed : env -> evar_map -> (mind_specif * EInstance.t) -> Inductive.squash option
 
 val squash_elim_sort : evar_map -> Inductive.squash -> ESorts.t -> evar_map
 (** Take into account elimination constraints. When there is an
@@ -136,7 +136,7 @@ val squash_elim_sort : evar_map -> Inductive.squash -> ESorts.t -> evar_map
     QSort, we make a non-canonical choice for the return type.
     Incompatible constraints produce a universe inconsistency. *)
 
-val is_allowed_elimination : evar_map -> (mind_specif * EInstance.t) -> EConstr.ESorts.t -> bool
+val is_allowed_elimination : env -> evar_map -> (mind_specif * EInstance.t) -> EConstr.ESorts.t -> bool
 
 val make_allowed_elimination : env -> evar_map -> (mind_specif * EInstance.t) -> EConstr.ESorts.t -> evar_map option
 (** Returns [Some sigma'] if the elimination can be allowed, possibly adding constraints in [sigma'] *)

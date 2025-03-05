@@ -213,7 +213,9 @@ let declare_one_case_analysis_scheme ?loc ind =
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
        appropriate type *)
-  if Sorts.Quality.eliminates_to kelim Sorts.Quality.qtype then
+  (* TTT: FIX - get graph differently? *)
+  let qgraph = QGraph.initial_quality_constraints in
+  if QGraph.is_allowed_elimination qgraph kelim Sorts.Quality.qtype then
     define_individual_scheme ?loc dep id ind
 
 (* Induction/recursion schemes *)

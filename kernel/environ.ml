@@ -337,6 +337,8 @@ let universes env = env.env_universes
 let set_universes g env =
   {env with env_universes=g}
 
+let qualities env = env.env_qualities
+
 let quality_vars env = QGraph.qvar_domain @@ env.env_qualities
 
 let named_context env = env.env_named_context.env_named_ctx
