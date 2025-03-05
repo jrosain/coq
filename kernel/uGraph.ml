@@ -232,6 +232,7 @@ let check_eq_sort ugraph s1 s2 = match s1, s2 with
 let is_above_prop ugraph q =
   Sorts.QVar.Set.mem q ugraph.above_prop_qvars
 
+(* JJJ replace by check_univ_leq? *)
 let check_leq_sort ugraph s1 s2 = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
 | (SProp, _) -> type_in_type ugraph

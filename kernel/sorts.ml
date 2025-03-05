@@ -114,10 +114,12 @@ module Quality = struct
       | QType, _ -> true
       | _, _ -> false
 
-    let pr = function
-      | QProp -> Pp.str "Prop"
-      | QSProp -> Pp.str "SProp"
-      | QType -> Pp.str "Type"
+    let to_string = function
+      | QProp -> "Prop"
+      | QSProp -> "SProp"
+      | QType -> "Type"
+
+    let pr q = Pp.str (to_string q)
 
     let hash = function
       | QSProp -> 0
@@ -207,6 +209,10 @@ module Quality = struct
     | PQConstant qc, QConstant qc' -> if Constants.equal qc qc' then Some qusubst else None
     | PQVar qio, q -> Some (Partial_subst.maybe_add_quality qio q qusubst)
     | PQConstant _, QVar _ -> None
+
+  let to_string = function
+    | QConstant q -> Constants.to_string q
+    | QVar q -> QVar.to_string q
 end
 
 module QConstraint = struct
@@ -365,9 +371,9 @@ let subst_fn (fq,fu) = function
     | QConstant QType -> sort_of_univ (fu v)
 
 let quality = let open Quality in function
-| Set | Type _ -> QConstant QType
-| Prop -> QConstant QProp
-| SProp -> QConstant QSProp
+| Set | Type _ -> qtype
+| Prop -> qprop
+| SProp -> qsprop
 | QSort (q, _) -> QVar q
 
 let eliminates_to a b = Quality.eliminates_to (quality a) (quality b)
@@ -440,6 +446,11 @@ let relevance_of_sort = function
   | Prop | Set | Type _ -> Relevant
   | QSort (q, _) -> RelevanceVar q
 
+let of_relevance u = function
+  | Irrelevant -> SProp
+  | Relevant -> Type u
+  | RelevanceVar q -> QSort (q, u)
+
 let debug_print = function
   | SProp -> Pp.(str "SProp")
   | Prop -> Pp.(str "Prop")
@@ -470,3 +481,5 @@ let pattern_match ps s qusubst =
   | PSType uio, Type u -> Some (Partial_subst.maybe_add_univ uio (extract_level u) qusubst)
   | PSQSort (qio, uio), s -> Some (qusubst |> Partial_subst.maybe_add_quality qio (quality s) |> Partial_subst.maybe_add_univ uio (extract_sort_level s))
   | (PSProp | PSSProp | PSSet | PSType _), _ -> None
+
+let to_string s = Quality.to_string (quality s)

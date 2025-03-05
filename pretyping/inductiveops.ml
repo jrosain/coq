@@ -246,15 +246,6 @@ let inductive_has_local_defs env ind =
   let l2 = mib.mind_nparams + mip.mind_nrealargs in
   not (Int.equal l1 l2)
 
-let is_squashed sigma specifu =
-  let ((x,mip),u) = specifu in
-  let u = EConstr.Unsafe.to_instance u in
-  let to_indq s = EConstr.ESorts.kind sigma (EConstr.ESorts.make @@ s)
-  in Inductive.is_squashed
-       ~to_indq:to_indq
-       ~to_quality:(UState.nf_quality (Evd.ustate sigma))
-       ((x,mip),u)
-
 let squash_elim_sort sigma squash rtnsort =
   let open Inductive in
   match squash with
@@ -285,35 +276,59 @@ let squash_elim_sort sigma squash rtnsort =
   | SquashToQuality (QVar q) ->
      Evd.set_leq_sort sigma (ESorts.make (Sorts.qsort q Univ.Universe.type0)) rtnsort
 
-let is_allowed_elimination sigma ((mib,_),_ as specifu) s =
+(* [s] is the sort of an inductive definition. *)
+let loc_indsort_to_quality sigma u s =
+  let u = (EConstr.Unsafe.to_instance u) in
+  Sorts.quality
+    (EConstr.ESorts.kind sigma
+	(EConstr.ESorts.make @@ (UVars.subst_instance_sort u s)))
+
+(* [q] is a quality an inductive has to be squashed to. *)
+let loc_squashed_to_quality sigma u q =
+  let u = (EConstr.Unsafe.to_instance u) in
+  UState.nf_quality (Evd.ustate sigma) (UVars.subst_instance_quality u q)
+
+let is_squashed sigma specifu =
+  Inductive.is_squashed_gen
+    (loc_indsort_to_quality sigma)
+    (loc_squashed_to_quality sigma)
+    specifu
+
+let is_allowed_elimination sigma ((mib,mip),_ as specifu) s =
   match mib.mind_record with
   | PrimRecord _ -> true
   | NotRecord | FakeRecord ->
-     Inductive.is_allowed_elimination
-       (is_squashed sigma specifu)
-       (EConstr.ESorts.kind sigma s)
+     Inductive.allowed_elimination_gen
+	(loc_indsort_to_quality sigma)
+	(loc_squashed_to_quality sigma)
+	(Inductive.is_allowed_elimination_actions mip.mind_sort)
+	specifu
+
+let make_allowed_elimination_actions sigma s =
+  Inductive.
+  { not_squashed = Some sigma
+  ; squashed_to_set_below = Some sigma
+  ; squashed_to_set_above = (
+    try Some (Evd.set_leq_sort sigma s ESorts.set)
+    with UGraph.UniverseInconsistency _ -> None)
+  ; squashed_to_quality =
+      fun indq -> let sq = EConstr.ESorts.quality sigma s in
+	       if Sorts.Quality.eliminates_to indq sq
+	       then Some sigma
+	       else
+		 let mk q = ESorts.make @@ Sorts.make q Univ.Universe.type0 in
+		 try Some (Evd.set_leq_sort sigma (mk sq) (mk indq))
+		 with UGraph.UniverseInconsistency _ -> None }
 
 let make_allowed_elimination env sigma ((mib,_),_ as specifu) s =
-  let open Sorts in
   match mib.mind_record with
   | PrimRecord _ -> Some sigma
   | NotRecord | FakeRecord ->
-    match is_squashed sigma specifu with
-    | None -> Some sigma
-    | Some SquashToSet ->
-      begin match EConstr.ESorts.kind sigma s with
-      | SProp|Prop|Set -> Some sigma
-      | QSort _ | Type _ ->
-        try Some (Evd.set_leq_sort sigma s ESorts.set)
-        with UGraph.UniverseInconsistency _ -> None
-      end
-    | Some (SquashToQuality indq) ->
-      let sq = EConstr.ESorts.quality sigma s in
-      if Sorts.Quality.eliminates_to indq sq then Some sigma
-      else
-        let mk q = ESorts.make @@ Sorts.make q Univ.Universe.type0 in
-        try Some (Evd.set_leq_sort sigma (mk sq) (mk indq))
-        with UGraph.UniverseInconsistency _ -> None
+     Inductive.allowed_elimination_gen
+	(loc_indsort_to_quality sigma)
+	(loc_squashed_to_quality sigma)
+	(make_allowed_elimination_actions sigma s)
+	specifu
 
 (* XXX questionable for sort poly inductives *)
 let elim_sort (_,mip) =
@@ -329,8 +344,8 @@ let top_allowed_sort env (kn,i as ind) =
 
 let sorts_below top =
   List.filter
-	 (Sorts.Quality.eliminates_to top)
-	 (Sorts.Quality.[qsprop; qprop; qtype])
+    (Sorts.Quality.eliminates_to top)
+    (Sorts.Quality.[qsprop; qprop; qtype])
 
 let sorts_for_schemes specif =
   sorts_below (elim_sort specif)

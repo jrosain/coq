@@ -50,6 +50,7 @@ module Quality : sig
     val equal : constant -> constant -> bool
     val compare : constant -> constant -> int
     val eliminates_to : constant -> constant -> bool
+    val to_string : constant -> string
     val pr : constant -> Pp.t
   end
 
@@ -93,6 +94,7 @@ module Quality : sig
 
   val pattern_match : pattern -> t -> ('t, t, 'u) Partial_subst.t -> ('t, t, 'u) Partial_subst.t option
 
+  val to_string : t -> string
 end
 
 module QConstraint : sig
@@ -182,6 +184,10 @@ val relevance_subst_fn : (QVar.t -> Quality.t) -> relevance -> relevance
 
 val relevance_of_sort : t -> relevance
 
+val of_relevance : Univ.Universe.t -> relevance -> t
+(** This is an approximation and will return [Type] for a [Relevant] variable.
+    The universe is the default universe used to create [Type] and [QSort]. *)
+
 val debug_print : t -> Pp.t
 
 type pattern =
@@ -189,3 +195,4 @@ type pattern =
 
 val pattern_match : pattern -> t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t option
 
+val to_string : t -> string

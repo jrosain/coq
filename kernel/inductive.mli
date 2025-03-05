@@ -78,11 +78,26 @@ val type_of_inductive_knowing_parameters :
 
 type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
 
-val is_squashed :
-  ?to_indq:(Sorts.t -> Sorts.t) -> ?to_quality:(Sorts.Quality.t -> Sorts.Quality.t)
-  -> mind_specif puniverses -> squash option
+type 'a allow_elimination_actions =
+  { not_squashed : 'a
+  ; squashed_to_set_below : 'a
+  ; squashed_to_set_above : 'a
+  ; squashed_to_quality : Sorts.Quality.t -> 'a }
 
-val is_allowed_elimination : squash option -> Sorts.t -> bool
+val is_squashed_gen :
+  ('a -> Sorts.t -> Sorts.Quality.t) -> ('a -> Sorts.Quality.Set.elt -> Sorts.Quality.t)
+  -> (mind_specif * 'a) -> squash option
+
+val allowed_elimination_gen :
+  ('a -> Sorts.t -> Sorts.Quality.t) -> ('a -> Sorts.Quality.Set.elt -> Sorts.Quality.t)
+  -> 'b allow_elimination_actions -> (mind_specif * 'a) -> 'b
+
+val is_squashed : mind_specif puniverses -> squash option
+
+val is_allowed_elimination_actions : Sorts.t -> bool allow_elimination_actions
+
+val is_allowed_elimination : mind_specif puniverses -> bool
+val is_allowed_fixpoint : Sorts.t -> Sorts.t -> bool
 
 val is_private : mind_specif -> bool
 val is_primitive_record : mind_specif -> bool

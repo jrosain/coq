@@ -71,7 +71,7 @@ type flag = info * scheme
   Really important function. *)
 
 let info_of_quality = let open Sorts.Quality in function
-  | QConstant QSProp | QConstant QProp -> Logic
+  | QConstant (QSProp | QProp) -> Logic
   | QConstant QType | QVar _ -> Info
 
 let info_of_sort s = info_of_quality (Sorts.quality s)

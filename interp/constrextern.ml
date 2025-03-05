@@ -1463,6 +1463,7 @@ let glob_of_pat_under_context glob_of_pat avoid env sigma (nas, pat) =
 let rec glob_of_pat
   : 'a 's. 's Namegen.Generator.input -> _ -> _ -> 'a constr_pattern_r -> _
   = fun (type a s) (avoid : s Namegen.Generator.t * s) env sigma (pat: a constr_pattern_r) ->
+  let open Sorts.Quality in
     DAst.make @@ match pat with
   | PRef ref -> GRef (ref,None)
   | PVar id  -> GVar id
@@ -1570,11 +1571,9 @@ let rec glob_of_pat
           Array.map (fun (bl,_,_) -> bl) v,
           Array.map (fun (_,_,ty) -> ty) v,
           Array.map (fun (_,bd,_) -> bd) v)
-  | PSort (Sorts.Quality.QConstant QSProp) -> GSort Glob_ops.glob_SProp_sort
-  | PSort (Sorts.Quality.QConstant QProp) -> GSort Glob_ops.glob_Prop_sort
-  (* | PSort Sorts.InSet -> GSort Glob_ops.glob_Set_sort *)
-  | PSort (Sorts.Quality.QConstant QType | Sorts.Quality.QVar _) ->
-     GSort Glob_ops.glob_Type_sort
+  | PSort (QConstant QSProp) -> GSort Glob_ops.glob_SProp_sort
+  | PSort (QConstant QProp) -> GSort Glob_ops.glob_Prop_sort
+  | PSort (QConstant QType | QVar _) -> GSort Glob_ops.glob_Type_sort
   | PInt i -> GInt i
   | PFloat f -> GFloat f
   | PString s -> GString s

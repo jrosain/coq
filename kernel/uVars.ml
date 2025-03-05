@@ -347,8 +347,8 @@ struct
     let qs, us = Instance.to_array inst in
     let us = Array.fold_left (fun acc x -> Level.Set.add x acc) Level.Set.empty us in
     let qs = Array.fold_left (fun acc -> function
-        | Sorts.Quality.QVar x -> Sorts.QVar.Set.add x acc
-        | Sorts.Quality.QConstant _ -> assert false)
+        | Quality.QVar x -> Sorts.QVar.Set.add x acc
+        | Quality.QConstant _ -> assert false)
         Sorts.QVar.Set.empty
         qs
     in
