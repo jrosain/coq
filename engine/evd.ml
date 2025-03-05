@@ -1111,8 +1111,9 @@ let make_nonalgebraic_variable evd u =
 (* Operations on constants              *)
 (****************************************)
 
-let fresh_sort_quality ?loc ?(rigid=univ_flexible) evd s =
-  with_sort_context_set ?loc rigid evd (UnivGen.fresh_sort_quality s)
+let fresh_sort_quality ?(from_glob=false) ?loc ?(rigid=univ_flexible) evd s =
+  with_sort_context_set ?loc rigid evd
+    (UnivGen.fresh_sort_quality ~from_glob:from_glob s)
 
 let fresh_constant_instance ?loc ?(rigid=univ_flexible) env evd c =
   with_sort_context_set ?loc rigid evd (UnivGen.fresh_constant_instance env c)
