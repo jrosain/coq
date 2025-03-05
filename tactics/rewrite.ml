@@ -941,8 +941,8 @@ let fold_match ?(force=false) env sigma c =
     in
     let sk =
       (* not sure how correct this is *)
-      if Sorts.Quality.equal sortp Sorts.Quality.qprop then
-        if Sorts.Quality.equal sortc Sorts.Quality.qprop then
+      if Sorts.Quality.is_qprop sortp then
+        if Sorts.Quality.is_qprop sortc then
           if dep then case_dep
           else case_nodep
         else (

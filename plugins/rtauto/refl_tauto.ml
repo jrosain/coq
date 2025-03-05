@@ -162,7 +162,7 @@ let rec make_hyps env sigma atom_env lenv = function
      let hrec=
        make_hyps env sigma atom_env (typ::lenv) rest in
      if List.exists (fun c -> Termops.local_occur_var sigma id.binder_name c) lenv ||
-	  (Retyping.get_sort_quality_of env sigma typ != Sorts.Quality.qprop)
+	  (not (Sorts.Quality.is_qprop (Retyping.get_sort_quality_of env sigma typ)))
      then
        hrec
      else
@@ -277,7 +277,7 @@ let rtauto_tac =
     Rocqlib.check_required_library ["Stdlib";"rtauto";"Rtauto"];
     let gamma={next=1;env=[]} in
     let () =
-      if Retyping.get_sort_quality_of env sigma concl != Sorts.Quality.qprop
+      if not (Sorts.Quality.is_qprop (Retyping.get_sort_quality_of env sigma concl))
       then user_err (Pp.str "Goal should be in Prop.") in
     let glf = make_form env sigma gamma concl in
     let hyps = make_hyps env sigma gamma [concl] hyps in
