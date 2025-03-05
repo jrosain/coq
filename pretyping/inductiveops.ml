@@ -278,24 +278,24 @@ let loc_squashed_to_quality sigma u q =
   let u = EConstr.Unsafe.to_instance u in
   UState.nf_quality (Evd.ustate sigma) (UVars.subst_instance_quality u q)
 
-let is_squashed sigma specifu =
-  Inductive.is_squashed_gen
+let is_squashed env sigma specifu =
+  Inductive.is_squashed_gen env
     (loc_indsort_to_quality sigma)
     (loc_squashed_to_quality sigma)
     specifu
 
-let is_allowed_elimination sigma (((mib,_),_) as specifu) s =
+let is_allowed_elimination env sigma (((mib,_),_) as specifu) s =
   match mib.mind_record with
   | PrimRecord _ -> true
   | NotRecord | FakeRecord ->
      let s = EConstr.ESorts.kind sigma s in
-     Inductive.allowed_elimination_gen
+     Inductive.allowed_elimination_gen env
 	(loc_indsort_to_quality sigma)
 	(loc_squashed_to_quality sigma)
 	(Inductive.is_allowed_elimination_actions s)
 	specifu s
 
-let make_allowed_elimination_actions sigma s =
+let make_allowed_elimination_actions env sigma s =
   Inductive.
   { not_squashed = Some sigma
   ; squashed_to_set_below = Some sigma
@@ -304,7 +304,7 @@ let make_allowed_elimination_actions sigma s =
     with UGraph.UniverseInconsistency _ -> None)
   ; squashed_to_quality =
       fun indq -> let sq = EConstr.ESorts.quality sigma s in
-	       if Sorts.Quality.eliminates_to indq sq
+	       if QGraph.is_allowed_elimination (qualities env) indq sq
 	       then Some sigma
 	       else
 		 let mk q = ESorts.make @@ Sorts.make q Univ.Universe.type0 in
@@ -315,10 +315,10 @@ let make_allowed_elimination env sigma ((mib,_),_ as specifu) s =
   match mib.mind_record with
   | PrimRecord _ -> Some sigma
   | NotRecord | FakeRecord ->
-     Inductive.allowed_elimination_gen
+     Inductive.allowed_elimination_gen env
 	(loc_indsort_to_quality sigma)
 	(loc_squashed_to_quality sigma)
-	(make_allowed_elimination_actions sigma s)
+	(make_allowed_elimination_actions env sigma s)
 	specifu
 	(EConstr.ESorts.kind sigma s)
 
@@ -335,9 +335,12 @@ let top_allowed_sort env (kn,i as ind) =
   elim_sort specif
 
 let sorts_below top =
+  (* TTT: CHANGE - What to do  *)
+  let initial_graph = QGraph.initial_quality_constraints in
+  let qualities = List.of_seq @@ Sorts.Quality.Set.to_seq @@ QGraph.domain initial_graph in
   List.filter
-    (Sorts.Quality.eliminates_to top)
-    (Sorts.Quality.[qsprop; qprop; qtype])
+	 (fun q -> QGraph.is_allowed_elimination initial_graph top q)
+   qualities
 
 let sorts_for_schemes specif =
   sorts_below (elim_sort specif)
