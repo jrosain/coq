@@ -11,7 +11,6 @@
 open CErrors
 open Util
 open Names
-open Term
 open EConstr
 open Vars
 open Context
@@ -248,31 +247,22 @@ let inductive_has_local_defs env ind =
 
 let squash_elim_sort sigma squash rtnsort =
   let open Inductive in
+  let add_unif_if_cannot_elim_into starget =
+    if Sorts.eliminates_to starget @@ ESorts.kind sigma rtnsort
+    then sigma
+    else Evd.set_eq_sort sigma rtnsort @@ ESorts.make starget in
   match squash with
-  | SquashToSet ->
+  | SquashToSet -> add_unif_if_cannot_elim_into Sorts.set
      (* Squashed inductive in Set, only happens with impredicative Set *)
-     begin match ESorts.kind sigma rtnsort with
-     | Set | SProp | Prop -> sigma
-     | QSort _ | Type _ ->
-        Evd.set_eq_sort sigma rtnsort ESorts.set
-     end
   | SquashToQuality (QConstant QProp) ->
+     add_unif_if_cannot_elim_into Sorts.prop
      (* Squashed inductive in Prop, return sort must be Prop or SProp *)
-     begin match ESorts.kind sigma rtnsort with
-     | SProp | Prop -> sigma
-     | QSort _ | Type _ | Set ->
-        Evd.set_eq_sort sigma rtnsort ESorts.prop
-     end
   | SquashToQuality (QConstant QSProp) ->
+     add_unif_if_cannot_elim_into Sorts.sprop
      (* Squashed inductive in SProp, return sort must be SProp. *)
-     begin match ESorts.kind sigma rtnsort with
-     | SProp -> sigma
-     | Type _ | Set | Prop | QSort _ ->
-        Evd.set_eq_sort sigma rtnsort ESorts.sprop
-     end
   | SquashToQuality (QConstant QType) ->
-     (* Sort poly squash to type *)
      Evd.set_leq_sort sigma ESorts.set rtnsort
+     (* Sort poly squash to type *)
   | SquashToQuality (QVar q) ->
      Evd.set_leq_sort sigma (ESorts.make (Sorts.qsort q Univ.Universe.type0)) rtnsort
 
@@ -281,11 +271,11 @@ let loc_indsort_to_quality sigma u s =
   let u = (EConstr.Unsafe.to_instance u) in
   Sorts.quality
     (EConstr.ESorts.kind sigma
-	(EConstr.ESorts.make @@ (UVars.subst_instance_sort u s)))
+	(EConstr.ESorts.make @@ UVars.subst_instance_sort u s))
 
 (* [q] is a quality an inductive has to be squashed to. *)
 let loc_squashed_to_quality sigma u q =
-  let u = (EConstr.Unsafe.to_instance u) in
+  let u = EConstr.Unsafe.to_instance u in
   UState.nf_quality (Evd.ustate sigma) (UVars.subst_instance_quality u q)
 
 let is_squashed sigma specifu =

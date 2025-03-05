@@ -1086,7 +1086,7 @@ and detype_binder d flags bk avoid env sigma decl c =
           try Retyping.get_sort_quality_of (snd env) sigma ty
           with Retyping.RetypeError _ -> Sorts.Quality.qtype
       in
-      let t = if s != Sorts.Quality.qprop && not !Flags.raw_print
+      let t = if not (Sorts.Quality.is_qprop s) && not !Flags.raw_print
 	      then None
 	      else Some (detype d (nongoal flags) avoid env sigma ty) in
       GLetIn (na', rinfo, c, t, r)

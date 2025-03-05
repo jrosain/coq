@@ -199,7 +199,7 @@ let declare_one_case_analysis_scheme ?loc ind =
   let (mib, mip) as specif = Global.lookup_inductive ind in
   let kind = Indrec.pseudo_sort_quality_for_elim ind mip in
   let dep, suff =
-    if Sorts.Quality.equal kind Sorts.Quality.qprop then case_nodep, Some "case"
+    if Sorts.Quality.is_qprop kind then case_nodep, Some "case"
     else if not (Inductiveops.has_dependent_elim specif) then
       case_nodep, None
     else case_dep, Some "case" in
@@ -221,13 +221,13 @@ let declare_one_case_analysis_scheme ?loc ind =
 let declare_one_induction_scheme ?loc ind =
   let (mib,mip) as specif = Global.lookup_inductive ind in
   let kind = Indrec.pseudo_sort_quality_for_elim ind mip in
-  let from_prop = Sorts.Quality.equal kind Sorts.Quality.qprop in
+  let from_prop = Sorts.Quality.is_qprop kind in
   let depelim = Inductiveops.has_dependent_elim specif in
-  let kelim = Inductiveops.sorts_below (Inductiveops.elim_sort (mib,mip)) in
+  let kelim = Inductiveops.sorts_below @@ Inductiveops.elim_sort (mib,mip) in
   let kelim =
     if Global.sprop_allowed ()
     then kelim
-    else List.filter (fun s -> not (Sorts.Quality.equal s Sorts.Quality.qsprop)) kelim
+    else List.filter (fun s -> not (Sorts.Quality.is_qsprop s)) kelim
   in
   let elims =
     List.filter (fun (sort,_) -> List.mem_f Sorts.Quality.equal sort kelim)
@@ -497,9 +497,8 @@ let build_combined_scheme env schemes =
   *)
   let inprop =
     let inprop (_,t) =
-      Sorts.Quality.equal
+      Sorts.Quality.is_qprop
 	(Retyping.get_sort_quality_of env sigma (EConstr.of_constr t))
-	(Sorts.Quality.qprop)
     in
     List.for_all inprop defs
   in

@@ -65,6 +65,10 @@ module Quality : sig
 
   val equal : t -> t -> bool
 
+  val is_qsprop : t -> bool
+  val is_qprop : t -> bool
+  val is_qtype : t -> bool
+
   val compare : t -> t -> int
 
   val eliminates_to : t -> t -> bool

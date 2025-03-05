@@ -452,8 +452,8 @@ let is_allowed_elimination (((_,mip),_) as specifu) =
     specifu
 
 (* We always allow fixpoints on values in Prop (for the accessibility predicate for instance). *)
-let is_allowed_fixpoint sind star =
-  Sorts.equal sind Sorts.prop || Sorts.eliminates_to sind star
+let is_allowed_fixpoint sind starget =
+  Sorts.is_prop sind || Sorts.eliminates_to sind starget
 
 let is_private (mib,_) = mib.mind_private = Some true
 let is_primitive_record (mib,_) =

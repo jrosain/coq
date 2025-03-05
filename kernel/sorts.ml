@@ -133,6 +133,10 @@ module Quality = struct
     | QConstant a, QConstant b -> Constants.equal a b
     | (QVar _ | QConstant _), _ -> false
 
+  let is_qsprop s = equal s (QConstant QSProp)
+  let is_qprop s = equal s (QConstant QProp)
+  let is_qtype s = equal s (QConstant QType)
+
   let compare a b = match a, b with
     | QVar a, QVar b -> QVar.compare a b
     | QVar _, _ -> -1
