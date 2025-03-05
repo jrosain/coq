@@ -395,7 +395,7 @@ type 'a allow_elimination_actions =
   ; squashed_to_set_above : 'a
   ; squashed_to_quality : Sorts.Quality.t -> 'a }
 
-let is_squashed_gen indsort_to_quality squashed_to_quality ((_,mip),u) =
+let is_squashed_gen env indsort_to_quality squashed_to_quality ((_,mip),u) =
   let open Sorts in
   let s = mip.mind_sort in
   match mip.mind_squashed with
@@ -411,12 +411,12 @@ let is_squashed_gen indsort_to_quality squashed_to_quality ((_,mip),u) =
         (* impredicative set squashes are always quashed,
            so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
         if Quality.Set.for_all
-	     (fun q -> Quality.eliminates_to indq @@ squashed_to_quality u q)
+	     (fun q -> QGraph.is_allowed_elimination (qualities env) indq (squashed_to_quality u q))
              squash
         then None
         else Some (SquashToQuality indq)
 
-let allowed_elimination_gen indsort_to_quality squashed_to_quality actions specifu s =
+let allowed_elimination_gen env indsort_to_quality squashed_to_quality actions specifu s =
   let open Sorts in
   match is_squashed_gen indsort_to_quality squashed_to_quality specifu with
   | None -> actions.not_squashed
@@ -430,8 +430,8 @@ let allowed_elimination_gen indsort_to_quality squashed_to_quality actions speci
 let loc_indsort_to_quality u s = Sorts.quality (UVars.subst_instance_sort u s)
 let loc_squashed_to_quality = UVars.subst_instance_quality
 
-let is_squashed =
-  is_squashed_gen
+let is_squashed env =
+  is_squashed_gen env
     loc_indsort_to_quality
     loc_squashed_to_quality
 
@@ -445,8 +445,8 @@ let is_allowed_elimination_actions s =
       let qgraph = QGraph.initial_quality_constraints in (* FIXME: This graph comes from somewher else *)
       QGraph.is_allowed_elimination qgraph indq (Sorts.quality s)}
 
-let is_allowed_elimination specifu s =
-  allowed_elimination_gen
+let env is_allowed_elimination specifu s =
+  allowed_elimination_gen env
     loc_indsort_to_quality
     loc_squashed_to_quality
     (is_allowed_elimination_actions s)

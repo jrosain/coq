@@ -70,19 +70,14 @@ let initial_quality_constraints =
   let g = enforce_constraint (qprop, Lt, qsprop) g in
   g
 
-
-let is_allowed_elimination g q1 q2 = 
-  (* FIXME : These qualities should already exist in the graph *)
-  let g = try G.add q1 g with G.AlreadyDeclared -> g in
-  let g = try G.add q2 g with G.AlreadyDeclared -> g in
-  G.check_leq g q1 q2
-
+(* TTT: Rename to eliminates_to to keep it consistent with Sorts.Quality? *)
+let is_allowed_elimination g q1 q2 = G.check_leq g q1 q2
 
 let domain g = G.domain g
 
 let qvar_domain g = 
   let domain = domain g in
   Quality.Set.fold (fun q acc -> match q with QVar q -> QVar.Set.add q acc | _ -> acc) domain QVar.Set.empty
-  
+
 (* could be part of acyclic graph api? *)
 let is_empty g = Set.is_empty (domain g)

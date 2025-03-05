@@ -195,7 +195,7 @@ let is_correct_arity env sigma c pj ind specif params =
           srec (push_rel (LocalAssum (na1,a1)) env) sigma t ar'
       end
     | Sort s, [] ->
-      begin match is_squashed sigma (specif, snd ind) with
+      begin match is_squashed env sigma (specif, snd ind) with
       | None -> sigma, s
       | Some squash ->
         let sigma =

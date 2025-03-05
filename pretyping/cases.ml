@@ -2111,7 +2111,7 @@ let expected_elimination_sorts env sigma tomatchl =
       | NotInd _ -> None
       | IsInd (_,IndType(indf,_),_) ->
         let (ind, u), _ = dest_ind_family indf in
-        Inductiveops.is_squashed sigma (Inductive.lookup_mind_specif env ind, u))
+        Inductiveops.is_squashed env sigma (Inductive.lookup_mind_specif env ind, u))
     tomatchl
 
 (* Builds the predicate. If the predicate is dependent, its context is

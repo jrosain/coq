@@ -85,18 +85,19 @@ type 'a allow_elimination_actions =
   ; squashed_to_quality : Sorts.Quality.t -> 'a }
 
 val is_squashed_gen :
-  ('a -> Sorts.t -> Sorts.Quality.t) -> ('a -> Sorts.Quality.Set.elt -> Sorts.Quality.t)
+  env -> ('a -> Sorts.t -> Sorts.Quality.t) -> ('a -> Sorts.Quality.Set.elt -> Sorts.Quality.t)
   -> (mind_specif * 'a) -> squash option
 
 val allowed_elimination_gen :
-  ('a -> Sorts.t -> Sorts.Quality.t) -> ('a -> Sorts.Quality.Set.elt -> Sorts.Quality.t)
-  -> 'b allow_elimination_actions -> (mind_specif * 'a) -> Sorts.t -> 'b
+  env -> ('a -> Sorts.t -> Sorts.Quality.t) -> ('a -> Sorts.Quality.Set.elt -> Sorts.Quality.t)
+      -> 'b allow_elimination_actions -> (mind_specif * 'a) -> Sorts.t -> 'b
 
-val is_squashed : mind_specif puniverses -> squash option
+
+val is_squashed : env -> mind_specif puniverses -> squash option
 
 val is_allowed_elimination_actions : Sorts.t -> bool allow_elimination_actions
 
-val is_allowed_elimination : mind_specif puniverses -> Sorts.t -> bool
+val is_allowed_elimination : env -> mind_specif puniverses -> Sorts.t -> bool
 val is_allowed_fixpoint : Sorts.t -> Sorts.t -> bool
 
 val is_private : mind_specif -> bool
