@@ -68,7 +68,8 @@ val eq_named_context_val : named_context_val -> named_context_val -> bool
 val empty_env : env
 
 val universes     : env -> UGraph.t
-val qualities     : env -> Sorts.QVar.Set.t
+val quality_vars     : env -> Sorts.QVar.Set.t
+(** Return the set of qvars associated with the given environment. *)
 val rel_context   : env -> Constr.rel_context
 val rel_context_val : env -> rel_context_val
 val named_context : env -> Constr.named_context
@@ -451,7 +452,7 @@ module Internal : sig
       env_named_context : named_context_val;
       env_rel_context   : rel_context_val;
       env_universes : UGraph.t;
-      env_qualities : Sorts.QVar.Set.t;
+      env_qualities : QGraph.t;
       env_symb_pats : rewrite_rule list Cmap_env.t;
       env_typing_flags  : typing_flags;
     }
