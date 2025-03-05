@@ -37,10 +37,11 @@ let enforce_constraint cstr g =
   | Some g -> g
 
 
-(* let add_quality_constraint g q := 
-  let g = G.add g q in 
-  enforce_constraint (qtype, QConstraint.Lt, q) g *)
+let add_quality g q = 
+  let g = try G.add q g with G.AlreadyDeclared -> g in (* Should it fail? *)
+  enforce_constraint (qtype, QConstraint.Lt, q) g
 
+(* let add_qvar q g = add_quality g (QVar q) *)
   
 (* let initial_qualities = [qsprop ; qprop ; qtype]
 
@@ -75,3 +76,13 @@ let is_allowed_elimination g q1 q2 =
   let g = try G.add q1 g with G.AlreadyDeclared -> g in
   let g = try G.add q2 g with G.AlreadyDeclared -> g in
   G.check_leq g q1 q2
+
+
+let domain g = G.domain g
+
+let qvar_domain g = 
+  let domain = domain g in
+  Quality.Set.fold (fun q acc -> match q with QVar q -> QVar.Set.add q acc | _ -> acc) domain QVar.Set.empty
+  
+(* could be part of acyclic graph api? *)
+let is_empty g = Set.is_empty (domain g)

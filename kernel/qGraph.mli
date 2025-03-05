@@ -16,8 +16,20 @@ type t
 
 exception QualitityInconsistency of string (* FIXME : something else *)
 
+val add_quality : t -> Quality.t -> t
+(** Add a quality to the graph. Enforces Type to be eliminable to the new quality *)
+
 val initial_quality_constraints : t
 (** Initial graph of quality elimination constraints. *)
 
 val is_allowed_elimination : t -> Quality.t -> Quality.t -> bool
 (** Check that the first quality is eliminable into the second one. *)
+
+val domain : t -> Quality.Set.t
+(** Return the set of qualities. *)
+
+val qvar_domain : t -> QVar.Set.t
+(** Return the set of quality variables. *)
+
+val is_empty : t -> bool
+(** Check that the graph is empty. *)
