@@ -199,7 +199,7 @@ let declare_one_case_analysis_scheme ?loc ind =
   let (mib, mip) as specif = Global.lookup_inductive ind in
   let kind = Indrec.pseudo_sort_quality_for_elim ind mip in
   let dep, suff =
-    if kind == Sorts.Quality.qprop then case_nodep, Some "case"
+    if Sorts.Quality.equal kind Sorts.Quality.qprop then case_nodep, Some "case"
     else if not (Inductiveops.has_dependent_elim specif) then
       case_nodep, None
     else case_dep, Some "case" in
@@ -221,11 +221,13 @@ let declare_one_case_analysis_scheme ?loc ind =
 let declare_one_induction_scheme ?loc ind =
   let (mib,mip) as specif = Global.lookup_inductive ind in
   let kind = Indrec.pseudo_sort_quality_for_elim ind mip in
-  let from_prop = kind == Sorts.Quality.qprop in
+  let from_prop = Sorts.Quality.equal kind Sorts.Quality.qprop in
   let depelim = Inductiveops.has_dependent_elim specif in
   let kelim = Inductiveops.sorts_below (Inductiveops.elim_sort (mib,mip)) in
-  let kelim = if Global.sprop_allowed () then kelim
-    else List.filter (fun s -> s <> Sorts.Quality.qsprop) kelim
+  let kelim =
+    if Global.sprop_allowed ()
+    then kelim
+    else List.filter (fun s -> not (Sorts.Quality.equal s Sorts.Quality.qsprop)) kelim
   in
   let elims =
     List.filter (fun (sort,_) -> List.mem_f Sorts.Quality.equal sort kelim)
@@ -233,7 +235,7 @@ let declare_one_induction_scheme ?loc ind =
          defined using _rect but _ind is not. *)
       [(Sorts.Quality.qtype, "rect");
        (Sorts.Quality.qprop, "ind");
-       (Sorts.Quality.qtype, "rec"); (* JJJ ugly *)
+       (Sorts.Quality.qtype, "rec"); (* backward-compatibility with set *)
        (Sorts.Quality.qsprop, "sind")]
   in
   let elims = List.map (fun (to_kind,dflt_suff) ->
@@ -495,8 +497,9 @@ let build_combined_scheme env schemes =
   *)
   let inprop =
     let inprop (_,t) =
-      Retyping.get_sort_quality_of env sigma (EConstr.of_constr t)
-      == Sorts.Quality.qprop
+      Sorts.Quality.equal
+	(Retyping.get_sort_quality_of env sigma (EConstr.of_constr t))
+	(Sorts.Quality.qprop)
     in
     List.for_all inprop defs
   in

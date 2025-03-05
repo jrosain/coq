@@ -350,10 +350,7 @@ let get_sort_quality_of ?(polyprop=true) env sigma t =
     match EConstr.kind sigma t with
     | Cast (c,_, s) when isSort sigma s -> ESorts.quality sigma (destSort sigma s)
     | Sort _ -> qtype
-    | Prod (name,t,c2) ->
-        let s2 = sort_quality_of (push_rel (LocalAssum (name,t)) env) c2 in
-        if not (is_impredicative_set env) &&
-           (* s2 == InSet && *) sort_quality_of env t == qtype then qtype else s2
+    | Prod (name,t,c2) -> sort_quality_of (push_rel (LocalAssum (name,t)) env) c2
     | App(f,args) when Termops.is_template_polymorphic_ind env sigma f ->
         let t = type_of_global_reference_knowing_parameters env f args in
         ESorts.quality sigma (sort_of_atomic_type env sigma t args)

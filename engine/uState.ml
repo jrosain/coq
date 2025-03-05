@@ -185,15 +185,15 @@ let collapse_above_prop ~to_prop m =
   let map q v = match v with
     | None ->
       if not @@ QSet.mem q m.above then None else
-      if to_prop then Some (QConstant QProp)
-      else Some (QConstant QType)
+      if to_prop then Some qprop
+      else Some qtype
   | Some _ -> v
   in
   { rigid = m.rigid; qmap = QMap.mapi map m.qmap; above = QSet.empty }
 
 let collapse ?(except=QSet.empty) m =
   let map q v = match v with
-  | None -> if QSet.mem q m.rigid || QSet.mem q except then None else Some (QConstant QType)
+  | None -> if QSet.mem q m.rigid || QSet.mem q except then None else Some qtype
   | Some _ -> v
   in
   { rigid = m.rigid; qmap = QMap.mapi map m.qmap; above = QSet.empty }

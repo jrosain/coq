@@ -297,9 +297,9 @@ let seff id = VtSideff ([id.CAst.v], VtLater)
 }
 
 (*VERNAC ARGUMENT EXTEND sort_quality
-| [ "Set" ] -> { QConstant QType }
-| [ "Prop" ] -> { QConstant QProp }
-| [ "Type" ] -> { QConstant QType }
+| [ "Set" ] -> { qtype }
+| [ "Prop" ] -> { qprop }
+| [ "Type" ] -> { qtype }
 END*)
 
 VERNAC COMMAND EXTEND DeriveInversionClear

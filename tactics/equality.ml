@@ -817,8 +817,8 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
   try
     let open Sorts.Quality in
     let sorts = if keep_proofs
-		then [QConstant QType;QConstant QProp]
-		else [QConstant QType] in
+		then [qtype; qprop]
+		else [qtype] in
     Inr (findrec sorts [] t1 t2)
   with DiscrFound (path,c1,c2) ->
     Inl (path,c1,c2)
