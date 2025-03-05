@@ -857,15 +857,15 @@ let execute env c =
 
 (* Derived functions *)
 
-let check_declared_qualities env qualities =
+let check_declared_qualities env qvars =
   let module S = Sorts.QVar.Set in
-  let unknown = S.diff qualities (Environ.qualities env) in
+  let unknown = S.diff qvars (Environ.quality_vars env) in
   if S.is_empty unknown then ()
   else error_undeclared_qualities env unknown
 
 let check_wellformed_universes env c =
-  let qualities, univs = sort_and_universes_of_constr c in
-  check_declared_qualities env qualities;
+  let qvars, univs = sort_and_universes_of_constr c in
+  check_declared_qualities env qvars;
   match UGraph.check_declared_universes (universes env) univs
   with
   | Ok () -> ()
