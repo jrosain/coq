@@ -213,9 +213,11 @@ let declare_one_case_analysis_scheme ?loc ind =
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
        appropriate type *)
-  (* TTT: FIX - get graph differently? *)
-  let qgraph = QGraph.initial_quality_constraints in
-  if QGraph.is_allowed_elimination qgraph kelim Sorts.Quality.qtype then
+  (* TTT: FIX - get graph differently?
+     - J: I think it's best to use Quality.eliminates_to for constant cases.
+          Here, I label it as "constant" as we check whether it eliminates into
+          qtype, thus the case (QVar, QVar) will never be called anyway. *)
+  if Sorts.Quality.eliminates_to kelim Sorts.Quality.qtype then
     define_individual_scheme ?loc dep id ind
 
 (* Induction/recursion schemes *)
@@ -225,7 +227,7 @@ let declare_one_induction_scheme ?loc ind =
   let kind = Indrec.pseudo_sort_quality_for_elim ind mip in
   let from_prop = Sorts.Quality.is_qprop kind in
   let depelim = Inductiveops.has_dependent_elim specif in
-  let kelim = Inductiveops.sorts_below @@ Inductiveops.elim_sort (mib,mip) in
+  let kelim = Inductiveops.constant_sorts_below @@ Inductiveops.elim_sort (mib,mip) in
   let kelim =
     if Global.sprop_allowed ()
     then kelim

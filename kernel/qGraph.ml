@@ -7,7 +7,7 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
-open Sorts 
+open Sorts
 open Quality
 
 module G = AcyclicGraph.Make(struct
@@ -19,6 +19,9 @@ module G = AcyclicGraph.Make(struct
     let compare = Quality.compare
 
     let raw_pr = Quality.raw_pr
+
+    let anomaly_label = "Quality.repr"
+    let anomaly_err q = Pp.(str "Quality " ++ Quality.raw_pr q ++ str " undefined.")
   end)
 
 type t = G.t
@@ -36,46 +39,44 @@ let enforce_constraint cstr g =
   | None -> raise (QualitityInconsistency "Inconsistency")
   | Some g -> g
 
-
-let add_quality g q = 
+let add_quality g q =
   let g = try G.add q g with G.AlreadyDeclared -> g in (* Should it fail? *)
-  enforce_constraint (qtype, QConstraint.Lt, q) g
+  enforce_constraint (qtype, QConstraint.Leq, q) g
+
+let enforce_eliminates_to g s1 s2 =
+  let g = add_quality g s1 in
+  let g = add_quality g s2 in
+  enforce_constraint (s2, QConstraint.Leq, s1) g
+
+let enforce_eq g s1 s2 =
+  let g = add_quality g s1 in
+  let g = add_quality g s2 in
+  enforce_constraint (s2, QConstraint.Equal, s1) g
 
 (* let add_qvar q g = add_quality g (QVar q) *)
-  
-(* let initial_qualities = [qsprop ; qprop ; qtype]
-
-let base_elimination_constraints q = 
-  let open QConstraint in
-  match q with
-  | QConstant QType -> [(Lt, qprop) ; (Lt, qsprop)]
-  | QConstant QProp -> [(Lt, qsprop)]
-  | QConstant QSProp -> []
-  | QVar _ -> [] *)
 
 let initial_quality_constraints =
   let open QConstraint in
-  (* Can generalize to : 
-    foreach quality in constants (initial qualities), add to graph + use constant-elimination table to enforce constraints *)
-  (* let add_quality_constraints g q = 
-    let g = G.add q g in
-    List.fold_left (fun g (cst, q') -> enforce_constraint (q, cst, q') g) g (base_elimination_constraints q) in
-  List.fold_left add_quality_constraints G.empty initial_qualities *)
   let g = G.empty in
-  let g = G.add qtype g in
-  let g = G.add qprop g in 
-  let g = G.add qsprop g in 
-  let g = enforce_constraint (qtype, Lt, qprop) g in
-  let g = enforce_constraint (qtype, Lt, qsprop) g in
-  let g = enforce_constraint (qprop, Lt, qsprop) g in
-  g
+  let g = List.fold_left (fun g q -> G.add q g) g Sorts.Quality.all_constants in
+  (* Enforces the constant constraints defined in the table of
+     [Constants.eliminates_to] without reflexivity. *)
+  List.fold_left
+    (fun g q ->
+      List.fold_left
+	(fun g q' -> if eliminates_to q q'
+		  then enforce_constraint (q, Lt, q') g
+		  else g) g
+	(List.filter (fun q' -> not @@ Sorts.Quality.equal q q')
+		Sorts.Quality.all_constants))
+    g Sorts.Quality.all_constants
 
 (* TTT: Rename to eliminates_to to keep it consistent with Sorts.Quality? *)
-let is_allowed_elimination g q1 q2 = G.check_leq g q1 q2
+let is_allowed_elimination = G.check_leq
 
-let domain g = G.domain g
+let domain = G.domain
 
-let qvar_domain g = 
+let qvar_domain g =
   let domain = domain g in
   Quality.Set.fold (fun q acc -> match q with QVar q -> QVar.Set.add q acc | _ -> acc) domain QVar.Set.empty
 

@@ -462,7 +462,7 @@ let add_universes ~strict ctx g =
 
   (* TTT: double check change *)
 let add_qualities qs graph =
-  if Array.distinct qs then 
+  if Array.distinct qs then
     let open Sorts.Quality in
     Array.fold_left (fun graph q ->
         match q with
