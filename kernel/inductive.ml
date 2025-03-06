@@ -411,15 +411,14 @@ let is_squashed_gen indsort_to_quality squashed_to_quality ((_,mip),u) =
         (* impredicative set squashes are always quashed,
            so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
         if Quality.Set.for_all
-	     (fun q -> Quality.eliminates_to indq (squashed_to_quality u q))
+	     (fun q -> Quality.eliminates_to indq @@ squashed_to_quality u q)
              squash
         then None
         else Some (SquashToQuality indq)
 
-let allowed_elimination_gen indsort_to_quality squashed_to_quality actions ((x,mip),u) =
+let allowed_elimination_gen indsort_to_quality squashed_to_quality actions specifu s =
   let open Sorts in
-  let s = mip.mind_sort in
-  match is_squashed_gen indsort_to_quality squashed_to_quality ((x,mip),u) with
+  match is_squashed_gen indsort_to_quality squashed_to_quality specifu with
   | None -> actions.not_squashed
   | Some SquashToSet ->
     begin match s with
@@ -444,12 +443,12 @@ let is_allowed_elimination_actions s =
   ; squashed_to_quality
     = fun indq -> Sorts.Quality.eliminates_to indq (Sorts.quality s) }
 
-let is_allowed_elimination (((_,mip),_) as specifu) =
+let is_allowed_elimination specifu s =
   allowed_elimination_gen
     loc_indsort_to_quality
     loc_squashed_to_quality
-    (is_allowed_elimination_actions mip.mind_sort)
-    specifu
+    (is_allowed_elimination_actions s)
+    specifu s
 
 (* We always allow fixpoints on values in Prop (for the accessibility predicate for instance). *)
 let is_allowed_fixpoint sind starget =
@@ -1638,7 +1637,7 @@ let inductive_of_mutfix ?evars env ((nvect,bodynum),(names,types,bodies as recde
 	let u = Sorts.univ_of_sort sind in
 	let bsort = Sorts.of_relevance u names.(i).Context.binder_relevance in
 	if not (is_allowed_fixpoint sind bsort) then
-	  raise_err env i (FixpointOnNonEliminable sind)
+	  raise_err env i @@ FixpointOnNonEliminable sind
 		    (* Currently, it's not allowing fixpoints on qvar with a *)
 		    (* qvar as target. It's going to be fixed once we have *)
 		    (* actual elimination constraints. *)

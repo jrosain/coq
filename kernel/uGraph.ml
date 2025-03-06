@@ -215,17 +215,17 @@ let check_universes_invariants g = G.check_invariants ~required_canonical:Level.
 open Sorts
 
 let check_eq_sort ugraph s1 s2 =
-  if type_in_type ugraph then true
-  else Sorts.Quality.equal (Sorts.quality s1) (Sorts.quality s2) &&
-	 check_eq ugraph (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2)
+  Sorts.Quality.equal (Sorts.quality s1) (Sorts.quality s2) &&
+    (type_in_type ugraph ||
+       check_eq ugraph (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2))
 
 let is_above_prop ugraph q =
   Sorts.QVar.Set.mem q ugraph.above_prop_qvars
 
 let check_leq_sort ugraph s1 s2 =
-  if type_in_type ugraph then true
-  else if Sorts.eliminates_to s2 s1
-  then check_leq ugraph (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2)
+  if Sorts.eliminates_to s2 s1
+  then type_in_type ugraph ||
+	 check_leq ugraph (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2)
   else match s1, s2 with
        | (Prop, QSort (q,_)) -> is_above_prop ugraph q
        | _ -> false
