@@ -284,15 +284,16 @@ let is_squashed sigma specifu =
     (loc_squashed_to_quality sigma)
     specifu
 
-let is_allowed_elimination sigma ((mib,mip),_ as specifu) s =
+let is_allowed_elimination sigma (((mib,_),_) as specifu) s =
   match mib.mind_record with
   | PrimRecord _ -> true
   | NotRecord | FakeRecord ->
+     let s = EConstr.ESorts.kind sigma s in
      Inductive.allowed_elimination_gen
 	(loc_indsort_to_quality sigma)
 	(loc_squashed_to_quality sigma)
-	(Inductive.is_allowed_elimination_actions mip.mind_sort)
-	specifu
+	(Inductive.is_allowed_elimination_actions s)
+	specifu s
 
 let make_allowed_elimination_actions sigma s =
   Inductive.
@@ -319,6 +320,7 @@ let make_allowed_elimination env sigma ((mib,_),_ as specifu) s =
 	(loc_squashed_to_quality sigma)
 	(make_allowed_elimination_actions sigma s)
 	specifu
+	(EConstr.ESorts.kind sigma s)
 
 (* XXX questionable for sort poly inductives *)
 let elim_sort (_,mip) =
