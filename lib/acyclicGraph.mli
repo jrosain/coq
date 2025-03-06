@@ -22,6 +22,10 @@ module type Point = sig
   val compare : t -> t -> int
 
   val raw_pr : t -> Pp.t
+
+  (* Parameters of the anomaly raised when repr node not found. *)
+  val anomaly_label : string
+  val anomaly_err : t -> Pp.t
 end
 
 module Make (Point:Point) : sig
@@ -33,6 +37,7 @@ module Make (Point:Point) : sig
   val check_invariants : required_canonical:(Point.t -> bool) -> t -> unit
 
   exception AlreadyDeclared
+
   val add : ?rank:int -> Point.t -> t -> t
   (** All points must be pre-declared through this function before
      they can be mentioned in the others. NB: use a large [rank] to

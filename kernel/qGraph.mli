@@ -8,16 +8,24 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Sorts 
+open Sorts
 
 (** {6 Graphs of quality elimination constraints. } *)
 
-type t 
+type t
 
 exception QualitityInconsistency of string (* FIXME : something else *)
 
 val add_quality : t -> Quality.t -> t
 (** Add a quality to the graph. Enforces Type to be eliminable to the new quality *)
+
+val enforce_eliminates_to : t -> Quality.t -> Quality.t -> t
+(** Checks whether the first quality eliminates to the second. If it's
+    consistent within the graph, then adds the constraint. *)
+
+val enforce_eq : t -> Quality.t -> Quality.t -> t
+(** Checks whether the first quality is equal to the second. If it's
+    consistent within the graph, then adds the constraint. *)
 
 val initial_quality_constraints : t
 (** Initial graph of quality elimination constraints. *)

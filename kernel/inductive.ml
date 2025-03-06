@@ -418,7 +418,7 @@ let is_squashed_gen env indsort_to_quality squashed_to_quality ((_,mip),u) =
 
 let allowed_elimination_gen env indsort_to_quality squashed_to_quality actions specifu s =
   let open Sorts in
-  match is_squashed_gen indsort_to_quality squashed_to_quality specifu with
+  match is_squashed_gen env indsort_to_quality squashed_to_quality specifu with
   | None -> actions.not_squashed
   | Some SquashToSet ->
     begin match s with
@@ -435,26 +435,30 @@ let is_squashed env =
     loc_indsort_to_quality
     loc_squashed_to_quality
 
-let is_allowed_elimination_actions s =
+let is_allowed_elimination_actions env s =
   { not_squashed = true
   ; squashed_to_set_below = true
   (* XXX in [Type u] case, should we check [u == set] in the ugraph? *)
   ; squashed_to_set_above = false
   ; squashed_to_quality
-    = fun indq -> 
-      let qgraph = QGraph.initial_quality_constraints in (* FIXME: This graph comes from somewher else *)
-      QGraph.is_allowed_elimination qgraph indq (Sorts.quality s)}
+    = fun indq ->
+      QGraph.is_allowed_elimination (qualities env) indq (Sorts.quality s)}
 
-let env is_allowed_elimination specifu s =
+let is_allowed_elimination env specifu s =
   allowed_elimination_gen env
     loc_indsort_to_quality
     loc_squashed_to_quality
-    (is_allowed_elimination_actions s)
+    (is_allowed_elimination_actions env s)
     specifu s
 
 (* We always allow fixpoints on values in Prop (for the accessibility predicate for instance). *)
-let is_allowed_fixpoint sind starget =
-  Sorts.is_prop sind || Sorts.eliminates_to sind starget
+
+let is_allowed_fixpoint env sind star =
+  Sorts.equal sind Sorts.prop ||
+    QGraph.is_allowed_elimination
+	     (qualities env)
+	     (Sorts.quality sind)
+	     (Sorts.quality star)
 
 let is_private (mib,_) = mib.mind_private = Some true
 let is_primitive_record (mib,_) =
@@ -1638,7 +1642,7 @@ let inductive_of_mutfix ?evars env ((nvect,bodynum),(names,types,bodies as recde
 	let sind  = mip.mind_sort in
 	let u = Sorts.univ_of_sort sind in
 	let bsort = Sorts.of_relevance u names.(i).Context.binder_relevance in
-	if not (is_allowed_fixpoint sind bsort) then
+	if not (is_allowed_fixpoint env sind bsort) then
 	  raise_err env i @@ FixpointOnNonEliminable (sind, bsort)
 		    (* Currently, it's not allowing fixpoints on qvar with a *)
 		    (* qvar as target. It's going to be fixed once we have *)

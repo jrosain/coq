@@ -785,7 +785,8 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
           when Int.equal (List.length args1) (constructor_nallargs env sp1)
             ->
           let sorts' =
-            CList.intersect Sorts.Quality.equal sorts (sorts_below (top_allowed_sort env (fst sp1)))
+            CList.intersect Sorts.Quality.equal sorts @@
+	      constant_sorts_below (top_allowed_sort env (fst sp1))
           in
           (* both sides are fully applied constructors, so either we descend,
              or we can discriminate here. *)

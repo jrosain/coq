@@ -68,11 +68,13 @@ module Quality : sig
   val is_qsprop : t -> bool
   val is_qprop : t -> bool
   val is_qtype : t -> bool
+  val is_qvar : t -> bool
 
   val compare : t -> t -> int
 
   val eliminates_to : t -> t -> bool
 
+  val all_constants : t list
   val all : t list
   (** This provides a list with all qualities, and a dummy QVar. *)
 
