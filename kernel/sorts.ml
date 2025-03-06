@@ -136,6 +136,7 @@ module Quality = struct
   let is_qsprop s = equal s (QConstant QSProp)
   let is_qprop s = equal s (QConstant QProp)
   let is_qtype s = equal s (QConstant QType)
+  let is_qvar s = match s with QVar _ -> true | _ -> false
 
   let compare a b = match a, b with
     | QVar a, QVar b -> QVar.compare a b
@@ -149,7 +150,8 @@ module Quality = struct
     | QConstant a, QConstant b -> Constants.eliminates_to a b
     | _, (QVar _ | QConstant _) -> false
 
-  let all = [QConstant QSProp; QConstant QProp; QConstant QType; var 0]
+  let all_constants = [QConstant QSProp; QConstant QProp; QConstant QType]
+  let all = var 0 :: all_constants
 
   let pr prv = function
     | QVar v -> prv v
@@ -250,7 +252,6 @@ module QConstraint = struct
     hov 1 (Quality.pr prq a ++ spc() ++ pr_kind k ++ spc() ++ Quality.pr prq b)
 
   let raw_pr x = pr QVar.raw_pr x
-
 end
 
 module QConstraints = struct include CSet.Make(QConstraint)

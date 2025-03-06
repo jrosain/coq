@@ -145,7 +145,7 @@ val elim_sort : mind_specif -> Sorts.Quality.t
 
 val top_allowed_sort : env -> inductive -> Sorts.Quality.t
 
-val sorts_below : Sorts.Quality.t -> Sorts.Quality.t list
+val constant_sorts_below : Sorts.Quality.t -> Sorts.Quality.t list
 
 (** (Co)Inductive records with primitive projections do not have eta-conversion,
     hence no dependent elimination. *)

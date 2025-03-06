@@ -292,7 +292,7 @@ let is_allowed_elimination env sigma (((mib,_),_) as specifu) s =
      Inductive.allowed_elimination_gen env
 	(loc_indsort_to_quality sigma)
 	(loc_squashed_to_quality sigma)
-	(Inductive.is_allowed_elimination_actions s)
+	(Inductive.is_allowed_elimination_actions env s)
 	specifu s
 
 let make_allowed_elimination_actions env sigma s =
@@ -334,16 +334,17 @@ let top_allowed_sort env (kn,i as ind) =
   let specif = Inductive.lookup_mind_specif env ind in
   elim_sort specif
 
-let sorts_below top =
-  (* TTT: CHANGE - What to do  *)
-  let initial_graph = QGraph.initial_quality_constraints in
-  let qualities = List.of_seq @@ Sorts.Quality.Set.to_seq @@ QGraph.domain initial_graph in
+let constant_sorts_below top =
+  (* TTT: CHANGE - What to do
+     J: here, it's fine to use the constants as it's called to generate
+        elimination schemes. I've changed the function name to say that we are
+        treating only constants. *)
   List.filter
-	 (fun q -> QGraph.is_allowed_elimination initial_graph top q)
-   qualities
+	 (Sorts.Quality.eliminates_to top)
+	 (Sorts.Quality.all_constants)
 
 let sorts_for_schemes specif =
-  sorts_below (elim_sort specif)
+  constant_sorts_below (elim_sort specif)
 
 let has_dependent_elim (mib,mip) =
   match mib.mind_record with
