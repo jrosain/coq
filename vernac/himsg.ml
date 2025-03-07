@@ -540,9 +540,11 @@ let explain_ill_formed_fix_body env sigma names i = function
             Name id -> Id.print id
           | Anonymous -> str "the " ++ pr_nth i ++ str " definition" in
      str "Recursive call to " ++ called ++ str " has not enough arguments"
-  | FixpointOnNonEliminable s ->
-     str "Cannot define a fixpoint on " ++ str (Sorts.to_string s) ++ strbrk " with value in Prop or Type. " ++
-       str (Sorts.to_string s) ++ str" does not eliminate in Prop or in Type"
+  | FixpointOnNonEliminable (s, s') ->
+     str "Cannot define a fixpoint on " ++ str (Sorts.to_string s) ++
+       strbrk " on a value living in " ++ str (Sorts.to_string s') ++
+       str ": " ++ str (Sorts.to_string s) ++ str " does not eliminate in " ++
+       str (Sorts.to_string s')
 
 let explain_ill_formed_cofix_body env sigma = function
   (* CoFixpoint guard errors *)

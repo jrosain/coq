@@ -1637,7 +1637,7 @@ let inductive_of_mutfix ?evars env ((nvect,bodynum),(names,types,bodies as recde
 	let u = Sorts.univ_of_sort sind in
 	let bsort = Sorts.of_relevance u names.(i).Context.binder_relevance in
 	if not (is_allowed_fixpoint sind bsort) then
-	  raise_err env i @@ FixpointOnNonEliminable sind
+	  raise_err env i @@ FixpointOnNonEliminable (sind, bsort)
 		    (* Currently, it's not allowing fixpoints on qvar with a *)
 		    (* qvar as target. It's going to be fixed once we have *)
 		    (* actual elimination constraints. *)
