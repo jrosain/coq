@@ -341,6 +341,9 @@ let qualities env = env.env_qualities
 
 let quality_vars env = QGraph.qvar_domain @@ env.env_qualities
 
+let set_qualities g env =
+  {env with env_qualities=g}
+
 let named_context env = env.env_named_context.env_named_ctx
 let named_context_val env = env.env_named_context
 let rel_context env = env.env_rel_context.env_rel_ctx
@@ -444,6 +447,7 @@ let fold_named_context_reverse f ~init env =
 (* Universe constraints *)
 
 let map_universes f env = set_universes (f env.env_universes) env
+let map_qualities f env = set_qualities (f env.env_qualities) env
 
 let add_constraints c env =
   if Univ.Constraints.is_empty c then env
@@ -1039,10 +1043,11 @@ module Internal = struct
   let push_template_context uctx env =
     let env = push_context ~strict:false uctx env in
     let qvars, _ = UVars.UContext.to_context_set uctx in
-    let env = map_universes (UGraph.Internal.add_template_qvars qvars) env in
+    let env = map_qualities (QGraph.add_template_qvars qvars) env in
     env
 
-  let is_above_prop env q = UGraph.Internal.is_above_prop env.env_universes q
+  let eliminates_to_prop env q =
+    QGraph.eliminates_to_prop env.env_qualities @@ Sorts.Quality.QVar q
 
   module View =
   struct

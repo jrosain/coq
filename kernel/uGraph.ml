@@ -31,8 +31,6 @@ module G = AcyclicGraph.Make(struct
 type t = {
   graph: G.t;
   type_in_type : bool;
-  (* above_prop only for checking template poly! *)
-  above_prop_qvars : Sorts.QVar.Set.t;
 }
 
 (* Universe inconsistency: error raised when trying to enforce a relation
@@ -83,7 +81,6 @@ let check_eq_level g u v =
 let empty_universes = {
   graph=G.empty;
   type_in_type=false;
-  above_prop_qvars=Sorts.QVar.Set.empty;
 }
 
 let initial_universes =
@@ -126,6 +123,12 @@ let check_constraint { graph = g; type_in_type; _ } (u,d,v) =
   | Eq -> G.check_eq g u v
 
 let check_constraints csts g = Constraints.for_all (check_constraint g) csts
+
+let check_eq_sort g u u' =
+  check_eq g (Sorts.univ_of_sort u) (Sorts.univ_of_sort u')
+
+let check_leq_sort g u u' =
+  check_leq g (Sorts.univ_of_sort u) (Sorts.univ_of_sort u')
 
 let leq_expr (u,m) (v,n) =
   let d = match m - n with
@@ -209,30 +212,6 @@ let choose p g u = G.choose p g.graph u
 
 let check_universes_invariants g = G.check_invariants ~required_canonical:Level.is_set g.graph
 
-(** Sort comparison *)
-
-(* The functions below rely on the invariant that no universe in the graph
-   can be unified with Prop / SProp. This is ensured by UGraph, which only
-   contains Set as a "small" level. *)
-
-open Sorts
-
-let check_eq_sort ugraph s1 s2 =
-  Sorts.Quality.equal (Sorts.quality s1) (Sorts.quality s2) &&
-    (type_in_type ugraph ||
-       check_eq ugraph (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2))
-
-let is_above_prop ugraph q =
-  Sorts.QVar.Set.mem q ugraph.above_prop_qvars
-
-let check_leq_sort ugraph s1 s2 =
-  if Sorts.eliminates_to s2 s1
-  then type_in_type ugraph ||
-	 check_leq ugraph (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2)
-  else match s1, s2 with
-       | (Prop, QSort (q,_)) -> is_above_prop ugraph q
-       | _ -> false
-
 (** Pretty-printing *)
 
 let pr_pmap sep pr map =
@@ -291,11 +270,11 @@ let explain_universe_inconsistency default_prq default_prl (printers, (o,u,v,p) 
     str "Cannot enforce" ++ spc() ++ pr_uni u ++ spc() ++
       pr_rel o ++ spc() ++ pr_uni v ++ reason
 
-module Internal = struct
+(* module Internal = struct *)
 
-  let add_template_qvars qvars g =
-    assert (Sorts.QVar.Set.is_empty g.above_prop_qvars);
-    {g with above_prop_qvars=qvars}
+(*   let add_template_qvars qvars g = *)
+(*     assert (Sorts.QVar.Set.is_empty g.above_prop_qvars); *)
+(*     {g with above_prop_qvars=qvars} *)
 
-  let is_above_prop = is_above_prop
-end
+(*   let is_above_prop = is_above_prop *)
+(* end *)

@@ -1682,15 +1682,17 @@ module Infer = struct
 
 open Conversion
 
-let infer_eq (univs, cstrs as cuniv) u u' =
-  if UGraph.check_eq_sort univs u u' then Result.Ok cuniv
+let infer_eq qgraph (univs, cstrs as cuniv) u u' =
+  if QGraph.check_eq_sort qgraph u u' &&
+       UGraph.check_eq_sort univs u u' then Result.Ok cuniv
   else try
     let cstrs' = UnivSubst.enforce_eq_sort u u' Constraints.empty in
     Result.Ok (UGraph.merge_constraints cstrs' univs, Constraints.union cstrs cstrs')
   with UGraph.UniverseInconsistency err -> Result.Error (Some err)
 
-let infer_leq (univs, cstrs as cuniv) u u' =
-  if UGraph.check_leq_sort univs u u' then Result.Ok cuniv
+let infer_leq qgraph (univs, cstrs as cuniv) u u' =
+  if QGraph.sort_eliminates_to qgraph u' u &&
+       UGraph.check_leq_sort univs u u' then Result.Ok cuniv
   else match UnivSubst.enforce_leq_alg_sort u u' univs with
   | cstrs', univs ->
     Result.Ok (univs, Univ.Constraints.union cstrs cstrs')
@@ -1698,8 +1700,8 @@ let infer_leq (univs, cstrs as cuniv) u u' =
 
 let infer_cmp_universes _env pb s0 s1 univs =
   match pb with
-  | CUMUL -> infer_leq univs s0 s1
-  | CONV -> infer_eq univs s0 s1
+  | CUMUL -> infer_leq (Environ.qualities _env) univs s0 s1
+  | CONV -> infer_eq (Environ.qualities _env) univs s0 s1
 
 let infer_convert_instances ~flex u u' (univs,cstrs as cuniv) =
   if flex then

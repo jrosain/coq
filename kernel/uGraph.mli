@@ -119,10 +119,10 @@ val explain_universe_inconsistency : (Sorts.QVar.t -> Pp.t) -> (Level.t -> Pp.t)
 (** {6 Debugging} *)
 val check_universes_invariants : t -> unit
 
-module Internal : sig
-  (** Makes the qvars treated as above prop.
-      Do not use outside kernel inductive typechecking. *)
-  val add_template_qvars : Sorts.QVar.Set.t -> t -> t
+(* module Internal : sig *)
+(*   (\** Makes the qvars treated as above prop. *)
+(*       Do not use outside kernel inductive typechecking. *\) *)
+(*   val add_template_qvars : Sorts.QVar.Set.t -> t -> t *)
 
-  val is_above_prop : t -> Sorts.QVar.t -> bool
-end
+(*   val is_above_prop : t -> Sorts.QVar.t -> bool *)
+(* end *)
