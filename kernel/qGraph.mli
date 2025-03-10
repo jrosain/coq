@@ -33,6 +33,14 @@ val initial_quality_constraints : t
 val is_allowed_elimination : t -> Quality.t -> Quality.t -> bool
 (** Check that the first quality is eliminable into the second one. *)
 
+val sort_eliminates_to : t -> Sorts.t -> Sorts.t -> bool
+
+val check_eq : t -> Quality.t -> Quality.t -> bool
+
+val check_eq_sort : t -> Sorts.t -> Sorts.t -> bool
+
+val eliminates_to_prop : t -> Quality.t -> bool
+
 val domain : t -> Quality.Set.t
 (** Return the set of qualities. *)
 
@@ -41,3 +49,7 @@ val qvar_domain : t -> QVar.Set.t
 
 val is_empty : t -> bool
 (** Check that the graph is empty. *)
+
+val add_template_qvars : QVar.Set.t -> t -> t
+(** Set all the qvars in the set to eliminate to Prop.
+    Do not use outside kernel inductive typechecking. *)

@@ -74,6 +74,15 @@ let initial_quality_constraints =
 (* TTT: Rename to eliminates_to to keep it consistent with Sorts.Quality? *)
 let is_allowed_elimination = G.check_leq
 
+let sort_eliminates_to g s1 s2 =
+  is_allowed_elimination g (Sorts.quality s1) (Sorts.quality s2)
+
+let check_eq = G.check_eq
+
+let check_eq_sort g s s' = check_eq g (Sorts.quality s) (Sorts.quality s')
+
+let eliminates_to_prop g q = is_allowed_elimination g q Sorts.Quality.qprop
+
 let domain = G.domain
 
 let qvar_domain g =
@@ -82,3 +91,7 @@ let qvar_domain g =
 
 (* could be part of acyclic graph api? *)
 let is_empty g = Set.is_empty (domain g)
+
+let add_template_qvars =
+  QVar.Set.fold
+    (fun v g -> enforce_eliminates_to g (QVar v) Quality.qprop)
