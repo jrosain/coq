@@ -121,7 +121,7 @@ let update_invtblu ~loc evd (qsubst, usubst) (state, stateq, stateu : state) u :
   let stateq, maskq = Array.fold_left_map (safe_quality_pattern_of_quality ~loc evd qsubst) stateq q
   in
   let stateu, masku = Array.fold_left_map (fun stateu lvlold ->
-      let lvlnew = Univ.Level.var_index @@ Univ.subst_univs_level_level usubst lvlold in
+      let lvlnew = Univ.Level.var_index @@ UVars.subst_univs_level_level usubst lvlold in
       Option.fold_right (update_invtblu1 ~loc evd lvlold) lvlnew stateu, lvlnew
     ) stateu u
   in
@@ -131,7 +131,7 @@ let universe_level_subst_var_index usubst u =
   match Univ.Universe.level u with
     | None -> None
     | Some lvlold ->
-        let lvl = Univ.subst_univs_level_level usubst lvlold in
+        let lvl = UVars.subst_univs_level_level usubst lvlold in
         Option.map (fun lvl -> lvlold, lvl) @@ Univ.Level.var_index lvl
 
 let safe_sort_pattern_of_sort ~loc evd (qsubst, usubst) (st, sq, su as state) s =

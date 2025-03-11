@@ -42,7 +42,7 @@ type explanation =
   | Path of path_explanation
   | Other of Pp.t
 
-type univ_variable_printers = (Sorts.QVar.t -> Pp.t) * (Level.t -> Pp.t)
+type univ_variable_printers = (Quality.QVar.t -> Pp.t) * (Level.t -> Pp.t)
 type univ_inconsistency = univ_variable_printers option * (constraint_type * Sorts.t * Sorts.t * explanation option)
 
 exception UniverseInconsistency of univ_inconsistency
@@ -204,7 +204,7 @@ let check_subtype univs ctxT ctx =
 let check_eq_instances g t1 t2 =
   let qt1, ut1 = Instance.to_array t1 in
   let qt2, ut2 = Instance.to_array t2 in
-  CArray.equal Sorts.Quality.equal qt1 qt2
+  CArray.equal Quality.equal qt1 qt2
   && CArray.equal (check_eq_level g) ut1 ut2
 
 let domain g = G.domain g.graph
@@ -269,12 +269,3 @@ let explain_universe_inconsistency default_prq default_prl (printers, (o,u,v,p) 
   in
     str "Cannot enforce" ++ spc() ++ pr_uni u ++ spc() ++
       pr_rel o ++ spc() ++ pr_uni v ++ reason
-
-(* module Internal = struct *)
-
-(*   let add_template_qvars qvars g = *)
-(*     assert (Sorts.QVar.Set.is_empty g.above_prop_qvars); *)
-(*     {g with above_prop_qvars=qvars} *)
-
-(*   let is_above_prop = is_above_prop *)
-(* end *)

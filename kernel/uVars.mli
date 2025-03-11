@@ -9,7 +9,7 @@
 (************************************************************************)
 
 open Univ
-open Sorts
+open Quality
 
 (** {6 Support for universe polymorphism } *)
 
@@ -44,8 +44,8 @@ sig
   val empty : t
   val is_empty : t -> bool
 
-  val of_array : Quality.t array * Level.t array -> t
-  val to_array : t -> Quality.t array * Level.t array
+  val of_array : quality array * Level.t array -> t
+  val to_array : t -> quality array * Level.t array
 
   val abstract_instance : int * int -> t
   (** Instance of the given size made of QVar/Level.var *)
@@ -75,24 +75,24 @@ sig
   (** The set of levels in the instance *)
 
   val subst_fn
-    : (QVar.t -> Quality.t) * (Level.t -> Level.t)
+    : (QVar.t -> quality) * (Level.t -> Level.t)
     -> t -> t
 
   type mask = Quality.pattern array * int option array
 
-  val pattern_match : mask -> t -> ('term, Quality.t, Level.t) Partial_subst.t -> ('term, Quality.t, Level.t) Partial_subst.t option
+  val pattern_match : mask -> t -> ('term, quality, Level.t) Partial_subst.t -> ('term, quality, Level.t) Partial_subst.t option
   (** Pattern matching, as used by the rewrite rules mechanism *)
 end
 
 val eq_sizes : int * int -> int * int -> bool
 (** Convenient function to compare the result of Instance.length, UContext.size etc *)
 
-type 'a quconstraint_function = 'a -> 'a -> Sorts.QUConstraints.t -> Sorts.QUConstraints.t
+(* type 'a quconstraint_function = 'a -> 'a -> Sorts.QUConstraints.t -> Sorts.QUConstraints.t *)
 
-val enforce_eq_instances : Instance.t quconstraint_function
+(* val enforce_eq_instances : Instance.t quconstraint_function *)
 
-val enforce_eq_variance_instances : Variance.t array -> Instance.t quconstraint_function
-val enforce_leq_variance_instances : Variance.t array -> Instance.t quconstraint_function
+(* val enforce_eq_variance_instances : Variance.t array -> Instance.t quconstraint_function *)
+(* val enforce_leq_variance_instances : Variance.t array -> Instance.t quconstraint_function *)
 
 type 'a puniverses = 'a * Instance.t
 val out_punivs : 'a puniverses -> 'a
@@ -133,7 +133,7 @@ sig
   val sort_levels : Level.t array -> Level.t array
   (** Arbitrary choice of linear order of the variables *)
 
-  val sort_qualities : Quality.t array -> Quality.t array
+  val sort_qualities : quality array -> quality array
   (** Arbitrary choice of linear order of the variables *)
 
   val of_context_set : (Instance.t -> bound_names) -> QVar.Set.t -> ContextSet.t -> t
@@ -195,9 +195,21 @@ val map_univ_abstracted : ('a -> 'b) -> 'a univ_abstracted -> 'b univ_abstracted
 
 (** {6 Substitution} *)
 
-val pr_quality_level_subst : (QVar.t -> Pp.t) -> Quality.t QVar.Map.t -> Pp.t
+type universe_level_subst = Level.t Level.Map.t
 
-type sort_level_subst = Quality.t QVar.Map.t * universe_level_subst
+val empty_level_subst : universe_level_subst
+val is_empty_level_subst : universe_level_subst -> bool
+
+(** Substitution of universes. *)
+val subst_univs_level_level : universe_level_subst -> Level.t -> Level.t
+val subst_univs_level_universe : universe_level_subst -> Universe.t -> Universe.t
+val subst_univs_level_constraints : universe_level_subst -> Constraints.t -> Constraints.t
+
+val pr_universe_level_subst : (Level.t -> Pp.t) -> universe_level_subst -> Pp.t
+
+val pr_quality_level_subst : (QVar.t -> Pp.t) -> quality QVar.Map.t -> Pp.t
+
+type sort_level_subst = quality QVar.Map.t * universe_level_subst
 
 val empty_sort_subst : sort_level_subst
 
@@ -210,7 +222,7 @@ val subst_univs_level_abstract_universe_context :
 val subst_sort_level_instance : sort_level_subst -> Instance.t -> Instance.t
 (** Level to universe substitutions. *)
 
-val subst_sort_level_quality : sort_level_subst -> Sorts.Quality.t -> Sorts.Quality.t
+val subst_sort_level_quality : sort_level_subst -> quality -> quality
 
 val subst_sort_level_sort : sort_level_subst -> Sorts.t -> Sorts.t
 
@@ -219,7 +231,7 @@ val subst_sort_level_relevance : sort_level_subst -> Sorts.relevance -> Sorts.re
 (** Substitution of instances *)
 val subst_instance_instance : Instance.t -> Instance.t -> Instance.t
 val subst_instance_universe : Instance.t -> Universe.t -> Universe.t
-val subst_instance_quality : Instance.t -> Sorts.Quality.t -> Sorts.Quality.t
+val subst_instance_quality : Instance.t -> quality -> quality
 val subst_instance_sort : Instance.t -> Sorts.t -> Sorts.t
 val subst_instance_relevance : Instance.t -> Sorts.relevance -> Sorts.relevance
 val subst_instance_sort_level_subst : Instance.t -> sort_level_subst -> sort_level_subst

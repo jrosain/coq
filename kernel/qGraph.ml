@@ -7,7 +7,6 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
-open Sorts
 open Quality
 
 module G = AcyclicGraph.Make(struct
@@ -30,9 +29,9 @@ exception QualitityInconsistency of string
 
 let enforce_constraint0 (q1, cst, q2) g =
   match cst with
-  | QConstraint.Leq -> G.enforce_leq q1 q2 g
-  | QConstraint.Lt -> G.enforce_lt q1 q2 g
-  | QConstraint.Equal -> G.enforce_eq q1 q2 g
+  | ElimConstraint.ElimTo -> G.enforce_leq q1 q2 g
+  | ElimConstraint.SElimTo -> G.enforce_lt q1 q2 g
+  | ElimConstraint.Eq -> G.enforce_eq q1 q2 g
 
 let enforce_constraint cstr g =
   match enforce_constraint0 cstr g with
@@ -41,37 +40,32 @@ let enforce_constraint cstr g =
 
 let add_quality g q =
   let g = try G.add q g with G.AlreadyDeclared -> g in (* Should it fail? *)
-  enforce_constraint (qtype, QConstraint.Leq, q) g
+  enforce_constraint (qtype, ElimConstraint.ElimTo, q) g
 
 let enforce_eliminates_to g s1 s2 =
-  let g = add_quality g s1 in
-  let g = add_quality g s2 in
-  enforce_constraint (s2, QConstraint.Leq, s1) g
+  enforce_constraint (s1, ElimConstraint.ElimTo, s2) g
 
 let enforce_eq g s1 s2 =
-  let g = add_quality g s1 in
-  let g = add_quality g s2 in
-  enforce_constraint (s2, QConstraint.Equal, s1) g
+  enforce_constraint (s1, ElimConstraint.Eq, s2) g
 
 (* let add_qvar q g = add_quality g (QVar q) *)
 
 let initial_quality_constraints =
-  let open QConstraint in
+  let open Quality in
   let g = G.empty in
-  let g = List.fold_left (fun g q -> G.add q g) g Sorts.Quality.all_constants in
+  let g = List.fold_left (fun g q -> G.add q g) g all_constants in
   (* Enforces the constant constraints defined in the table of
      [Constants.eliminates_to] without reflexivity. *)
   List.fold_left
     (fun g q ->
       List.fold_left
 	(fun g q' -> if eliminates_to q q'
-		  then enforce_constraint (q, Lt, q') g
+		  then enforce_constraint (q, ElimConstraint.SElimTo, q') g
 		  else g) g
-	(List.filter (fun q' -> not @@ Sorts.Quality.equal q q')
-		Sorts.Quality.all_constants))
-    g Sorts.Quality.all_constants
+	(List.filter (fun q' -> not @@ Quality.equal q q') all_constants))
+    g all_constants
 
-(* TTT: Rename to eliminates_to to keep it consistent with Sorts.Quality? *)
+(* TTT: Rename to eliminates_to to keep it consistent with Sorts/Quality? *)
 let is_allowed_elimination = G.check_leq
 
 let sort_eliminates_to g s1 s2 =
@@ -81,13 +75,15 @@ let check_eq = G.check_eq
 
 let check_eq_sort g s s' = check_eq g (Sorts.quality s) (Sorts.quality s')
 
-let eliminates_to_prop g q = is_allowed_elimination g q Sorts.Quality.qprop
+let eliminates_to_prop g q = is_allowed_elimination g q qprop
 
 let domain = G.domain
 
 let qvar_domain g =
   let domain = domain g in
-  Quality.Set.fold (fun q acc -> match q with QVar q -> QVar.Set.add q acc | _ -> acc) domain QVar.Set.empty
+  Quality.Set.fold
+    (fun q acc -> match q with QVar q -> QVar.Set.add q acc | _ -> acc)
+    domain QVar.Set.empty
 
 (* could be part of acyclic graph api? *)
 let is_empty g = Set.is_empty (domain g)
