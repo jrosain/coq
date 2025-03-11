@@ -113,8 +113,7 @@ let check_univ_leq ?(is_real_arg=false) env u info =
     let check_univ_consistency_squash quality =
       check_univ_consistency (add_squash quality) in
     (* If the inductive can be eliminated into u, simply check universe consistency. *)
-    (* TTT: Add API for Sorts directly? *)
-    if QGraph.is_allowed_elimination (qualities env) (Sorts.quality indu) (Sorts.quality u) then
+    if QGraph.sort_eliminates_to (qualities env) indu u then
       check_univ_consistency (fun x -> x)
 	(Sorts.univ_of_sort indu)
 	(Sorts.univ_of_sort u)

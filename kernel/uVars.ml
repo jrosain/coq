@@ -12,8 +12,6 @@ open Pp
 open Util
 open Univ
 
-module Quality = Sorts.Quality
-
 module Variance =
 struct
   (** A universe position in the instance given to a cumulative
@@ -86,9 +84,9 @@ module Instance : sig
 
     val share : t -> t * int
 
-    val subst_fn : (Sorts.QVar.t -> Quality.t) * (Level.t -> Level.t) -> t -> t
+    val subst_fn : (Quality.QVar.t -> Quality.t) * (Level.t -> Level.t) -> t -> t
 
-    val pr : (Sorts.QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
+    val pr : (Quality.QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
     val levels : t -> Quality.Set.t * Level.Set.t
 
     type mask = Quality.pattern array * int option array
@@ -208,7 +206,7 @@ end
 
 let eq_sizes (a,b) (a',b') = Int.equal a a' && Int.equal b b'
 
-type 'a quconstraint_function = 'a -> 'a -> Sorts.QUConstraints.t -> Sorts.QUConstraints.t
+(* type 'a quconstraint_function = 'a -> 'a -> Sorts.QUConstraints.t -> Sorts.QUConstraints.t *)
 
 let enforce_eq_instances x y (qcs, ucs as orig) =
   let xq, xu = Instance.to_array x and yq, yu = Instance.to_array y in
@@ -410,6 +408,46 @@ let map_univ_abstracted f {univ_abstracted_value;univ_abstracted_binder} =
   {univ_abstracted_value;univ_abstracted_binder}
 
 let hcons_abstract_universe_context = AbstractContext.hcons
+
+(** Substitutions. *)
+
+(** A universe level substitution, note that no algebraic universes are
+    involved *)
+
+type universe_level_subst = universe_level Level.Map.t
+
+(** A set of universes with universe constraints.
+    We linearize the set to a list after typechecking.
+    Beware, representation could change.
+*)
+
+let empty_level_subst = Level.Map.empty
+let is_empty_level_subst = Level.Map.is_empty
+
+(** Substitution functions *)
+
+(** With level to level substitutions. *)
+let subst_univs_level_level subst l =
+  try Level.Map.find l subst
+  with Not_found -> l
+
+let subst_univs_level_universe subst =
+  Universe.map (fun u -> subst_univs_level_level subst u)
+
+let subst_univs_level_constraint subst (u,d,v) =
+  let u' = subst_univs_level_level subst u
+  and v' = subst_univs_level_level subst v in
+    if d != Lt && Level.equal u' v' then None
+    else Some (u',d,v')
+
+let subst_univs_level_constraints subst csts =
+  Constraints.fold
+    (fun c -> Option.fold_right Constraints.add (subst_univs_level_constraint subst c))
+    csts Constraints.empty
+
+let pr_universe_level_subst prl =
+  Level.Map.pr prl (fun u -> str" := " ++ prl u ++ spc ())
+
 
 let pr_quality_level_subst prl l =
   let open Pp in

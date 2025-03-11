@@ -884,8 +884,8 @@ let add_universe_constraints d c =
 let add_elimination_constraint d s1 s2 =
   { d with qualities = QGraph.enforce_eliminates_to d.qualities s1 s2 }
 
-let add_equal_sorts_constraint d s1 s2 =
-  { d with qualities = QGraph.enforce_eq d.qualities s1 s2 }
+(* let add_equal_sorts_constraint d s1 s2 = *)
+(*   { d with qualities = QGraph.enforce_eq d.qualities s1 s2 } *)
 
 (*** /Lifting... ***)
 
@@ -1168,10 +1168,8 @@ let set_eq_sort evd s1 s2 =
   | None -> evd
   | Some (u1, u2) ->
     if not (UGraph.type_in_type (UState.ugraph evd.universes)) then
-      let evd = add_universe_constraints evd @@
-		  UnivProblem.Set.singleton (UnivProblem.UEq (u1,u2)) in
-      (* JJJ: is this inconsistent? Should sorts be ignored here? *)
-      add_equal_sorts_constraint evd (Sorts.quality s1) (Sorts.quality s2)
+      add_universe_constraints evd @@
+	UnivProblem.Set.singleton (UnivProblem.UEq (u1,u2))
     else
       evd
 
@@ -1192,12 +1190,13 @@ let set_leq_sort evd s1 s2 =
   | None -> evd
   | Some (u1, u2) ->
      if not (UGraph.type_in_type (UState.ugraph evd.universes)) then
-       let evd = add_universe_constraints evd @@
-		   UnivProblem.Set.singleton (UnivProblem.ULe (u1,u2)) in
-       add_elimination_constraint evd (Sorts.quality s1) (Sorts.quality s2)
+       add_universe_constraints evd @@
+	 UnivProblem.Set.singleton (UnivProblem.ULe (u1,u2))
      else evd
 
+(* JJJ check the two functions below *)
 let set_eq_qualities evd q1 q2 =
+  (* add_equal_sorts_constraint evd q1 q2 *)
   add_universe_constraints evd (UnivProblem.Set.singleton (QEq (q1, q2)))
 
 let set_above_prop evd q =
