@@ -18,13 +18,13 @@ open Constr
 
 type universes_entry =
   | Monomorphic_entry
-  | Polymorphic_entry of UVars.UContext.t
+  | Polymorphic_entry of UVars.PolyContext.t
 
 type inductive_universes_entry =
   | Monomorphic_ind_entry
-  | Polymorphic_ind_entry of UVars.UContext.t
+  | Polymorphic_ind_entry of UVars.PolyContext.t
   | Template_ind_entry of {
-      uctx : UVars.UContext.t;
+      uctx : UVars.PolyContext.t;
       (* The quality part of default_univs must be all qtype *)
       default_univs : UVars.Instance.t;
     }
@@ -112,7 +112,7 @@ type symbol_entry = {
   symb_entry_universes : universes_entry;
 }
 
-type 'a proof_output = constr Univ.in_universe_context_set * 'a
+type 'a proof_output = constr PolyConstraints.in_poly_context_set * 'a
 
 type constant_entry =
   | DefinitionEntry : definition_entry -> constant_entry

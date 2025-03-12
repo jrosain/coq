@@ -57,14 +57,14 @@ exception UniverseInconsistency of univ_inconsistency
 
 val enforce_constraint : univ_constraint -> t -> t
 
-val merge_constraints : Constraints.t -> t -> t
+val merge_constraints : LvlConstraints.t -> t -> t
 
 val check_constraint  : t -> univ_constraint -> bool
-val check_constraints : Constraints.t -> t -> bool
+val check_constraints : LvlConstraints.t -> t -> bool
 val check_eq_sort : t -> Sorts.t  -> Sorts.t -> bool
 val check_leq_sort : t -> Sorts.t -> Sorts.t -> bool
 
-val enforce_leq_alg : Univ.Universe.t -> Univ.Universe.t -> t -> Univ.Constraints.t * t
+val enforce_leq_alg : Universe.t -> Universe.t -> t -> LvlConstraints.t * t
 
 (** Adds a universe to the graph, ensuring it is >= or > Set.
    @raise AlreadyDeclared if the level is already declared in the graph. *)
@@ -82,7 +82,7 @@ val empty_universes : t
 (** [constraints_of_universes g] returns [csts] and [partition] where
    [csts] are the non-Eq constraints and [partition] is the partition
    of the universes into equivalence classes. *)
-val constraints_of_universes : t -> Constraints.t * Level.Set.t list
+val constraints_of_universes : t -> LvlConstraints.t * Level.Set.t list
 
 val choose : (Level.t -> bool) -> t -> Level.t -> Level.t option
 (** [choose p g u] picks a universe verifying [p] and equal
@@ -92,7 +92,7 @@ val choose : (Level.t -> bool) -> t -> Level.t -> Level.t option
    universes [kept] in [g] up to transitivity.
 
     eg if [g] is [a <= b <= c] then [constraints_for ~kept:{a, c} g] is [a <= c]. *)
-val constraints_for : kept:Level.Set.t -> t -> Constraints.t
+val constraints_for : kept:Level.Set.t -> t -> LvlConstraints.t
 
 val domain : t -> Level.Set.t
 (** Known universes *)

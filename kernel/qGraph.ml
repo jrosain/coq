@@ -28,18 +28,31 @@ type t = G.t
 exception QualitityInconsistency of string
 
 let enforce_constraint0 (q1, cst, q2) g =
+  let open ElimConstraint in
   match cst with
-  | ElimConstraint.ElimTo -> G.enforce_leq q1 q2 g
-  | ElimConstraint.SElimTo -> G.enforce_lt q1 q2 g
-  | ElimConstraint.Eq -> G.enforce_eq q1 q2 g
+  | ElimTo -> G.enforce_leq q1 q2 g
+  | SElimTo -> G.enforce_lt q1 q2 g
+  | Eq -> G.enforce_eq q1 q2 g
 
 let enforce_constraint cstr g =
   match enforce_constraint0 cstr g with
   | None -> raise (QualitityInconsistency "Inconsistency")
   | Some g -> g
 
+let merge_constraints csts g = ElimConstraints.fold enforce_constraint csts g
+
+let check_constraint g (q1, c, q2) =
+  let open ElimConstraint in
+  match c with
+  | ElimTo -> G.check_leq g q1 q2
+  | SElimTo -> G.check_lt g q1 q2
+  | Eq -> G.check_eq g q1 q2
+
+let check_constraints csts g = ElimConstraints.for_all (check_constraint g) csts
+
+exception AlreadyDeclared = G.AlreadyDeclared
 let add_quality g q =
-  let g = try G.add q g with G.AlreadyDeclared -> g in (* Should it fail? *)
+  let g = G.add q g in (* Should it fail? Yes *)
   enforce_constraint (qtype, ElimConstraint.ElimTo, q) g
 
 let enforce_eliminates_to g s1 s2 =

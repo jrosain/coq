@@ -59,8 +59,7 @@ val levels : t -> Univ.Level.Set.t
 
 val super : t -> t
 
-val subst_fn : (Quality.QVar.t -> Quality.t) * (Univ.Universe.t -> Univ.Universe.t)
-  -> t -> t
+val subst_fn : (Quality.QVar.t -> Quality.t) * (Univ.Universe.t -> Univ.Universe.t) -> t -> t
 
 (** On binders: is this variable proof relevant *)
 (* TODO put in submodule or new file *)

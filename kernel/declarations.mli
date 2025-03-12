@@ -164,7 +164,7 @@ type record_info =
 
 type squash_info =
   | AlwaysSquashed
-  | SometimesSquashed of Sorts.Quality.Set.t
+  | SometimesSquashed of Quality.Set.t
   (** A sort polymorphic inductive [I@{...|...|...} : ... -> Type@{ s|...}]
       is squashed at a given instantiation if any quality in the list is not smaller than [s].
 
@@ -293,8 +293,8 @@ type mind_specif = mutual_inductive_body * one_inductive_body
 
 (** {6 Rewrite rules } *)
 
-type quality_pattern = Sorts.Quality.pattern =
-  | PQVar of int option | PQConstant of Sorts.Quality.constant
+type quality_pattern = Quality.pattern =
+  | PQVar of int option | PQConstant of Quality.constant
 
 type instance_mask = UVars.Instance.mask
 

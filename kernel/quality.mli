@@ -46,7 +46,6 @@ type constant = QProp | QSProp | QType
 type t = QVar of QVar.t | QConstant of constant
 
 type quality = t
-(* to avoid confusion in the constraints *)
 
 module Constants : sig
   val equal : constant -> constant -> bool
@@ -125,11 +124,7 @@ module ElimConstraints : sig
   include Stdlib.Set.S with type elt = ElimConstraint.t
   val trivial : t -> bool
 
-  val pr : (quality -> Pp.t) -> t -> Pp.t
-end
-
-module HElimConstraint : sig
-  include Hashcons.S with type t = ElimConstraint.t and type u = quality -> quality
+  val pr : (QVar.t -> Pp.t) -> t -> Pp.t
 end
 
 module HElimConstraints : sig
@@ -138,5 +133,4 @@ module HElimConstraints : sig
     type u = ElimConstraint.t -> ElimConstraint.t
 end
 
-val hcons_elim_constraint : ElimConstraint.t -> ElimConstraint.t
 val hcons_elim_constraints : HElimConstraints.t -> HElimConstraints.t
