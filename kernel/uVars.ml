@@ -11,6 +11,7 @@
 open Pp
 open Util
 open Univ
+open PolyConstraints
 
 module Variance =
 struct
@@ -208,27 +209,27 @@ let eq_sizes (a,b) (a',b') = Int.equal a a' && Int.equal b b'
 
 (* type 'a quconstraint_function = 'a -> 'a -> Sorts.QUConstraints.t -> Sorts.QUConstraints.t *)
 
-let enforce_eq_instances x y (qcs, ucs as orig) =
+let enforce_eq_instances x y csts =
   let xq, xu = Instance.to_array x and yq, yu = Instance.to_array y in
   if Array.length xq != Array.length yq || Array.length xu != Array.length yu then
     CErrors.anomaly (Pp.(++) (Pp.str "Invalid argument: enforce_eq_instances called with")
                        (Pp.str " instances of different lengths."));
-  let qcs' = CArray.fold_right2 Sorts.enforce_eq_quality xq yq qcs in
-  let ucs' = CArray.fold_right2 enforce_eq_level xu yu ucs in
-  if qcs' == qcs && ucs' == ucs then orig else qcs', ucs'
+  let csts' = CArray.fold_right2 enforce_eq_quality xq yq csts in
+  let csts' = CArray.fold_right2 enforce_eq_level xu yu csts' in
+  if csts' == csts then csts else csts'
 
-let enforce_eq_variance_instances variances x y (qcs,ucs as orig) =
+let enforce_eq_variance_instances variances x y csts =
   let xq, xu = Instance.to_array x and yq, yu = Instance.to_array y in
-  let qcs' = CArray.fold_right2 Sorts.enforce_eq_quality xq yq qcs in
-  let ucs' = Variance.eq_constraints variances xu yu ucs in
-  if qcs' == qcs && ucs' == ucs then orig else qcs', ucs'
+  let csts' = CArray.fold_right2 enforce_eq_quality xq yq csts in
+  let csts' = Variance.eq_constraints variances xu yu csts' in
+  if csts' == csts then csts else csts'
 
-let enforce_leq_variance_instances variances x y (qcs,ucs as orig) =
+let enforce_leq_variance_instances variances x y csts =
   let xq, xu = Instance.to_array x and yq, yu = Instance.to_array y in
   (* no variance for quality variables -> enforce_eq *)
-  let qcs' = CArray.fold_right2 Sorts.enforce_eq_quality xq yq qcs in
-  let ucs' = Variance.leq_constraints variances xu yu ucs in
-  if qcs' == qcs && ucs' == ucs then orig else qcs', ucs'
+  let csts' = CArray.fold_right2 enforce_eq_quality xq yq csts in
+  let csts' = Variance.leq_constraints variances xu yu csts' in
+  if csts' == csts then csts else csts'
 
 let subst_instance_level s l =
   match Level.var_index l with
@@ -236,13 +237,13 @@ let subst_instance_level s l =
   | None -> l
 
 let subst_instance_qvar s v =
-  match Sorts.QVar.var_index v with
+  match Quality.QVar.var_index v with
   | Some n -> (fst (Instance.to_array s)).(n)
   | None -> Quality.QVar v
 
 let subst_instance_quality s l =
   match l with
-  | Quality.QVar v -> begin match Sorts.QVar.var_index v with
+  | Quality.QVar v -> begin match Quality.QVar.var_index v with
       | Some n -> (fst (Instance.to_array s)).(n)
       | None -> l
     end
@@ -271,16 +272,24 @@ let subst_instance_sort u s =
 let subst_instance_relevance u r =
   Sorts.relevance_subst_fn (subst_instance_qvar u) r
 
-let subst_instance_constraint s (u,d,v as c) =
-  let u' = subst_instance_level s u in
-  let v' = subst_instance_level s v in
+let subst_instance_constraint subst_instance s (u, d, v as c) =
+  let u' = subst_instance s u in
+  let v' = subst_instance s v in
     if u' == u && v' == v then c
-    else (u',d,v')
+    else (u', d, v')
+
+let subst_instance_elim_constraint =
+  subst_instance_constraint subst_instance_quality
+
+let subst_instance_level_constraint =
+  subst_instance_constraint subst_instance_level
 
 let subst_instance_constraints s csts =
-  Constraints.fold
-    (fun c csts -> Constraints.add (subst_instance_constraint s c) csts)
-    csts Constraints.empty
+  let open Quality in
+  PolyConstraints.fold
+    ( (fun q csts -> ElimConstraints.add (subst_instance_elim_constraint s q) csts)
+    , (fun l csts -> LvlConstraints.add (subst_instance_level_constraint s l) csts))
+    csts PolyConstraints.empty
 
 type 'a puniverses = 'a * Instance.t
 let out_punivs (x, _y) = x
@@ -288,43 +297,58 @@ let in_punivs x = (x, Instance.empty)
 let eq_puniverses f (x, u) (y, u') =
   f x y && Instance.equal u u'
 
-type bound_names = Names.Name.t array * Names.Name.t array
+type bound_names =
+  { qualities : Names.Name.t array
+  ; levels : Names.Name.t array }
 
 (** A context of universe levels with universe constraints,
     representing local universe variables and constraints *)
 
-module UContext =
+module PolyContext =
 struct
   type t = bound_names * Instance.t constrained
 
   let make names (univs, _ as x) : t =
     let qs, us = Instance.to_array univs in
-    assert (Array.length (fst names) = Array.length qs && Array.length(snd names) = Array.length us);
+    assert (Array.length (names.qualities) = Array.length qs &&
+	      Array.length(names.levels) = Array.length us);
     (names, x)
 
   (** Universe contexts (variables as a list) *)
-  let empty = (([||], [||]), (Instance.empty, Constraints.empty))
-  let is_empty (_, (univs, csts)) = Instance.is_empty univs && Constraints.is_empty csts
+  let empty =
+    ({ qualities = [| |]; levels = [| |] }, (Instance.empty, PolyConstraints.empty))
+  let is_empty (_, (univs, csts)) =
+    Instance.is_empty univs && PolyConstraints.is_empty csts
 
   let pr prq prl ?variance (_, (univs, csts) as uctx) =
     if is_empty uctx then mt() else
-      h (Instance.pr prq prl ?variance univs ++ str " |= ") ++ h (v 0 (Constraints.pr prl csts))
+      h (Instance.pr prq prl ?variance univs ++ str " |= ") ++
+	h (v 0 (PolyConstraints.pr prq prl csts))
 
-  let hcons ((qnames, unames), (univs, csts)) =
-    ((Array.map Names.Name.hcons qnames, Array.map Names.Name.hcons unames), (Instance.hcons univs, hcons_constraints csts))
+  let hcons (names, (levels, csts)) =
+    ( { qualities = Array.map Names.Name.hcons names.qualities
+      ; levels = Array.map Names.Name.hcons names.levels }
+    , ( Instance.hcons levels
+      , hcons_poly_constraints csts))
 
   let names ((names, _) : t) = names
   let instance (_, (univs, _csts)) = univs
   let constraints (_, (_univs, csts)) = csts
 
-  let union ((qna, una), (univs, csts)) ((qna', una'), (univs', csts')) =
-    (Array.append qna qna', Array.append una una'), (Instance.append univs univs', Constraints.union csts csts')
+  let union (names, (univs, csts)) (names', (univs', csts')) =
+    ( { qualities = Array.append names.qualities names'.qualities
+      ; levels = Array.append names.levels names'.levels }
+    , ( Instance.append univs univs'
+      , PolyConstraints.union csts csts'))
 
   let size (_,(x,_)) = Instance.length x
 
-  let refine_names (qnames',unames') ((qnames, unames), x) =
-    let merge_names = Array.map2 Names.(fun old refined -> match refined with Anonymous -> old | Name _ -> refined) in
-    ((merge_names qnames qnames', merge_names unames unames'), x)
+  let refine_names names (names', x) =
+    let merge_names =
+      Array.map2 Names.(fun old refined -> match refined with Anonymous -> old | Name _ -> refined) in
+    ( { qualities = merge_names names.qualities names'.qualities
+      ; levels = merge_names names.levels names'.levels }
+    , x)
 
   let sort_levels a =
     Array.sort Level.compare a; a
@@ -335,7 +359,7 @@ struct
   let of_context_set f qctx (levels, csts) =
     let qctx = sort_qualities
         (Array.map_of_list (fun q -> Quality.QVar q)
-           (Sorts.QVar.Set.elements qctx))
+           (Quality.QVar.Set.elements qctx))
     in
     let levels = sort_levels (Array.of_list (Level.Set.elements levels)) in
     let inst = Instance.of_array (qctx, levels) in
@@ -345,19 +369,19 @@ struct
     let qs, us = Instance.to_array inst in
     let us = Array.fold_left (fun acc x -> Level.Set.add x acc) Level.Set.empty us in
     let qs = Array.fold_left (fun acc -> function
-        | Quality.QVar x -> Sorts.QVar.Set.add x acc
+        | Quality.QVar x -> Quality.QVar.Set.add x acc
         | Quality.QConstant _ -> assert false)
-        Sorts.QVar.Set.empty
+        Quality.QVar.Set.empty
         qs
     in
     qs, (us, csts)
 
 end
 
-type universe_context = UContext.t
-type 'a in_universe_context = 'a * universe_context
+type poly_context = PolyContext.t
+type 'a in_poly_context = 'a * poly_context
 
-let hcons_universe_context = UContext.hcons
+let hcons_poly_context = PolyContext.hcons
 
 module AbstractContext =
 struct
@@ -365,36 +389,39 @@ struct
 
   let make names csts : t = names, csts
 
-  let instantiate inst ((qnames,unames), cst) =
+  let instantiate inst (names, cst) =
     let q, u = Instance.to_array inst in
-    assert (Array.length q == Array.length qnames && Array.length u = Array.length unames);
+    assert (Array.length q == Array.length names.qualities
+	    && Array.length u = Array.length names.levels);
     subst_instance_constraints inst cst
 
   let names (nas, _) = nas
 
-  let hcons ((qnames,unames), cst) =
-    let qnames = Array.map Names.Name.hcons qnames in
-    let unames = Array.map Names.Name.hcons unames in
-    ((qnames, unames), hcons_constraints cst)
+  let hcons (names, csts) =
+    ( { qualities = Array.map Names.Name.hcons names.qualities
+      ; levels = Array.map Names.Name.hcons names.levels }
+    , hcons_poly_constraints csts)
 
-  let empty = (([||],[||]), Constraints.empty)
+  let empty = ({ qualities = [| |]; levels = [| |] }, PolyConstraints.empty)
 
-  let is_constant ((qnas,unas),_) =
-    Array.is_empty qnas && Array.is_empty unas
+  let is_constant (names, _) =
+    Array.is_empty names.qualities && Array.is_empty names.levels
 
-  let is_empty (_, cst as ctx) =
-    is_constant ctx && Constraints.is_empty cst
+  let is_empty (_, csts as ctx) =
+    is_constant ctx && PolyConstraints.is_empty csts
 
-  let union ((qnas,unas), cst) ((qnas',unas'), cst') =
-    ((Array.append qnas qnas', Array.append unas unas'), Constraints.union cst cst')
+  let union (names, csts) (names', csts') =
+    ( { qualities = Array.append names.qualities names'.qualities
+      ; levels = Array.append names.levels names'.levels }
+    , PolyConstraints.union csts csts')
 
-  let size ((qnas,unas), _) = Array.length qnas, Array.length unas
+  let size (names, _) = Array.length names.qualities, Array.length names.levels
 
-  let repr (names, cst as self) : UContext.t =
-    let inst = Instance.abstract_instance (size self) in
-    (names, (inst, cst))
+  let repr (names, csts as ctx) : PolyContext.t =
+    let inst = Instance.abstract_instance (size ctx) in
+    (names, (inst, csts))
 
-  let pr prq pru ?variance ctx = UContext.pr prq pru ?variance (repr ctx)
+  let pr prq pru ?variance ctx = PolyContext.pr prq pru ?variance (repr ctx)
 
 end
 
@@ -414,7 +441,7 @@ let hcons_abstract_universe_context = AbstractContext.hcons
 (** A universe level substitution, note that no algebraic universes are
     involved *)
 
-type universe_level_subst = universe_level Level.Map.t
+type universe_level_subst = Univ.Level.t Level.Map.t
 
 (** A set of universes with universe constraints.
     We linearize the set to a list after typechecking.
@@ -441,9 +468,10 @@ let subst_univs_level_constraint subst (u,d,v) =
     else Some (u',d,v')
 
 let subst_univs_level_constraints subst csts =
-  Constraints.fold
-    (fun c -> Option.fold_right Constraints.add (subst_univs_level_constraint subst c))
-    csts Constraints.empty
+  PolyConstraints.fold
+    ( (fun _ qc -> qc)
+    , (fun c -> Option.fold_right LvlConstraints.add (subst_univs_level_constraint subst c)))
+    csts PolyConstraints.empty
 
 let pr_universe_level_subst prl =
   Level.Map.pr prl (fun u -> str" := " ++ prl u ++ spc ())
@@ -451,14 +479,14 @@ let pr_universe_level_subst prl =
 
 let pr_quality_level_subst prl l =
   let open Pp in
-  h (prlist_with_sep fnl (fun (u,v) -> prl u ++ str " := " ++ Sorts.Quality.pr prl v)
-       (Sorts.QVar.Map.bindings l))
+  h (prlist_with_sep fnl (fun (u,v) -> prl u ++ str " := " ++ Quality.pr prl v)
+       (Quality.QVar.Map.bindings l))
 
-type sort_level_subst = Quality.t Sorts.QVar.Map.t * universe_level_subst
+type sort_level_subst = Quality.t Quality.QVar.Map.t * universe_level_subst
 
-let is_empty_sort_subst (qsubst,usubst) = Sorts.QVar.Map.is_empty qsubst && is_empty_level_subst usubst
+let is_empty_sort_subst (qsubst,usubst) = Quality.QVar.Map.is_empty qsubst && is_empty_level_subst usubst
 
-let empty_sort_subst = Sorts.QVar.Map.empty, empty_level_subst
+let empty_sort_subst = Quality.QVar.Map.empty, empty_level_subst
 
 let subst_sort_level_instance (qsubst,usubst) i =
   let i' = Instance.subst_fn (Quality.subst_fn qsubst, subst_univs_level_level usubst) i in
@@ -467,7 +495,7 @@ let subst_sort_level_instance (qsubst,usubst) i =
 
 let subst_instance_sort_level_subst s (i : sort_level_subst) =
   let qs, us = i in
-  let qs' = Sorts.QVar.Map.map (fun l -> subst_instance_quality s l) qs in
+  let qs' = Quality.QVar.Map.map (fun l -> subst_instance_quality s l) qs in
   let us' = Level.Map.map (fun l -> subst_instance_level s l) us in
   if qs' == qs && us' == us then i else (qs', us')
 
@@ -475,13 +503,13 @@ let subst_univs_level_abstract_universe_context subst (inst, csts) =
   inst, subst_univs_level_constraints subst csts
 
 let subst_sort_level_qvar (qsubst,_) qv =
-  match Sorts.QVar.Map.find_opt qv qsubst with
+  match Quality.QVar.Map.find_opt qv qsubst with
   | None -> Quality.QVar qv
   | Some q -> q
 
 let subst_sort_level_quality subst = function
-  | Sorts.Quality.QConstant _ as q -> q
-  | Sorts.Quality.QVar q ->
+  | Quality.QConstant _ as q -> q
+  | Quality.QVar q ->
     subst_sort_level_qvar subst q
 
 let subst_sort_level_sort (_,usubst as subst) s =
@@ -497,8 +525,8 @@ let make_instance_subst i =
   let qsubst =
     Array.fold_left_i (fun i acc l ->
       let l = match l with Quality.QVar l -> l | _ -> assert false in
-      Sorts.QVar.Map.add l (Quality.var i) acc)
-      Sorts.QVar.Map.empty qarr
+      Quality.QVar.Map.add l (Quality.var i) acc)
+      Quality.QVar.Map.empty qarr
   in
   let usubst =
     Array.fold_left_i (fun i acc l ->
@@ -508,18 +536,18 @@ let make_instance_subst i =
   qsubst, usubst
 
 let make_abstract_instance ctx =
-  UContext.instance (AbstractContext.repr ctx)
+  PolyContext.instance (AbstractContext.repr ctx)
 
 let abstract_universes uctx =
-  let nas = UContext.names uctx in
-  let instance = UContext.instance uctx in
+  let nas = PolyContext.names uctx in
+  let instance = PolyContext.instance uctx in
   let subst = make_instance_subst instance in
   let cstrs = subst_univs_level_constraints (snd subst)
-      (UContext.constraints uctx)
+      (PolyContext.constraints uctx)
   in
   let ctx = (nas, cstrs) in
   instance, ctx
 
-let pr_universe_context = UContext.pr
+let pr_poly_context = PolyContext.pr
 
-let pr_abstract_universe_context = AbstractContext.pr
+let pr_abstract_context = AbstractContext.pr

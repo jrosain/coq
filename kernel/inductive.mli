@@ -15,6 +15,7 @@ open UVars
 open Declarations
 open Environ
 open CClosure
+open PolyConstraints
 
 (** {6 Extracting an inductive type from a construction } *)
 
@@ -44,24 +45,24 @@ val inductive_paramdecls : mutual_inductive_body puniverses -> Constr.rel_contex
 val inductive_nonrec_rec_paramdecls : mutual_inductive_body puniverses -> Constr.rel_context * Constr.rel_context
 
 val instantiate_inductive_constraints :
-  mutual_inductive_body -> Instance.t -> Constraints.t
+  mutual_inductive_body -> Instance.t -> PolyConstraints.t
 
 type template_univ =
   | TemplateProp
-  | TemplateAboveProp of Sorts.QVar.t * Universe.t
+  | TemplateAboveProp of Quality.QVar.t * Universe.t
   | TemplateUniv of Universe.t
 
 type param_univs = (default:Sorts.t -> template_univ) list
 
-type template_subst = Sorts.Quality.t Int.Map.t * Universe.t Int.Map.t
+type template_subst = Quality.t Int.Map.t * Universe.t Int.Map.t
 
 val instantiate_template_constraints
   : template_subst
   -> Declarations.template_universes
-  -> Univ.Constraints.t
+  -> PolyConstraints.t
 
 val instantiate_template_universes : mind_specif -> param_univs ->
-  Constraints.t * rel_context * template_subst
+  PolyConstraints.t * rel_context * template_subst
 
 val constrained_type_of_inductive : mind_specif puniverses -> types constrained
 
@@ -76,20 +77,20 @@ val type_of_inductive_knowing_parameters :
 
 (** For squashing. *)
 
-type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
+type squash = SquashToSet | SquashToQuality of Quality.t
 
 type 'a allow_elimination_actions =
   { not_squashed : 'a
   ; squashed_to_set_below : 'a
   ; squashed_to_set_above : 'a
-  ; squashed_to_quality : Sorts.Quality.t -> 'a }
+  ; squashed_to_quality : Quality.t -> 'a }
 
 val is_squashed_gen :
-  env -> ('a -> Sorts.t -> Sorts.Quality.t) -> ('a -> Sorts.Quality.Set.elt -> Sorts.Quality.t)
+  env -> ('a -> Sorts.t -> Quality.t) -> ('a -> Quality.Set.elt -> Quality.t)
   -> (mind_specif * 'a) -> squash option
 
 val allowed_elimination_gen :
-  env -> ('a -> Sorts.t -> Sorts.Quality.t) -> ('a -> Sorts.Quality.Set.elt -> Sorts.Quality.t)
+  env -> ('a -> Sorts.t -> Quality.t) -> ('a -> Quality.Set.elt -> Quality.t)
       -> 'b allow_elimination_actions -> (mind_specif * 'a) -> Sorts.t -> 'b
 
 
@@ -190,5 +191,5 @@ module Template : sig
   val template_subst_sort : template_subst -> Sorts.t -> Sorts.t
 
   (** Qualities must be above_prop  *)
-  val max_template_quality : Sorts.Quality.t -> Sorts.Quality.t -> Sorts.Quality.t
+  val max_template_quality : Quality.t -> Quality.t -> Quality.t
 end

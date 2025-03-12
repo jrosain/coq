@@ -115,25 +115,25 @@ Remark: Set (predicative) is encoded as Type(0)
 
 type template_univ =
   | TemplateProp
-  | TemplateAboveProp of Sorts.QVar.t * Universe.t
+  | TemplateAboveProp of Quality.QVar.t * Universe.t
   | TemplateUniv of Universe.t
 
-type template_subst = Sorts.Quality.t Int.Map.t * Universe.t Int.Map.t
+type template_subst = Quality.t Int.Map.t * Universe.t Int.Map.t
 
 let template_univ_quality = function
-  | TemplateProp -> Sorts.Quality.qprop
-  | TemplateUniv _ -> Sorts.Quality.qtype
-  | TemplateAboveProp (q,_) -> Sorts.Quality.QVar q
+  | TemplateProp -> Quality.qprop
+  | TemplateUniv _ -> Quality.qtype
+  | TemplateAboveProp (q,_) -> Quality.QVar q
 
 (* this requires TemplateAboveProp to really be above prop *)
 let max_template_quality a b =
-  let open Sorts.Quality in
+  let open Quality in
   match a, b with
   | QConstant QSProp, _ | _, QConstant QSProp -> assert false
   | QConstant QProp, q | q, QConstant QProp -> q
   | (QConstant QType as q), _ | _, (QConstant QType as q) -> q
   | QVar a', QVar b' ->
-    if Sorts.QVar.equal a' b' then a
+    if Quality.QVar.equal a' b' then a
     else qtype
 
 let template_univ_universe = function
@@ -152,7 +152,7 @@ let bind_kind = let open Sorts in function
     assert (Option.has_some u);
     None, u
   | QSort (q,u) ->
-    let q = Sorts.QVar.var_index q in
+    let q = Quality.QVar.var_index q in
     let u = univ_bind_kind u in
     assert (Option.has_some q || Option.has_some u);
     q, u
@@ -185,7 +185,7 @@ let cons_default_subst bind defaults (qsubst,usubst) =
   let qbind, ubind = bind_kind bind in
   let qsubst = match qbind with
     | None -> qsubst
-    | Some qbind -> Int.Map.add qbind Sorts.Quality.qtype qsubst
+    | Some qbind -> Int.Map.add qbind Quality.qtype qsubst
   in
   let usubst = match ubind with
     | None -> usubst
@@ -243,12 +243,12 @@ let template_subst_sort (subst : template_subst) = function
 | Sorts.Type u ->
   Sorts.sort_of_univ (template_subst_universe subst u)
 | Sorts.QSort (q,u) ->
-  let q = match Sorts.QVar.var_index q with
-    | None -> Sorts.Quality.QVar q
+  let q = match Quality.QVar.var_index q with
+    | None -> Quality.QVar q
     | Some q -> Int.Map.get q (fst subst)
   in
   (* shortcut for impredicative quality *)
-  if Sorts.Quality.(equal qprop q) then Sorts.prop
+  if Quality.(equal qprop q) then Sorts.prop
   else Sorts.make q (template_subst_universe subst u)
 
 let rec template_subst_ctx accu subs ctx params = match ctx, params with
@@ -266,8 +266,9 @@ let rec template_subst_ctx accu subs ctx params = match ctx, params with
 
 let template_subst_ctx subst ctx params = template_subst_ctx [] subst ctx params
 
+(* JJJ function below: poly or lvl constraints? *)
 let instantiate_template_constraints subst templ =
-  let cstrs = UVars.UContext.constraints (UVars.AbstractContext.repr templ.template_context) in
+  let cstrs = UVars.PolyContext.constraints (UVars.AbstractContext.repr templ.template_context) in
   let fold (u, cst, v) accu =
     (* v is not a local universe by the unbounded from below property *)
     let u = match Level.var_index u with
@@ -387,13 +388,13 @@ let abstract_constructor_type_relatively_to_inductive_types_context ntyps mind t
 
 (* Get type of inductive, with parameters instantiated *)
 
-type squash = SquashToSet | SquashToQuality of Sorts.Quality.t
+type squash = SquashToSet | SquashToQuality of Quality.t
 
 type 'a allow_elimination_actions =
   { not_squashed : 'a
   ; squashed_to_set_below : 'a
   ; squashed_to_set_above : 'a
-  ; squashed_to_quality : Sorts.Quality.t -> 'a }
+  ; squashed_to_quality : Quality.t -> 'a }
 
 let is_squashed_gen env indsort_to_quality squashed_to_quality ((_,mip),u) =
   let open Sorts in

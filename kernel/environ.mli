@@ -10,10 +10,10 @@
 
 open Names
 open Constr
-open Univ
 open UVars
 open Declarations
 open Mod_declarations
+open PolyConstraints
 
 (** Unsafe environments. We define here a datatype for environments.
    Since typing is not yet defined, it is not possible to check the
@@ -70,7 +70,7 @@ val empty_env : env
 val universes     : env -> UGraph.t
 val qualities : env -> QGraph.t
 (** Return the graph of qualities. *)
-val quality_vars     : env -> Sorts.QVar.Set.t
+val quality_vars     : env -> Quality.QVar.Set.t
 (** Return the set of qvars. *)
 val rel_context   : env -> Constr.rel_context
 val rel_context_val : env -> rel_context_val
@@ -207,7 +207,7 @@ exception NotEvaluableConst of const_evaluation_result
 val constant_type : env -> Constant.t puniverses -> types constrained
 
 val constant_value_and_type : env -> Constant.t puniverses ->
-  constr option * types * Constraints.t
+  constr option * types * poly_constraints
 (** The universe context associated to the constant, empty if not
     polymorphic *)
 val constant_context : env -> Constant.t -> AbstractContext.t
@@ -326,25 +326,24 @@ val shallow_add_module : ModPath.t -> module_body -> env -> env
 val lookup_module : ModPath.t -> env -> module_body
 val lookup_modtype : ModPath.t -> env -> module_type_body
 
-(** {5 Universe constraints } *)
+(** {5 Polymorphism constraints } *)
 
-val add_constraints : Constraints.t -> env -> env
-(** Add universe constraints to the environment.
-    @raise UniverseInconsistency. *)
+val add_constraints : poly_constraints -> env -> env
+(** Add level/elimination constraints to the environment. *)
 
-val check_constraints : Constraints.t -> env -> bool
+val check_constraints : poly_constraints -> env -> bool
 (** Check constraints are satifiable in the environment. *)
 
-val push_context : ?strict:bool -> UContext.t -> env -> env
+val push_context : ?strict:bool -> PolyContext.t -> env -> env
 (** [push_context ?(strict=false) ctx env] pushes the universe context to the environment.
-    @raise UGraph.AlreadyDeclared if one of the universes is already declared. *)
+    @raise AcyclicGraph.AlreadyDeclared if one of the level/sort is already declared. *)
 
 val push_context_set : ?strict:bool -> ContextSet.t -> env -> env
 (** [push_context_set ?(strict=false) ctx env] pushes the universe
     context set to the environment. It does not fail even if one of the
-    universes is already declared. *)
+    level/sort is already declared. *)
 
-val push_qualities : Sorts.QVar.Set.t -> env -> env
+val push_qualities : Quality.QVar.Set.t -> PolyConstraints.t -> env -> env
 (** Add the qualities to the environment. Only used in higher layers. *)
 
 val push_subgraph : ContextSet.t -> env -> env
@@ -440,9 +439,9 @@ val retroknowledge : env -> Retroknowledge.retroknowledge
 module Internal : sig
   (** Makes the qvars treated as above prop.
       Do not use outside kernel inductive typechecking. *)
-  val push_template_context : UContext.t -> env -> env
+  val push_template_context : PolyContext.t -> env -> env
 
-  val eliminates_to_prop : env -> Sorts.QVar.t -> bool
+  val eliminates_to_prop : env -> Quality.QVar.t -> bool
 
   module View :
   sig
