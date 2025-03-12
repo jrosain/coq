@@ -13,16 +13,6 @@ open Quality
 
 (* JJJ what do i do with this? *)
 
-(* let enforce_eq_quality a b csts = *)
-(*   if Quality.equal a b then csts *)
-(*   else QConstraints.add (a,QConstraint.Equal,b) csts *)
-
-(* let enforce_leq_quality a b csts = *)
-(*   if Quality.equal a b then csts *)
-(*   else match a, b with *)
-(*     | Quality.(QConstant QProp), Quality.(QConstant QType) -> csts *)
-(*     | _ -> QConstraints.add (a,QConstraint.EliminatesTo,b) csts *)
-
 (* module QUConstraints = struct *)
 
 (*   type t = QConstraints.t * Univ.Constraints.t *)
@@ -146,7 +136,7 @@ let hash = function
     let h' = QVar.hash q in
     combinesmall 3 (combine h h')
 
-module Hsorts =
+module HSorts =
   Hashcons.Make(
     struct
       type nonrec t = t

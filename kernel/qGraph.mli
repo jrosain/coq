@@ -16,8 +16,13 @@ type t
 
 exception QualitityInconsistency of string (* FIXME : something else *)
 
+exception AlreadyDeclared
 val add_quality : t -> quality -> t
 (** Add a quality to the graph. Enforces Type to be eliminable to the new quality *)
+
+val merge_constraints : ElimConstraints.t -> t -> t
+
+val check_constraints : ElimConstraints.t -> t -> bool
 
 val enforce_eliminates_to : t -> quality -> quality -> t
 (** Checks whether the first quality eliminates to the second. If it's

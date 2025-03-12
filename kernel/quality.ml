@@ -259,9 +259,9 @@ struct
 
   let trivial = for_all ElimConstraint.trivial
 
-  let pr prq c =
+  let pr prv c =
     v 0 (prlist_with_sep spc (fun (u1,op,u2) ->
-      hov 0 (prq u1 ++ ElimConstraint.pr_kind op ++ prq u2))
+      hov 0 (pr prv u1 ++ ElimConstraint.pr_kind op ++ pr prv u2))
        (elements c))
 end
 

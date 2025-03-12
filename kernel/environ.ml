@@ -450,58 +450,61 @@ let map_universes f env = set_universes (f env.env_universes) env
 let map_qualities f env = set_qualities (f env.env_qualities) env
 
 let add_constraints c env =
-  if Univ.Constraints.is_empty c then env
-  else map_universes (UGraph.merge_constraints c) env
+  if PolyConstraints.is_empty c then env
+  else
+    map_qualities (QGraph.merge_constraints @@ PolyConstraints.qualities c) @@
+      map_universes (UGraph.merge_constraints @@ PolyConstraints.levels c) env
 
 let check_constraints c env =
-  UGraph.check_constraints c env.env_universes
+  QGraph.check_constraints (PolyConstraints.qualities c) env.env_qualities &&
+    UGraph.check_constraints (PolyConstraints.levels c) env.env_universes
+
 
 let add_universes ~strict ctx g =
-  let _qs, us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
+  let _, us = UVars.Instance.to_array (UVars.PolyContext.instance ctx) in
   let g = Array.fold_left
       (fun g v -> UGraph.add_universe ~strict v g)
       g us
   in
-  UGraph.merge_constraints (UVars.UContext.constraints ctx) g
+  UGraph.merge_constraints
+    (PolyConstraints.levels @@ UVars.PolyContext.constraints ctx) g
 
-  (* TTT: double check change *)
-let add_qualities qs graph =
-  if Array.distinct qs then
-    let open Sorts.Quality in
-    Array.fold_left (fun graph q ->
-        match q with
-        | QVar q -> QGraph.add_quality graph (QVar q)
-        | QConstant _ -> CErrors.anomaly Pp.(str "constant quality in ucontext"))
-      graph
-      qs
-  else
-    CErrors.anomaly Pp.(str"multiply bound sort quality")
+let add_qualities ctx g =
+  let qs, _ = UVars.Instance.to_array (UVars.PolyContext.instance ctx) in
+  let g = Array.fold_left QGraph.add_quality g qs in
+  QGraph.merge_constraints
+    (PolyConstraints.qualities @@ UVars.PolyContext.constraints ctx) g
 
 let push_context ?(strict=false) ctx env =
-  let qs, _us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
-  let env = { env with env_qualities = add_qualities qs env.env_qualities } in
-  map_universes (add_universes ~strict ctx) env
+  map_qualities (add_qualities ctx) @@
+    map_universes (add_universes ~strict ctx) env
 
 let add_universes_set ~strict ctx g =
+  let open PolyConstraints in
   let g = Univ.Level.Set.fold
             (* Be lenient, module typing reintroduces universes and constraints due to includes *)
             (fun v g -> try UGraph.add_universe ~strict v g with UGraph.AlreadyDeclared -> g)
-            (Univ.ContextSet.levels ctx) g
-  in UGraph.merge_constraints (Univ.ContextSet.constraints ctx) g
+            (ContextSet.levels ctx) g
+  in UGraph.merge_constraints
+       (PolyConstraints.levels @@ ContextSet.constraints ctx) g
 
 let push_context_set ?(strict=false) ctx env =
-  map_universes (add_universes_set ~strict ctx) env
+    map_universes (add_universes_set ~strict ctx) env
 
-let push_qualities qvars env =
-  let open Sorts in
-  let graph = QVar.Set.fold (fun qvar g -> QGraph.add_quality g (Quality.QVar qvar)) qvars env.env_qualities in
-  { env with env_qualities = graph }
+let add_qualities_set qvars csts g =
+  let g = Quality.QVar.Set.fold
+	    (fun qvar g -> QGraph.add_quality g (Quality.QVar qvar))
+       	    qvars g
+  in QGraph.merge_constraints (PolyConstraints.qualities csts) g
+
+let push_qualities qvars csts env =
+  map_qualities (add_qualities_set qvars csts) env
 
 let push_subgraph (levels,csts) env =
   let add_subgraph g =
     let newg = Univ.Level.Set.fold (fun v g -> UGraph.add_universe ~strict:false v g) levels g in
-    let newg = UGraph.merge_constraints csts newg in
-    (if not (Univ.Constraints.is_empty csts) then
+    let newg = UGraph.merge_constraints (PolyConstraints.levels csts) newg in
+    (if not (PolyConstraints.is_empty csts) then
        let restricted = UGraph.constraints_for ~kept:(UGraph.domain g) newg in
        (if not (UGraph.check_constraints restricted g) then
           CErrors.anomaly Pp.(str "Local constraints imply new transitive constraints.")));
@@ -1042,12 +1045,12 @@ end
 module Internal = struct
   let push_template_context uctx env =
     let env = push_context ~strict:false uctx env in
-    let qvars, _ = UVars.UContext.to_context_set uctx in
+    let qvars, _ = UVars.PolyContext.to_context_set uctx in
     let env = map_qualities (QGraph.add_template_qvars qvars) env in
     env
 
   let eliminates_to_prop env q =
-    QGraph.eliminates_to_prop env.env_qualities @@ Sorts.Quality.QVar q
+    QGraph.eliminates_to_prop env.env_qualities @@ Quality.QVar q
 
   module View =
   struct
