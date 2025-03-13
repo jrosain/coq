@@ -25,6 +25,10 @@ let add_quality q (qc, lc) = (ElimConstraints.add q qc, lc)
 
 let add_level u (qc, lc) = (qc, LvlConstraints.add u lc)
 
+let of_qualities qc = make qc LvlConstraints.empty
+
+let of_levels lc = make ElimConstraints.empty lc
+
 let empty = (ElimConstraints.empty, LvlConstraints.empty)
 
 let is_empty (qc, lc) =
@@ -39,11 +43,11 @@ let union (qc, lc) (qc', lc') =
 let fold (qf, lf) (qc, lc) (x, y) =
   (ElimConstraints.fold qf qc x, LvlConstraints.fold lf lc y)
 
-(* let add (q, l) (qc, lc) = *)
-(*   (ElimConstraints.add q qc, LvlConstraints.add l lc) *)
-
 let diff (qc, lc) (qc', lc') =
   (ElimConstraints.diff qc qc', LvlConstraints.diff lc lc')
+
+let elements (qc, lc) =
+  (ElimConstraints.elements qc, LvlConstraints.elements lc)
 
 let pr prv prl (qc, lc) =
   let open Pp in
@@ -87,15 +91,18 @@ let enforce_leq_level u v c =
   if Level.equal u v then c
   else add_level (u, Le, v) c
 
-let enforce_eq_quality a b csts =
-  if Quality.equal a b then csts
-  else add_quality (a, ElimConstraint.Eq , b) csts
+let add_quality_or_fail q1 op q2 csts =
+  match q1, q2 with
+  | Quality.(QConstant _), Quality.(QConstant _) -> raise (QGraph.QualitityInconsistency "JJJ TODO")
+  | _ -> add_quality (q1, op , q2) csts
 
-(* let enforce_elim_to_quality a b csts = *)
-(*   if Quality.equal a b then csts *)
-(*   else match a, b with *)
-(*        | Quality.(QConstant _), Quality.(QConstant _) -> csts *)
-(*        | _ -> add_quality (a ,ElimConstraint.ElimTo, b) csts *)
+let enforce_eq_quality q1 q2 csts =
+  if Quality.equal q1 q2 then csts
+  else add_quality_or_fail q1 ElimConstraint.Eq q2 csts
+
+let enforce_elim_to q1 q2 csts =
+  if Quality.eliminates_to q1 q2 then csts
+  else add_quality_or_fail q1 ElimConstraint.ElimTo q2 csts
 
 module ContextSet = struct
   type t = Level.Set.t constrained
@@ -140,30 +147,28 @@ end
 
 type 'a in_poly_context_set = 'a * ContextSet.t
 
-(* (\** A value in a universe context (resp. context set). *\) *)
-(* type 'a in_universe_context_set = 'a * universe_context_set *)
-
-(* (\** Pretty-printing *\) *)
+(** Pretty-printing *)
 
 (* replaced by exposure of pr in ContextSet *)
-(* let pr_universe_context_set = ContextSet.pr *)
+(* let pr_poly_context_set = ContextSet.pr *)
 
-(* module Huniverse_set = *)
-(*   Hashcons.Make( *)
-(*     struct *)
-(*       type t = universe_set *)
-(*       type u = universe_level -> universe_level *)
-(*       let hashcons huc s = *)
-(*         Level.Set.fold (fun x -> Level.Set.add (huc x)) s Level.Set.empty *)
-(*       let eq s s' = *)
-(*         Level.Set.equal s s' *)
-(*       let hash = Hashtbl.hash *)
-(*     end) *)
+module HLvls =
+  Hashcons.Make(
+    struct
+      type t = Level.Set.t
+      type u = Level.t -> Level.t
+      let hashcons huc s =
+        Level.Set.fold (fun x -> Level.Set.add (huc x)) s Level.Set.empty
+      let eq s s' =
+        Level.Set.equal s s'
+      let hash = Hashtbl.hash
+    end)
 
-(* let hcons_universe_set = *)
-(*   Hashcons.simple_hcons Huniverse_set.generate Huniverse_set.hcons Level.hcons *)
 
-(* let hcons_universe_context_set (v, c) = *)
-(*   (hcons_universe_set v, hcons_constraints c) *)
+let hcons_lvls =
+  Hashcons.simple_hcons HLvls.generate HLvls.hcons Level.hcons
+
+let hcons_poly_context_set (v, c) =
+  (hcons_lvls v, hcons_poly_constraints c)
 
 (* let hcons_univ x = Universe.hcons x *)

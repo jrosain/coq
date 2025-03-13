@@ -10,7 +10,7 @@
 
 open Names
 open Univ
-open Sorts
+open Quality
 
 (** Local universe name <-> level mapping *)
 

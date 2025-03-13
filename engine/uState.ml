@@ -14,12 +14,14 @@ open Names
 open Univ
 open Sorts
 open UVars
+open Quality
+open PolyConstraints
 
 module UnivFlex = UnivFlex
 
 type universes_entry =
-| Monomorphic_entry of Univ.ContextSet.t
-| Polymorphic_entry of UVars.UContext.t
+| Monomorphic_entry of ContextSet.t
+| Polymorphic_entry of UVars.PolyContext.t
 
 module UNameMap = Id.Map
 
@@ -27,8 +29,6 @@ type uinfo = {
   uname : Id.t option;
   uloc : Loc.t option;
 }
-
-open Quality
 
 let sort_inconsistency ?explain cst l r =
   let explain = Option.map (fun p -> UGraph.Other p) explain in
@@ -43,7 +43,7 @@ module QState : sig
   val repr : elt -> t -> Quality.t
   val is_rigid : t -> QVar.t -> bool
   val unify_quality : fail:(unit -> t) -> Conversion.conv_pb -> Quality.t -> Quality.t -> t -> t
-  val is_above_prop : elt -> t -> bool
+  val elim_to_prop : elt -> t -> bool
   val undefined : t -> QVar.Set.t
   val collapse_above_prop : to_prop:bool -> t -> t
   val collapse : ?except:QVar.Set.t -> t -> t
@@ -77,7 +77,7 @@ let rec repr q m = match QMap.find q m.qmap with
 (*   let () = assert !Flags.in_debugger in *) (* FIXME *)
   QVar q
 
-let is_above_prop q m = QSet.mem q m.above
+let elim_to_prop q m = QSet.mem q m.above
 
 let is_rigid m q = QSet.mem q m.rigid
 
@@ -102,7 +102,7 @@ let set q qv m =
     else
       Some { rigid = m.rigid; qmap = QMap.add q (Some qv) m.qmap; above = QSet.remove q m.above }
 
-let set_above_prop q m =
+let set_elim_to_prop q m =
   let q = repr q m in
   let q = match q with QVar q -> q | QConstant _ -> assert false in
   if QSet.mem q m.rigid then None
@@ -113,7 +113,7 @@ let unify_quality ~fail c q1 q2 local = match q1, q2 with
 | QConstant QProp, QConstant QProp
 | QConstant QSProp, QConstant QSProp -> local
 | QConstant QProp, QVar q when c == Conversion.CUMUL ->
-  begin match set_above_prop q local with
+  begin match set_elim_to_prop q local with
   | Some local -> local
   | None -> fail ()
   end
@@ -344,7 +344,7 @@ let union uctx uctx' =
         universes =
           (if local == uctx.local then uctx.universes
            else
-             let cstrsr = ContextSet.constraints uctx'.local in
+             let cstrsr = PolyConstraints.levels @@ ContextSet.constraints uctx'.local in
              merge_constraints uctx cstrsr (declarenew uctx.universes));
         minim_extra = extra}
 
@@ -370,11 +370,12 @@ let compute_instance_binders uctx inst =
     try Name (Option.get (Level.Map.find lvl urev).uname)
     with Option.IsNone | Not_found -> Anonymous
   in
-  Array.map qmap qinst, Array.map umap uinst
+  { qualities = Array.map qmap qinst
+  ; levels = Array.map umap uinst }
 
 let context uctx =
   let qvars = QState.undefined uctx.sort_variables in
-  UContext.of_context_set (compute_instance_binders uctx) qvars uctx.local
+  PolyContext.of_context_set (compute_instance_binders uctx) qvars uctx.local
 
 type named_universes_entry = universes_entry * UnivNames.universe_binders
 
@@ -463,7 +464,7 @@ let nf_relevance uctx r = match r with
   | QVar q' ->
     (* XXX currently not used in nf_evars_and_universes_opt_subst
        does it matter? *)
-    if QState.is_above_prop q' uctx.sort_variables then Relevant
+    if QState.elim_to_prop q' uctx.sort_variables then Relevant
     else if QVar.equal q q' then r
     else Sorts.RelevanceVar q'
 
@@ -499,18 +500,18 @@ let classify s = match s with
   else UAlgebraic u
 
 type local = {
-  local_cst : Constraints.t;
+  local_cst : PolyConstraints.t;
   local_above_prop : Level.Set.t;
   local_weak : UPairSet.t;
   local_sorts : QState.t;
 }
 
 let add_local cst local =
-  { local with local_cst = Constraints.add cst local.local_cst }
+  { local with local_cst = PolyConstraints.add_level cst local.local_cst }
 
 (* Constraint with algebraic on the left and a single level on the right *)
 let enforce_leq_up u v local =
-  { local with local_cst = UnivSubst.enforce_leq u (Universe.make v) local.local_cst }
+  { local with local_cst = UnivSubst.enforce_leq_univ u (Universe.make v) local.local_cst }
 
 let get_constraint = function
 | Conversion.CONV -> Eq
@@ -706,7 +707,7 @@ let process_universe_constraints uctx cstrs =
     else try unify_universes cst local with UGraph.UniverseInconsistency _ -> local
   in
   let local = {
-    local_cst = Constraints.empty;
+    local_cst = PolyConstraints.empty;
     local_weak = uctx.minim_extra.UnivMinim.weak_constraints;
     local_above_prop = uctx.minim_extra.UnivMinim.above_prop;
     local_sorts = uctx.sort_variables;
@@ -719,14 +720,14 @@ let add_universe_constraints uctx cstrs =
   let univs, local = uctx.local in
   let vars, extra, local', sorts = process_universe_constraints uctx cstrs in
   { uctx with
-    local = (univs, Constraints.union local local');
+    local = (univs, PolyConstraints.union local local');
     univ_variables = vars;
-    universes = merge_constraints uctx local' uctx.universes;
+    universes = merge_constraints uctx (PolyConstraints.levels local') uctx.universes;
     sort_variables = sorts;
     minim_extra = extra; }
 
 let problem_of_constraints cstrs =
-  Constraints.fold (fun (l,d,r) acc ->
+  LvlConstraints.fold (fun (l,d,r) acc ->
       let l = Universe.make l and r = sort_of_univ @@ Universe.make r in
       let cstr' = let open UnivProblem in
         match d with
@@ -737,31 +738,39 @@ let problem_of_constraints cstrs =
       in UnivProblem.Set.add cstr' acc)
     cstrs UnivProblem.Set.empty
 
-let add_constraints uctx cstrs =
+let add_level_constraints uctx cstrs =
   let cstrs = problem_of_constraints cstrs in
   add_universe_constraints uctx cstrs
 
-let add_quconstraints uctx (qcstrs,ucstrs) =
-  let cstrs = problem_of_constraints ucstrs in
-  let cstrs = QConstraints.fold (fun (l,d,r) cstrs ->
+let add_constraints uctx csts =
+  let ucsts = PolyConstraints.levels csts in
+  let cstrs = problem_of_constraints ucsts in
+  let cstrs = ElimConstraints.fold (fun (l,d,r) cstrs ->
       match d with
-      | Equal -> UnivProblem.Set.add (QEq (l,r)) cstrs
-      | Leq -> UnivProblem.Set.add (QLeq (l,r)) cstrs
-      | Lt -> raise (Failure "add_quconstraints: Lt not supported"))
-      qcstrs cstrs
+      | Eq -> UnivProblem.Set.add (QEq (l,r)) cstrs
+      | ElimTo -> UnivProblem.Set.add (QLeq (r,l)) cstrs
+      | SElimTo -> raise (Failure "add_constraints: SElimTo not supported"))
+      (PolyConstraints.qualities csts) cstrs
   in
   add_universe_constraints uctx cstrs
 
-let check_qconstraints uctx csts =
-  Sorts.QConstraints.for_all (fun (l,k,r) ->
+let check_elim_to uctx l r =
+  let l = nf_quality uctx l in
+  let r = nf_quality uctx r in
+  if Quality.eliminates_to l r
+  then true
+  else match l, r with
+       | QVar q, QConstant QProp -> QState.elim_to_prop q uctx.sort_variables
+       | _ -> false
+
+let check_elim_constraints uctx csts =
+  ElimConstraints.for_all (fun (l,k,r) ->
       let l = nf_quality uctx l in
       let r = nf_quality uctx r in
-      if Quality.equal l r then true
-      else match l,k,r with
-        | _, Equal, _ -> false
-        | QConstant QProp, Leq, QConstant QType -> true
-        | QConstant QProp, Leq, QVar q -> QState.is_above_prop q uctx.sort_variables
-        | _, (Leq|Lt), _ -> false)
+      match l,k,r with
+      | _, Eq, _ -> Quality.equal l r
+      | _, ElimTo, _ -> check_elim_to uctx l r
+      | _ -> false)
     csts
 
 let check_universe_constraint uctx (c:UnivProblem.t) =
@@ -770,15 +779,7 @@ let check_universe_constraint uctx (c:UnivProblem.t) =
     let a = nf_quality uctx a in
     let b = nf_quality uctx b in
     Quality.equal a b
-  | QLeq (a,b) ->
-    let a = nf_quality uctx a in
-    let b = nf_quality uctx b in
-    if Quality.equal a b then true
-    else begin match a, b with
-      | QConstant QProp, QConstant QType -> true
-      | QConstant QProp, QVar q -> QState.is_above_prop q uctx.sort_variables
-      | _ -> false
-    end
+  | QLeq (a,b) -> check_elim_to uctx a b
   | ULe (u,v) -> UGraph.check_leq_sort uctx.universes u v
   | UEq (u,v) -> UGraph.check_eq_sort uctx.universes u v
   | ULub (u,v) -> UGraph.check_eq_level uctx.universes u v
@@ -800,7 +801,7 @@ type ('a, 'b, 'c) gen_universe_decl = {
   univdecl_extensible_constraints : bool (* Can new constraints be added *) }
 
 type universe_decl =
-  (QVar.t list, Level.t list, Constraints.t) gen_universe_decl
+  (QVar.t list, Level.t list, PolyConstraints.t) gen_universe_decl
 
 let default_univ_decl =
   { univdecl_qualities = [];
@@ -810,7 +811,7 @@ let default_univ_decl =
     univdecl_extensible_qualities = true;
     univdecl_instance = [];
     univdecl_extensible_instance = true;
-    univdecl_constraints = Constraints.empty;
+    univdecl_constraints = PolyConstraints.empty;
     univdecl_extensible_constraints = true }
 
 let pr_error_unbound_universes quals univs names =
@@ -886,10 +887,10 @@ let universe_context_inst decl qvars levels names =
     if not (QVar.Set.is_empty unboundqs && Level.Set.is_empty unboundus)
     then error_unbound_universes unboundqs unboundus names
   in
-  let leftqs = UContext.sort_qualities
+  let leftqs = PolyContext.sort_qualities
       (Array.map_of_list (fun q -> Quality.QVar q) (QVar.Set.elements leftqs))
   in
-  let leftus = UContext.sort_levels (Array.of_list (Level.Set.elements leftus)) in
+  let leftus = PolyContext.sort_levels (Array.of_list (Level.Set.elements leftus)) in
   let instq = Array.append
       (Array.map_of_list (fun q -> Quality.QVar q) decl.univdecl_qualities)
       leftqs
@@ -908,12 +909,14 @@ let check_universe_context_set ~prefix levels names =
 
 let check_implication uctx cstrs cstrs' =
   let gr = uctx.initial_universes in
+  let cstrs = PolyConstraints.levels cstrs in
+  let cstrs' = PolyConstraints.levels cstrs' in
   let grext = merge_constraints uctx cstrs gr in
-  let cstrs' = Constraints.filter (fun c -> not (UGraph.check_constraint grext c)) cstrs' in
-  if Constraints.is_empty cstrs' then ()
+  let cstrs' = LvlConstraints.filter (fun c -> not (UGraph.check_constraint grext c)) cstrs' in
+  if LvlConstraints.is_empty cstrs' then ()
   else CErrors.user_err
       Pp.(str "Universe constraints are not implied by the ones declared: " ++
-          Constraints.pr (pr_uctx_level uctx) cstrs')
+          LvlConstraints.pr (pr_uctx_level uctx) cstrs')
 
 let check_template_univ_decl uctx ~template_qvars decl =
   let () =
@@ -975,7 +978,7 @@ let check_poly_univ_decl uctx decl =
       decl.univdecl_constraints
     end
   in
-  let uctx = UContext.make nas (inst, csts) in
+  let uctx = PolyContext.make nas (inst, csts) in
   uctx
 
 let check_univ_decl ~poly uctx decl =
@@ -989,16 +992,19 @@ let restrict_universe_context (univs, csts) keep =
   let removed = Level.Set.diff univs keep in
   if Level.Set.is_empty removed then univs, csts
   else
-  let allunivs = Constraints.fold (fun (u,_,v) all -> Level.Set.add u (Level.Set.add v all)) csts univs in
+  let allunivs =
+    LvlConstraints.fold
+      (fun (u,_,v) all -> Level.Set.add u (Level.Set.add v all))
+      (PolyConstraints.levels csts) univs in
   let g = UGraph.initial_universes in
   let g = Level.Set.fold (fun v g ->
       if Level.is_set v then g else
         UGraph.add_universe v ~strict:false g) allunivs g in
-  let g = UGraph.merge_constraints csts g in
+  let g = UGraph.merge_constraints (PolyConstraints.levels csts) g in
   let allkept = Level.Set.union (UGraph.domain UGraph.initial_universes) (Level.Set.diff allunivs removed) in
-  let csts = UGraph.constraints_for ~kept:allkept g in
-  let csts = Constraints.filter (fun (l,d,r) -> not (Level.is_set l && d == Le)) csts in
-  (Level.Set.inter univs keep, csts)
+  let lcsts = UGraph.constraints_for ~kept:allkept g in
+  let lcsts = LvlConstraints.filter (fun (l,d,r) -> not (Level.is_set l && d == Le)) lcsts in
+  (Level.Set.inter univs keep, PolyConstraints.make (PolyConstraints.qualities csts) lcsts)
 
 let restrict uctx vars =
   let vars = Id.Map.fold (fun na l vars -> Level.Set.add l vars)
@@ -1013,7 +1019,8 @@ let restrict_even_binders uctx vars =
 
 let restrict_constraints uctx csts =
   let levels, _ = uctx.local in
-  let uctx' = { uctx with local = ContextSet.of_set levels; universes = uctx.initial_universes } in
+  let uctx' = { uctx with local = PolyConstraints.ContextSet.of_lvl_set levels
+			; universes = uctx.initial_universes } in
   add_constraints uctx' csts
 
 type rigid =
@@ -1050,7 +1057,9 @@ let merge ?loc ~sideff rigid uctx uctx' =
   in
   let initial = declare uctx.initial_universes in
   let univs = declare uctx.universes in
-  let universes = merge_constraints uctx (ContextSet.constraints uctx') univs in
+  let universes =
+    merge_constraints uctx
+      (PolyConstraints.levels @@ ContextSet.constraints uctx') univs in
   let uctx =
     match rigid with
     | UnivRigid -> uctx
@@ -1087,22 +1096,22 @@ let merge_sort_context ?loc ~sideff rigid uctx ((qvars,levels),csts) =
   let uctx = merge_sort_variables ?loc ~sideff uctx qvars in
   merge ?loc ~sideff rigid uctx (levels,csts)
 
-let demote_global_univs (lvl_set,csts_set) uctx =
-  let (local_univs, local_constraints) = uctx.local in
-  let local_univs = Level.Set.diff local_univs lvl_set in
-  let univ_variables = Level.Set.fold UnivFlex.remove lvl_set uctx.univ_variables in
+let demote_global_univs (levels,csts) uctx =
+  let (loc_univs, loc_csts) = uctx.local in
+  let loc_univs = Level.Set.diff loc_univs levels in
+  let univ_variables = Level.Set.fold UnivFlex.remove levels uctx.univ_variables in
   let update_ugraph g =
     let g = Level.Set.fold (fun u g ->
         try UGraph.add_universe u ~strict:true g
         with UGraph.AlreadyDeclared -> g)
-        lvl_set
+        levels
         g
     in
-    UGraph.merge_constraints csts_set g
+    UGraph.merge_constraints (PolyConstraints.levels csts) g
   in
   let initial_universes = update_ugraph uctx.initial_universes in
   let universes = update_ugraph uctx.universes in
-  { uctx with local = (local_univs, local_constraints); univ_variables; universes; initial_universes }
+  { uctx with local = (loc_univs, loc_csts); univ_variables; universes; initial_universes }
 
 let demote_global_univ_entry entry uctx = match entry with
   | Monomorphic_entry entry -> demote_global_univs entry uctx
@@ -1124,7 +1133,7 @@ let merge_seff uctx uctx' =
   in
   let initial_universes = declare uctx.initial_universes in
   let univs = declare uctx.universes in
-  let universes = merge_constraints uctx (ContextSet.constraints uctx') univs in
+  let universes = merge_constraints uctx (PolyConstraints.levels @@ ContextSet.constraints uctx') univs in
   { uctx with universes; initial_universes }
 
 let update_sigma_univs uctx univs =
@@ -1162,7 +1171,7 @@ let add_loc l loc (names, (qnames_rev,unames_rev) as orig) =
 let add_universe ?loc name strict uctx u =
   let initial_universes = UGraph.add_universe ~strict u uctx.initial_universes in
   let universes = UGraph.add_universe ~strict u uctx.universes in
-  let local = ContextSet.add_universe u uctx.local in
+  let local = ContextSet.add_level u uctx.local in
   let names =
     match name with
     | Some n -> add_names ?loc n u uctx.names
@@ -1220,7 +1229,9 @@ let normalize_variables uctx =
     UnivFlex.normalize_univ_variables uctx.univ_variables
   in
   let uctx_local = subst_univs_context_with_def def subst uctx.local in
-  let univs = UGraph.merge_constraints (snd uctx_local) uctx.initial_universes in
+  let univs = UGraph.merge_constraints
+		(PolyConstraints.levels @@ ContextSet.constraints uctx_local)
+		uctx.initial_universes in
   { uctx with
     local = uctx_local;
     univ_variables = normalized_variables;
@@ -1243,7 +1254,9 @@ let minimize uctx =
   in
   if ContextSet.equal us' uctx.local then uctx
   else
-    let universes = UGraph.merge_constraints (snd us') uctx.initial_universes in
+    let universes = UGraph.merge_constraints
+		      (PolyConstraints.levels @@ ContextSet.constraints us')
+		      uctx.initial_universes in
       { names = uctx.names;
         local = us';
         univ_variables = vars';
@@ -1281,7 +1294,7 @@ let check_univ_decl_rev uctx decl =
     if decl.univdecl_extensible_constraints
     then uctx, csts else restrict_constraints uctx decl.univdecl_constraints, decl.univdecl_constraints
   in
-  let uctx' = UContext.make nas (inst, csts) in
+  let uctx' = PolyContext.make nas (inst, csts) in
   uctx, uctx'
 
 let check_uctx_impl ~fail uctx uctx' =
@@ -1297,9 +1310,10 @@ let check_uctx_impl ~fail uctx uctx' =
   in
   let () =
     let grext = ugraph uctx in
-    let cstrs' = Constraints.filter (fun c -> not (UGraph.check_constraint grext c)) csts in
-    if Constraints.is_empty cstrs' then ()
-    else fail (Constraints.pr (pr_uctx_level uctx) cstrs')
+    let cstrs' = LvlConstraints.filter (fun c -> not (UGraph.check_constraint grext c)) @@
+		   PolyConstraints.levels csts in
+    if LvlConstraints.is_empty cstrs' then ()
+    else fail (LvlConstraints.pr (pr_uctx_level uctx) cstrs')
   in
   ()
 
@@ -1316,12 +1330,13 @@ let pr_sort_opt_subst uctx = QState.pr (qualid_of_qvar_names uctx.names) uctx.so
 
 let pr ctx =
   let open Pp in
+  let prv = pr_uctx_qvar ctx in
   let prl = pr_uctx_level ctx in
   if is_empty ctx then mt ()
   else
     v 0
       (str"UNIVERSES:"++brk(0,1)++
-       h (Univ.pr_universe_context_set prl (context_set ctx)) ++ fnl () ++
+       h (PolyConstraints.ContextSet.pr prv prl (context_set ctx)) ++ fnl () ++
        UnivFlex.pr prl (subst ctx) ++ fnl() ++
        str"SORTS:"++brk(0,1)++
        h (pr_sort_opt_subst ctx) ++ fnl() ++

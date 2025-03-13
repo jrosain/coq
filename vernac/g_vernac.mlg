@@ -296,7 +296,7 @@ GRAMMAR EXTEND Gram
           { VernacPrimitive(id, r, typopt) }
       | IDENT "Universe"; l = LIST1 identref -> { VernacUniverse l }
       | IDENT "Universes"; l = LIST1 identref -> { VernacUniverse l }
-      | IDENT "Constraint"; l = LIST1 univ_constraint SEP "," -> { VernacConstraint l }
+      | IDENT "Constraint"; l = LIST1 level_constraint SEP "," -> { VernacConstraint l }
       | IDENT "Rewrite"; IDENT "Rule"; id = identref; ":="; OPT"|"; rules = LIST1 rewrite_rule SEP "|" ->
           { VernacAddRewRule (id, rules) }
       | IDENT "Rewrite"; IDENT "Rules"; id = identref; ":="; OPT"|"; rules = LIST1 rewrite_rule SEP "|" ->
@@ -340,12 +340,12 @@ GRAMMAR EXTEND Gram
       | IDENT "Inline" -> { DefaultInline }
       | -> { NoInline } ] ]
   ;
-  univ_constraint:
+  level_constraint:
     [ [ l = universe_name; ord = [ "<" -> { Univ.Lt } | "=" -> { Univ.Eq } | "<=" -> { Univ.Le } ];
         r = universe_name -> { (l, ord, r) } ] ]
   ;
   univ_decl_constraints:
-    [ [ "|"; l' = LIST0 univ_constraint SEP ",";
+    [ [ "|"; l' = LIST0 level_constraint SEP ",";
         ext = [ "+" -> { true } | -> { false } ]; "}" -> { (l',ext) }
       | ext = [ "}" -> { true } | bar_cbrace -> { false } ] -> { ([], ext) } ] ]
   ;

@@ -65,9 +65,9 @@ val build_mutual_induction_scheme :
 
 (** Recursor names utilities *)
 
-val lookup_eliminator : env -> inductive -> Sorts.Quality.t -> GlobRef.t
-val elimination_suffix : Sorts.Quality.t -> string
-val make_elimination_ident : Id.t -> Sorts.Quality.t -> Id.t
+val lookup_eliminator : env -> inductive -> Quality.t -> GlobRef.t
+val elimination_suffix : Quality.t -> string
+val make_elimination_ident : Id.t -> Quality.t -> Id.t
 
 val case_suffix : string
 
@@ -77,4 +77,4 @@ val declare_prop_but_default_dependent_elim : inductive -> unit
 
 val is_prop_but_default_dependent_elim : inductive -> bool
 
-val pseudo_sort_quality_for_elim : inductive -> Declarations.one_inductive_body -> Sorts.Quality.t
+val pseudo_sort_quality_for_elim : inductive -> Declarations.one_inductive_body -> Quality.t

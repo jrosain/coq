@@ -69,6 +69,8 @@ sig
   val share : t -> t * int
   (** Simultaneous hash-consing and hash-value computation *)
 
+  val pr_qualities : (QVar.t -> Pp.t) -> t -> Pp.t
+  val pr_levels : (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
   val pr : (QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
   (** Pretty-printing, no comments *)
 
@@ -86,7 +88,7 @@ sig
 end
 
 val eq_sizes : int * int -> int * int -> bool
-(** Convenient function to compare the result of Instance.length, UContext.size etc *)
+(** Convenient function to compare the result of Instance.length, PolyContext.size etc *)
 
 val enforce_eq_instances : Instance.t constraint_function
 

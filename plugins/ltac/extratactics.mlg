@@ -233,7 +233,7 @@ let add_rewrite_hint ~locality ~poly bases ort t lcsr =
         else (* This is a global universe context that shouldn't be
                 refreshed at every use of the hint, declare it globally. *)
           (Global.push_context_set ctx;
-           Univ.ContextSet.empty)
+           PolyConstraints.ContextSet.empty)
     in
       CAst.make ?loc:(Constrexpr_ops.constr_loc ce) ((c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t) in
   let eqs = List.map f lcsr in
@@ -310,7 +310,7 @@ VERNAC COMMAND EXTEND DeriveInversionClear
 
 | #[ polymorphic; ] [ "Derive" "Inversion_clear" identref(na) "with" constr(c) ] => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:polymorphic na c Sorts.Quality.qprop false inv_clear_tac }
+      add_inversion_lemma_exn ~poly:polymorphic na c Quality.qprop false inv_clear_tac }
 END
 
 VERNAC COMMAND EXTEND DeriveInversion
@@ -321,7 +321,7 @@ VERNAC COMMAND EXTEND DeriveInversion
 
 | #[ polymorphic; ] [ "Derive" "Inversion" identref(na) "with" constr(c) ] => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:polymorphic na c Sorts.Quality.qprop false inv_tac }
+      add_inversion_lemma_exn ~poly:polymorphic na c Quality.qprop false inv_tac }
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversion

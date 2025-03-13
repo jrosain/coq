@@ -458,8 +458,8 @@ let is_applied o n = match o with FullyApplied -> true | NumArgs m -> Int.equal 
 
 let compare_heads pbty env evd ~nargs term term' =
   let check_strict evd u u' =
-    let cstrs = UVars.enforce_eq_instances u u' Sorts.QUConstraints.empty in
-    try Success (Evd.add_quconstraints evd cstrs)
+    let cstrs = UVars.enforce_eq_instances u u' PolyConstraints.empty in
+    try Success (Evd.add_constraints evd cstrs)
     with UGraph.UniverseInconsistency p -> UnifFailure (evd, UnifUnivInconsistency p)
   in
   match EConstr.kind evd term, EConstr.kind evd term' with

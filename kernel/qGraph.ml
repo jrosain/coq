@@ -78,7 +78,7 @@ let initial_quality_constraints =
 	(List.filter (fun q' -> not @@ Quality.equal q q') all_constants))
     g all_constants
 
-(* TTT: Rename to eliminates_to to keep it consistent with Sorts/Quality? *)
+(* TTT: Rename to eliminates_to to keep it consistent with Quality? *)
 let is_allowed_elimination = G.check_leq
 
 let sort_eliminates_to g s1 s2 =

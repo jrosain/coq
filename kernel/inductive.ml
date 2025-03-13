@@ -266,7 +266,6 @@ let rec template_subst_ctx accu subs ctx params = match ctx, params with
 
 let template_subst_ctx subst ctx params = template_subst_ctx [] subst ctx params
 
-(* JJJ function below: poly or lvl constraints? *)
 let instantiate_template_constraints subst templ =
   let cstrs = UVars.PolyContext.constraints (UVars.AbstractContext.repr templ.template_context) in
   let fold (u, cst, v) accu =
@@ -277,14 +276,14 @@ let instantiate_template_constraints subst templ =
     in
     (* if qsort, it is above prop *)
     let fold accu (u, n) = match n, cst with
-      | 0, _ -> Constraints.add (u, cst, v) accu
-      | 1, Le -> Constraints.add (u, Lt, v) accu
+      | 0, _ -> PolyConstraints.add_level (u, cst, v) accu
+      | 1, Le -> PolyConstraints.add_level (u, Lt, v) accu
       | 1, (Eq | Lt) -> assert false (* FIXME? *)
       | _ -> assert false
     in
     List.fold_left fold accu (Univ.Universe.repr u)
   in
-  Constraints.fold fold cstrs Constraints.empty
+  LvlConstraints.fold fold (PolyConstraints.levels cstrs) PolyConstraints.empty
 
 let instantiate_template_universes (mib, _mip) args =
   let templ = match mib.mind_template with

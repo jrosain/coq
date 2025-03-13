@@ -344,7 +344,7 @@ let retype ?metas ?(polyprop=true) sigma =
   in type_of, sort_of, type_of_global_reference_knowing_parameters
 
 let get_sort_quality_of ?(polyprop=true) env sigma t =
-  let open Sorts.Quality in
+  let open Quality in
   let type_of,_,type_of_global_reference_knowing_parameters = retype ~polyprop sigma in
   let rec sort_quality_of env t =
     match EConstr.kind sigma t with

@@ -23,7 +23,7 @@ module RelDecl = Context.Rel.Declaration
 (** Telescope *)
 
 type family = SPropF | PropF | TypeF
-let family_of_sort_quality = let open Sorts.Quality in function
+let family_of_sort_quality = let open Quality in function
     | QConstant QSProp -> SPropF
     | QConstant QProp -> PropF
     | QConstant QType | QVar _ -> TypeF

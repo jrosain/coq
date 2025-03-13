@@ -131,7 +131,7 @@ let basecuttac k c =
         | _ ->
           let sigma, sg = Typing.sort_of env sigma concl in
           let qc,qg = ESorts.quality sigma sc, ESorts.quality sigma sg in
-          let open Sorts.Quality in match qc, qg with
+          let open Quality in match qc, qg with
           | QConstant QProp, QConstant QProp ->
           let f = Rocqlib.lib_ref ("plugins.ssreflect.ssr_have") in
           let sigma, f = EConstr.fresh_global env sigma f in

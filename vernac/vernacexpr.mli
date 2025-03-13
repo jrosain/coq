@@ -268,7 +268,7 @@ type equality_scheme_type =
 type scheme = {
   sch_type : scheme_type ;
   sch_qualid : Libnames.qualid Constrexpr.or_by_notation ;
-  sch_sort : Sorts.Quality.t ;
+  sch_sort : Quality.t ;
 }
 
 type section_subset_expr =
@@ -433,7 +433,7 @@ type nonrec synpure_vernac_expr =
   | VernacSchemeEquality of equality_scheme_type * Libnames.qualid Constrexpr.or_by_notation
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
-  | VernacConstraint of univ_constraint_expr list
+  | VernacConstraint of level_constraint_expr list
   | VernacAddRewRule of lident * (universe_decl_expr option * constr_expr * constr_expr) list
 
   (* Gallina extensions *)

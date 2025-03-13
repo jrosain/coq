@@ -67,7 +67,7 @@ module RelDecl = Context.Rel.Declaration
 
 let hid = Id.of_string "H"
 let xid = Id.of_string "X"
-let default_id_of_sort = let open Sorts.Quality in function
+let default_id_of_sort = let open Quality in function
     | QConstant QSProp | QConstant QProp -> hid
     | QConstant QType | QVar _ -> xid
 let fresh env id avoid =
@@ -715,7 +715,7 @@ let rew_l2r_dep_scheme_kind =
     SchemeIndividualDep (ind, sym_involutive_scheme_kind);
   ])
   (fun env handle ind ->
-    build_l2r_rew_scheme true env handle ind Sorts.Quality.qtype)
+    build_l2r_rew_scheme true env handle ind Quality.qtype)
 
 (**********************************************************************)
 (* Dependent rewrite from right-to-left in conclusion                 *)
@@ -725,7 +725,7 @@ let rew_l2r_dep_scheme_kind =
 (**********************************************************************)
 let rew_r2l_dep_scheme_kind =
   declare_individual_scheme_object "rew_dep"
-  (fun env _ ind -> build_r2l_rew_scheme true env ind Sorts.Quality.qtype)
+  (fun env _ ind -> build_r2l_rew_scheme true env ind Quality.qtype)
 
 (**********************************************************************)
 (* Dependent rewrite from right-to-left in hypotheses                 *)
@@ -735,7 +735,7 @@ let rew_r2l_dep_scheme_kind =
 (**********************************************************************)
 let rew_r2l_forward_dep_scheme_kind =
   declare_individual_scheme_object "rew_fwd_dep"
-  (fun env _ ind -> build_r2l_forward_rew_scheme true env ind Sorts.Quality.qtype)
+  (fun env _ ind -> build_r2l_forward_rew_scheme true env ind Quality.qtype)
 
 (**********************************************************************)
 (* Dependent rewrite from left-to-right in hypotheses                 *)
@@ -745,7 +745,7 @@ let rew_r2l_forward_dep_scheme_kind =
 (**********************************************************************)
 let rew_l2r_forward_dep_scheme_kind =
   declare_individual_scheme_object "rew_fwd_r_dep"
-  (fun env _ ind -> build_l2r_forward_rew_scheme true env ind Sorts.Quality.qtype)
+  (fun env _ ind -> build_l2r_forward_rew_scheme true env ind Quality.qtype)
 
 (**********************************************************************)
 (* Non-dependent rewrite from either left-to-right in conclusion or   *)
@@ -759,7 +759,7 @@ let rew_l2r_forward_dep_scheme_kind =
 let rew_l2r_scheme_kind =
   declare_individual_scheme_object "rew_r"
   (fun env _ ind -> fix_r2l_forward_rew_scheme env
-     (build_r2l_forward_rew_scheme false env ind Sorts.Quality.qtype))
+     (build_r2l_forward_rew_scheme false env ind Quality.qtype))
 
 (**********************************************************************)
 (* Non-dependent rewrite from either right-to-left in conclusion or   *)
@@ -769,7 +769,7 @@ let rew_l2r_scheme_kind =
 (**********************************************************************)
 let rew_r2l_scheme_kind =
   declare_individual_scheme_object "rew"
-  (fun env _ ind -> build_r2l_rew_scheme false env ind Sorts.Quality.qtype)
+  (fun env _ ind -> build_r2l_rew_scheme false env ind Quality.qtype)
 
 (* End of rewriting schemes *)
 
@@ -820,8 +820,8 @@ let build_congr env (eq,refl,ctx) ind =
   let uni, ctx' = UnivGen.new_global_univ () in
   let ctx =
     let (qs,us),csts = ctx in
-    let us, csts = Univ.ContextSet.union (us,csts) ctx' in
-    ((qs, us), UnivSubst.enforce_leq uni (univ_of_eq env eq) csts) in
+    let us, csts = PolyConstraints.ContextSet.union (us,csts) ctx' in
+    ((qs, us), UnivSubst.enforce_leq_univ uni (univ_of_eq env eq) csts) in
   let c =
   my_it_mkLambda_or_LetIn paramsctxt
      (mkNamedLambda (make_annot varB Sorts.Relevant) (mkType uni)

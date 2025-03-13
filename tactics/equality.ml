@@ -321,7 +321,7 @@ let jmeq_same_dom env sigma (rels, eq, args) =
     | _ -> false
 
 let eq_elimination_ref l2r sort =
-  let open Sorts.Quality in
+  let open Quality in
   let name =
     if l2r then
       match sort with
@@ -773,7 +773,7 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
       if keep_head_inductive sigma ty1 then true
       else
         let s = get_sort_quality_of env sigma ty1 in
-        List.mem_f Sorts.Quality.equal s sorts
+        List.mem_f Quality.equal s sorts
     in
     if keep then [(List.rev posn,t1,t2)] else []
   in
@@ -785,7 +785,7 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
           when Int.equal (List.length args1) (constructor_nallargs env sp1)
             ->
           let sorts' =
-            CList.intersect Sorts.Quality.equal sorts @@
+            CList.intersect Quality.equal sorts @@
 	      constant_sorts_below (top_allowed_sort env (fst sp1))
           in
           (* both sides are fully applied constructors, so either we descend,
@@ -800,7 +800,7 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
             List.flatten
               (List.map2_i (fun i -> findrec sorts' ((sp1,adjust i)::posn))
                 0 rargs1 rargs2)
-          else if List.mem_f Sorts.Quality.equal (Sorts.Quality.qtype) sorts' && not no_discr
+          else if List.mem_f Quality.equal (Quality.qtype) sorts' && not no_discr
           then (* see build_discriminator *)
             raise (DiscrFound (List.rev posn,sp1,sp2))
           else
@@ -816,7 +816,7 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
             project env sorts posn t1_0 t2_0
   in
   try
-    let open Sorts.Quality in
+    let open Quality in
     let sorts = if keep_proofs
 		then [qtype; qprop]
 		else [qtype] in

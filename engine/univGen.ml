@@ -13,21 +13,23 @@ open Names
 open Constr
 open Univ
 open UVars
+open PolyConstraints
+open Quality
 
-type sort_context_set = (Sorts.QVar.Set.t * Univ.Level.Set.t) * Univ.Constraints.t
+type sort_context_set = (Quality.QVar.Set.t * Univ.Level.Set.t) * poly_constraints
 
 type 'a in_sort_context_set = 'a * sort_context_set
 
-let empty_sort_context = (QVar.Set.empty, Level.Set.empty), Constraints.empty
+let empty_sort_context = (QVar.Set.empty, Level.Set.empty), PolyConstraints.empty
 
 let is_empty_sort_context ((qs,us),csts) =
-  QVar.Set.is_empty qs && Level.Set.is_empty us && Constraints.is_empty csts
+  QVar.Set.is_empty qs && Level.Set.is_empty us && PolyConstraints.is_empty csts
 
 let sort_context_union ((qs,us),csts) ((qs',us'),csts') =
-  ((QVar.Set.union qs qs', Level.Set.union us us'),Constraints.union csts csts')
+  ((QVar.Set.union qs qs', Level.Set.union us us'), PolyConstraints.union csts csts')
 
 let diff_sort_context ((qs,us),csts) ((qs',us'),csts') =
-  (QVar.Set.diff qs qs', Level.Set.diff us us'), Constraints.diff csts csts'
+  (QVar.Set.diff qs qs', Level.Set.diff us us'), PolyConstraints.diff csts csts'
 
 type univ_length_mismatch = {
   gref : GlobRef.t;
@@ -68,16 +70,16 @@ let new_sort_id =
 
 let new_sort_global () =
   let s = if Flags.async_proofs_is_worker() then !Flags.async_proofs_worker_id else "" in
-  Sorts.QVar.make_unif s (new_sort_id ())
+  QVar.make_unif s (new_sort_id ())
 
 let fresh_instance auctx : _ in_sort_context_set =
   let qlen, ulen = AbstractContext.size auctx in
-  let qinst = Array.init qlen (fun _ -> Sorts.Quality.QVar (new_sort_global())) in
+  let qinst = Array.init qlen (fun _ -> Quality.QVar (new_sort_global())) in
   let uinst = Array.init ulen (fun _ -> fresh_level()) in
   let qctx = Array.fold_left (fun qctx q -> match q with
-      | Sorts.Quality.QVar q -> Sorts.QVar.Set.add q qctx
+      | Quality.QVar q -> QVar.Set.add q qctx
       | _ -> assert false)
-      Sorts.QVar.Set.empty
+      QVar.Set.empty
       qinst
   in
   let uctx = Array.fold_right Level.Set.add uinst Level.Set.empty in
@@ -92,7 +94,7 @@ let existing_instance ?loc ~gref auctx inst =
         Loc.raise ?loc (UniverseLengthMismatch { gref; actual; expect })
       else ()
   in
-  inst, ((Sorts.QVar.Set.empty,Level.Set.empty), AbstractContext.instantiate inst auctx)
+  inst, ((QVar.Set.empty,Level.Set.empty), AbstractContext.instantiate inst auctx)
 
 let fresh_instance_from ?loc ctx = function
   | Some (gref,inst) -> existing_instance ?loc ~gref ctx inst
@@ -134,17 +136,17 @@ let constr_of_monomorphic_global env gr =
       Pp.(str "globalization of polymorphic reference " ++ Nametab.pr_global_env Id.Set.empty gr ++
           str " would forget universes.")
 
-let fresh_sort_quality ?(from_glob=false) = let open Sorts.Quality in function
+let fresh_sort_quality ?(from_glob=false) = let open Quality in function
   | QConstant QSProp -> Sorts.sprop, empty_sort_context
   | QConstant QProp -> Sorts.prop, empty_sort_context
   | QConstant QType when from_glob -> Sorts.set, empty_sort_context (* see pretyping/glob_ops.ml *)
   | QConstant QType | QVar _ (* Treat as Type *) ->
     let u = fresh_level () in
-      sort_of_univ (Univ.Universe.make u), ((QVar.Set.empty,Level.Set.singleton u),Constraints.empty)
+      sort_of_univ (Univ.Universe.make u), ((QVar.Set.empty,Level.Set.singleton u), PolyConstraints.empty)
 
 let new_global_univ () =
   let u = fresh_level () in
-  (Univ.Universe.make u, ContextSet.singleton u)
+  (Univ.Universe.make u, ContextSet.singleton_lvl u)
 
 let fresh_universe_context_set_instance ctx =
   if ContextSet.is_empty ctx then Level.Map.empty, ctx
@@ -163,7 +165,7 @@ let fresh_sort_context_instance ((qs,us),csts) =
   let usubst, (us, csts) = fresh_universe_context_set_instance (us,csts) in
   let qsubst, qs = QVar.Set.fold (fun q (qsubst,qs) ->
       let q' = new_sort_global () in
-      QVar.Map.add q (Sorts.Quality.QVar q') qsubst, QVar.Set.add q' qs)
+      QVar.Map.add q (Quality.QVar q') qsubst, QVar.Set.add q' qs)
       qs
       (QVar.Map.empty, QVar.Set.empty)
   in

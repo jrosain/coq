@@ -50,7 +50,7 @@ let declare_variable ~coe ~kind ~univs ~impargs ~impl ~name typ =
   declare_local ~coe ~try_assum_as_instance:true ~kind:(Decls.IsAssumption kind) ~univs ~impargs ~impl ~name None typ
 
 let instance_of_univ_entry = function
-  | UState.Polymorphic_entry univs -> UVars.UContext.instance univs
+  | UState.Polymorphic_entry univs -> UVars.PolyContext.instance univs
   | UState.Monomorphic_entry _ -> UVars.Instance.empty
 
 (** Declares a global axiom/parameter, possibly declaring it:
@@ -100,8 +100,8 @@ let interp_assumption ~program_mode env sigma impl_env bl c =
   let ty = EConstr.it_mkProd_or_LetIn ty ctx in
   sigma, ty, impls1@impls2
 
-let empty_poly_univ_entry = UState.Polymorphic_entry UVars.UContext.empty, UnivNames.empty_binders
-let empty_mono_univ_entry = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders
+let empty_poly_univ_entry = UState.Polymorphic_entry UVars.PolyContext.empty, UnivNames.empty_binders
+let empty_mono_univ_entry = UState.Monomorphic_entry PolyConstraints.ContextSet.empty, UnivNames.empty_binders
 let empty_univ_entry poly = if poly then empty_poly_univ_entry else empty_mono_univ_entry
 
 let clear_univs scope univ =

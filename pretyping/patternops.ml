@@ -44,7 +44,7 @@ let rec constr_pattern_eq env (p1:constr_pattern) p2 = match p1, p2 with
 | PLetIn (v1, b1, t1, c1), PLetIn (v2, b2, t2, c2) ->
   Name.equal v1 v2 && constr_pattern_eq env b1 b2 &&
   Option.equal (fun c1 c2 -> constr_pattern_eq env c1 c2) t1 t2 && constr_pattern_eq env c1 c2
-| PSort s1, PSort s2 -> Sorts.Quality.equal s1 s2 
+| PSort s1, PSort s2 -> Quality.equal s1 s2 
 | PMeta m1, PMeta m2 -> Option.equal Id.equal m1 m2
 | PIf (t1, l1, r1), PIf (t2, l2, r2) ->
   constr_pattern_eq env t1 t2 && constr_pattern_eq env l1 l2 && constr_pattern_eq env r1 r2

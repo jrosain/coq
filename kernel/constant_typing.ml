@@ -20,8 +20,8 @@ open Constr
 open Declarations
 open Environ
 open Entries
-open Univ
 open UVars
+open PolyConstraints
 
 module NamedDecl = Context.Named.Declaration
 
@@ -124,11 +124,11 @@ let adjust_primitive_univ_entry p auctx = function
     (* [push_context] will check that the universes aren't repeated in
        the instance so comparing the sizes works. No polymorphic
        primitive uses constraints currently. *)
-    if not (AbstractContext.size auctx = UContext.size uctx
-            && Constraints.is_empty (UContext.constraints uctx))
+    if not (AbstractContext.size auctx = PolyContext.size uctx
+            && PolyConstraints.is_empty (PolyContext.constraints uctx))
     then CErrors.user_err Pp.(str "Incorrect universes for primitive " ++
                                 str (CPrimitives.op_or_type_to_string p));
-    Polymorphic_entry (UContext.refine_names (AbstractContext.names auctx) uctx)
+    Polymorphic_entry (PolyContext.refine_names (AbstractContext.names auctx) uctx)
 
 let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
   let open CPrimitives in
@@ -136,7 +136,7 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
   let univs, typ =
     match utyp with
     | None ->
-      let u = UContext.instance (AbstractContext.repr auctx) in
+      let u = PolyContext.instance (AbstractContext.repr auctx) in
       let typ = Typeops.type_of_prim_or_type env u p in
       let univs = if AbstractContext.is_empty auctx then Monomorphic
         else Polymorphic auctx

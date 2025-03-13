@@ -112,7 +112,7 @@ end
 
 (* Deferred proofs: monomorphic, opaque, and udecl is for body+type *)
 type 'eff deferred_opaque_proof_body = {
-  body : ((Constr.t * Univ.ContextSet.t) * 'eff) Future.computation;
+  body : ((Constr.t * PolyConstraints.ContextSet.t) * 'eff) Future.computation;
   feedback_id : Stateid.t option
   (* State id on which the completion of type checking is reported *)
 }
@@ -121,7 +121,7 @@ type 'eff deferred_opaque_proof_body = {
 type default_body_opacity =
   | Transparent
     (* udecl is for body+type; all universes are in proof_entry_universes  *)
-  | Opaque of Univ.ContextSet.t
+  | Opaque of PolyConstraints.ContextSet.t
     (* if poly, the private uctx, udecl excludes the private uctx *)
     (* if mono, the body uctx *)
 
@@ -172,20 +172,20 @@ type symbol_entry = {
   symb_entry_universes : UState.named_universes_entry;
 }
 
-let default_univ_entry = UState.Monomorphic_entry Univ.ContextSet.empty
+let default_univ_entry = UState.Monomorphic_entry PolyConstraints.ContextSet.empty
 let default_named_univ_entry = default_univ_entry, UnivNames.empty_binders
 
 let extract_monomorphic = function
   | UState.Monomorphic_entry ctx -> Entries.Monomorphic_entry, ctx
-  | UState.Polymorphic_entry uctx -> Entries.Polymorphic_entry uctx, Univ.ContextSet.empty
+  | UState.Polymorphic_entry uctx -> Entries.Polymorphic_entry uctx, PolyConstraints.ContextSet.empty
 
 let instance_of_univs = function
   | UState.Monomorphic_entry _, _ -> UVars.Instance.empty
-  | UState.Polymorphic_entry uctx, _ -> UVars.UContext.instance uctx
+  | UState.Polymorphic_entry uctx, _ -> UVars.PolyContext.instance uctx
 
 let add_mono_uctx uctx = function
-  | UState.Monomorphic_entry ctx, ubinders -> UState.Monomorphic_entry (Univ.ContextSet.union (UState.context_set uctx) ctx), ubinders
-  | UState.Polymorphic_entry _, _ as x -> assert (Univ.ContextSet.is_empty (UState.context_set uctx)); x
+  | UState.Monomorphic_entry ctx, ubinders -> UState.Monomorphic_entry (PolyConstraints.ContextSet.union (UState.context_set uctx) ctx), ubinders
+  | UState.Polymorphic_entry _, _ as x -> assert (PolyConstraints.ContextSet.is_empty (UState.context_set uctx)); x
 
 let make_ubinders uctx (univs, ubinders as u) = match univs with
   | UState.Monomorphic_entry _ -> (UState.Monomorphic_entry uctx, ubinders)
@@ -229,7 +229,7 @@ let make_univs_immediate_private_poly ~uctx ~udecl ~eff ~used_univs body typ =
   let utyp = UState.check_univ_decl ~poly:true uctx' udecl in
   let ubody =
     let uctx = UState.restrict uctx used_univs in
-    Univ.ContextSet.diff
+    PolyConstraints.ContextSet.diff
       (UState.context_set uctx)
       (UState.context_set uctx')
   in
@@ -254,9 +254,9 @@ let make_univs_immediate_default ~poly ~opaque ~uctx ~udecl ~eff ~used_univs bod
          Not sure if it makes more sense to merge them in the ustate
          before restrict/check_univ_decl or here. Since we only do it
          when monomorphic it shouldn't really matter. *)
-      Monomorphic_entry (Univ.ContextSet.union uctx (Safe_typing.universes_of_private eff.Evd.seff_private)), snd utyp
+      Monomorphic_entry (PolyConstraints.ContextSet.union uctx (Safe_typing.universes_of_private eff.Evd.seff_private)), snd utyp
   in
-  uctx, utyp, used_univs, Default { body = (body, eff); opaque = if opaque then Opaque Univ.ContextSet.empty else Transparent }
+  uctx, utyp, used_univs, Default { body = (body, eff); opaque = if opaque then Opaque PolyConstraints.ContextSet.empty else Transparent }
 
 let make_univs_immediate ~poly ?keep_body_ucst_separate ~opaque ~uctx ~udecl ~eff ~used_univs body typ =
   (* allow_deferred case *)
@@ -282,7 +282,7 @@ let pure_definition_entry ?(opaque=Transparent) ?using ?inline ?types ?univs bod
   definition_entry_core ?using ?inline ?types ?univs body
 
 let definition_entry ?(opaque=false) ?using ?inline ?types ?univs body =
-  let opaque = if opaque then Opaque Univ.ContextSet.empty else Transparent in
+  let opaque = if opaque then Opaque PolyConstraints.ContextSet.empty else Transparent in
   definition_entry_core ?using ?inline ?types ?univs (Default { body = (body, Evd.empty_side_effects); opaque })
 
 let delayed_definition_entry ?feedback_id ?using ~univs ?types body =
@@ -341,7 +341,7 @@ module ProofEntry = struct
 
   let force_extract_body entry =
     match entry.proof_entry_body with
-    | Default { body = (body, eff); opaque = Transparent } -> ((body, Univ.ContextSet.empty), eff), false, None
+    | Default { body = (body, eff); opaque = Transparent } -> ((body, PolyConstraints.ContextSet.empty), eff), false, None
     | Default { body = (body, eff); opaque = Opaque uctx } -> ((body, uctx), eff), true, None
     | DeferredOpaque { body; feedback_id } -> Future.force body, true, feedback_id
 
@@ -349,7 +349,7 @@ module ProofEntry = struct
     let (body, eff), opaque = force_entry_body entry in
     let uctx = match opaque with
       | Opaque uctx -> uctx
-      | Transparent -> Univ.ContextSet.empty
+      | Transparent -> PolyConstraints.ContextSet.empty
     in
     (body, uctx), eff
 
@@ -614,7 +614,7 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
     | PrimitiveEntry e ->
       let typ, univ_entry, ctx = match e.prim_entry_type with
       | None ->
-        None, (UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders), Univ.ContextSet.empty
+        None, (UState.Monomorphic_entry PolyConstraints.ContextSet.empty, UnivNames.empty_binders), PolyConstraints.ContextSet.empty
       | Some (typ, entry_univs) ->
         let univ_entry, ctx = extract_monomorphic (fst entry_univs) in
         Some (typ, univ_entry), entry_univs, ctx
@@ -736,8 +736,8 @@ let declare_variable ~name ~kind ~typing_flags d =
       let univs = match fst de.proof_entry_universes with
         | UState.Monomorphic_entry uctx ->
           DeclareUniv.name_mono_section_univs (fst uctx);
-          Global.push_context_set (Univ.ContextSet.union uctx body_uctx);
-          UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders
+          Global.push_context_set (PolyConstraints.ContextSet.union uctx body_uctx);
+          UState.Monomorphic_entry PolyConstraints.ContextSet.empty, UnivNames.empty_binders
         | UState.Polymorphic_entry uctx ->
           Global.push_section_context uctx;
           let mk_anon_names u =
@@ -745,14 +745,14 @@ let declare_variable ~name ~kind ~typing_flags d =
             Array.make (Array.length qs) Anonymous, Array.make (Array.length us) Anonymous
           in
           Global.push_section_context
-            (UVars.UContext.of_context_set mk_anon_names Sorts.QVar.Set.empty body_uctx);
-          UState.Polymorphic_entry UVars.UContext.empty, UnivNames.empty_binders
+            (UVars.PolyContext.of_context_set mk_anon_names Quality.QVar.Set.empty body_uctx);
+          UState.Polymorphic_entry UVars.PolyContext.empty, UnivNames.empty_binders
       in
       let se = if opaque then
           let cname = Id.of_string (Id.to_string name ^ "_subproof") in
           let cname = Namegen.next_global_ident_away cname Id.Set.empty in
           let de = {
-            proof_entry_body = DeferredOpaque { body = Future.from_val ((body, Univ.ContextSet.empty), Evd.empty_side_effects); feedback_id };
+            proof_entry_body = DeferredOpaque { body = Future.from_val ((body, PolyConstraints.ContextSet.empty), Evd.empty_side_effects); feedback_id };
             proof_entry_secctx = None; (* de.proof_entry_secctx is NOT respected *)
             proof_entry_type = de.proof_entry_type;
             proof_entry_universes = univs;
@@ -2154,7 +2154,7 @@ let build_by_tactic env ~uctx ~poly ~typ tac =
      cf #13271 and discussion in #18874
      (but due to #13324 we still want to inline them) *)
   let body, effs = ce.proof_entry_body in
-  let body, _uctx = inline_private_constants ~uctx env ((body, Univ.ContextSet.empty), effs) in
+  let body, _uctx = inline_private_constants ~uctx env ((body, PolyConstraints.ContextSet.empty), effs) in
   body, ce.proof_entry_type, ce.proof_entry_universes, status, uctx
 
 let declare_abstract ~name ~poly ~sign ~secsign ~opaque ~solve_tac sigma concl =
@@ -2826,7 +2826,7 @@ let declare_entry ?loc ~name ?scope ~kind ?user_warns ?hook ~impargs ~uctx entry
 
 let declare_definition_full ~info ~cinfo ~opaque ~body ?using sigma =
   let c, uctx = declare_definition ~obls:[] ~info ~cinfo ~opaque ~body ?using sigma in
-  c, if info.poly then Univ.ContextSet.empty else UState.context_set uctx
+  c, if info.poly then PolyConstraints.ContextSet.empty else UState.context_set uctx
 
 let declare_definition ~info ~cinfo ~opaque ~body ?using sigma =
   declare_definition ~obls:[] ~info ~cinfo ~opaque ~body ?using sigma |> fst

@@ -172,7 +172,7 @@ let show_universes ~proof =
   let ctx = Evd.universe_context_set (Evd.minimize_universes sigma) in
   UState.pr (Evd.ustate sigma) ++ fnl () ++
   v 1 (str "Normalized constraints:" ++ cut() ++
-       Univ.pr_universe_context_set (Termops.pr_evd_level sigma) ctx)
+       PolyConstraints.ContextSet.pr (Termops.pr_evd_qvar sigma) (Termops.pr_evd_level sigma) ctx)
 
 (* Simulate the Intro(s) tactic *)
 let show_intro ~proof all =
@@ -522,9 +522,10 @@ type constraint_sources = {
 
 let empty_sources = { edges = Univ.Level.Map.empty }
 
+(* JJJ check this function when I'm less tired *)
 let mk_sources () =
   let open Univ in
-  let srcs = DeclareUniv.constraint_sources () in
+  let srcs = DeclareUniv.constraint_sources () in (* HERE *)
   let pick_stricter_constraint (_,k as v) (_,k' as v') =
     match k, k' with
     | Le, Lt | Le, Eq -> v'
@@ -555,14 +556,14 @@ let mk_sources () =
     let libs = Library.loaded_libraries () in
     List.fold_left (fun edges dp ->
         let _, csts = Safe_typing.univs_of_library @@ Library.library_compiled dp in
-        Constraints.fold (fun cst edges -> add_edge cst (Library dp) edges)
-          csts edges)
+        LvlConstraints.fold (fun cst edges -> add_edge cst (Library dp) edges)
+          (PolyConstraints.levels csts) edges) (* HERE *)
       edges libs
   in
   let edges =
     List.fold_left (fun edges (ref,csts) ->
-        Constraints.fold (fun cst edges -> add_edge cst (GlobRef ref) edges)
-          csts edges)
+        LvlConstraints.fold (fun cst edges -> add_edge cst (GlobRef ref) edges)
+          (PolyConstraints.levels csts) edges) (* AND HERE *)
       edges srcs
   in
   {
@@ -1365,7 +1366,7 @@ let add_subnames_of ?loc len n ns full_n ref =
         | exception Not_found -> ns
         | None -> ns
         | Some ref -> (len, ref) :: ns)
-      ns Sorts.Quality.all
+      ns Quality.all
 
 let interp_names m ns =
   let dp_m = Nametab.dirpath_of_module m in

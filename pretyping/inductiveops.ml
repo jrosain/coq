@@ -327,7 +327,7 @@ let elim_sort (_,mip) =
   (* Always allow fixpoints on Prop and impredicative sets *)
   if Option.is_empty mip.mind_squashed &&
        (Sorts.is_prop mip.mind_sort || Sorts.is_set mip.mind_sort)
-  then Sorts.Quality.qtype
+  then Quality.qtype
   else Sorts.quality mip.mind_sort
 
 let top_allowed_sort env (kn,i as ind) =
@@ -340,8 +340,8 @@ let constant_sorts_below top =
         elimination schemes. I've changed the function name to say that we are
         treating only constants. *)
   List.filter
-	 (Sorts.Quality.eliminates_to top)
-	 (Sorts.Quality.all_constants)
+	 (Quality.eliminates_to top)
+	 (Quality.all_constants)
 
 let sorts_for_schemes specif =
   constant_sorts_below (elim_sort specif)

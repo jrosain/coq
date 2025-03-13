@@ -20,15 +20,25 @@ val make : ElimConstraints.t -> LvlConstraints.t -> t
 val empty : t
 val is_empty : t -> bool
 
+val equal : t -> t -> bool
+
 val qualities : t -> ElimConstraints.t
 
 val levels : t -> LvlConstraints.t
 
+val of_qualities : ElimConstraints.t -> t
+
+val of_levels : LvlConstraints.t -> t
+
 val add_quality : ElimConstraint.t -> t -> t
 
-val add_level : univ_constraint -> t -> t
+val add_level : level_constraint -> t -> t
 
 val union : t -> t -> t
+
+val diff : t -> t -> t
+
+val elements : t -> ElimConstraint.t list * level_constraint list
 
 val pr : (QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> t -> Pp.t
 
@@ -55,7 +65,9 @@ val enforce_leq_level : Level.t constraint_function
 
 val enforce_eq_quality : Quality.t constraint_function
 
-val fold : (ElimConstraint.t -> 'a -> 'a) * (univ_constraint -> 'b -> 'b) -> t
+val enforce_elim_to : Quality.t constraint_function
+
+val fold : (ElimConstraint.t -> 'a -> 'a) * (level_constraint -> 'b -> 'b) -> t
   -> ('a * 'b) -> ('a * 'b)
 
 (** Polymorphic contexts (as sets) *)
@@ -96,3 +108,5 @@ sig
 end
 
 type 'a in_poly_context_set = 'a * ContextSet.t
+
+val hcons_poly_context_set : ContextSet.t -> ContextSet.t

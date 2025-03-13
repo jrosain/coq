@@ -55,11 +55,11 @@ type univ_inconsistency = univ_variable_printers option * (constraint_type * Sor
 
 exception UniverseInconsistency of univ_inconsistency
 
-val enforce_constraint : univ_constraint -> t -> t
+val enforce_constraint : level_constraint -> t -> t
 
 val merge_constraints : LvlConstraints.t -> t -> t
 
-val check_constraint  : t -> univ_constraint -> bool
+val check_constraint  : t -> level_constraint -> bool
 val check_constraints : LvlConstraints.t -> t -> bool
 val check_eq_sort : t -> Sorts.t  -> Sorts.t -> bool
 val check_leq_sort : t -> Sorts.t -> Sorts.t -> bool
