@@ -149,14 +149,14 @@ type t =
     Const_cs of GlobRef.t
   | Proj_cs of Names.Projection.Repr.t
   | Prod_cs
-  | Sort_cs of Sorts.Quality.t
+  | Sort_cs of Quality.t
   | Default_cs
 
 let equal env p1 p2 = match p1, p2 with
   | Const_cs gr1, Const_cs gr2 -> Environ.QGlobRef.equal env gr1 gr2
   | Proj_cs p1, Proj_cs p2 -> Environ.QProjection.Repr.equal env p1 p2
   | Prod_cs, Prod_cs -> true
-  | Sort_cs s1, Sort_cs s2 -> Sorts.Quality.equal s1 s2
+  | Sort_cs s1, Sort_cs s2 -> Quality.equal s1 s2
   | Default_cs, Default_cs -> true
   | _ -> false
 
@@ -164,7 +164,7 @@ let compare p1 p2 = match p1, p2 with
   | Const_cs gr1, Const_cs gr2 -> GlobRef.CanOrd.compare gr1 gr2
   | Proj_cs p1, Proj_cs p2 -> Projection.Repr.CanOrd.compare p1 p2
   | Prod_cs, Prod_cs -> 0
-  | Sort_cs s1, Sort_cs s2 -> Sorts.Quality.compare s1 s2
+  | Sort_cs s1, Sort_cs s2 -> Quality.compare s1 s2
   | Default_cs, Default_cs -> 0
   | _ -> Stdlib.compare p1 p2
 
@@ -185,7 +185,7 @@ let print = function
   | Proj_cs p -> Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef (Names.Projection.Repr.constant p))
   | Prod_cs -> str "forall _, _"
   | Default_cs -> str "_"
-  | Sort_cs s -> Sorts.Quality.raw_pr s
+  | Sort_cs s -> Quality.raw_pr s
 
 end
 

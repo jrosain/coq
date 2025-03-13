@@ -11,18 +11,6 @@
 open Univ
 open Quality
 
-(* JJJ what do i do with this? *)
-
-(* module QUConstraints = struct *)
-
-(*   type t = QConstraints.t * Univ.Constraints.t *)
-
-(*   let empty = QConstraints.empty, Univ.Constraints.empty *)
-
-(*   let union (qcsts,ucsts) (qcsts',ucsts') = *)
-(*     QConstraints.union qcsts qcsts', Constraints.union ucsts ucsts' *)
-(* end *)
-
 type t =
   | SProp
   | Prop

@@ -854,15 +854,16 @@ let explain_non_linear_unification env sigma m t =
   strbrk " which would require to abstract twice on " ++
   pr_leconstr_env env sigma t ++ str "."
 
-let explain_unsatisfied_constraints env sigma cst =
-  let cst = Univ.Constraints.filter (fun cst -> not @@ UGraph.check_constraint (Evd.universes sigma) cst) cst in
+let explain_unsatisfied_level_constraints env sigma cst =
+  let cst = Univ.LvlConstraints.filter
+	      (fun cst -> not @@ UGraph.check_constraint (Evd.universes sigma) cst) cst in
   strbrk "Unsatisfied constraints: " ++
-    Univ.Constraints.pr (Termops.pr_evd_level sigma) cst ++
+    Univ.LvlConstraints.pr (Termops.pr_evd_level sigma) cst ++
     spc () ++ str "(maybe a bugged tactic)."
 
-let explain_unsatisfied_qconstraints env sigma cst =
+let explain_unsatisfied_elim_constraints env sigma cst =
   strbrk "Unsatisfied quality constraints: " ++
-  Sorts.QConstraints.pr (Termops.pr_evd_qvar sigma) cst ++
+  Quality.ElimConstraints.pr (Termops.pr_evd_qvar sigma) cst ++
   spc() ++ str "(maybe a bugged tactic)."
 
 let explain_undeclared_universes env sigma l =
@@ -872,9 +873,9 @@ let explain_undeclared_universes env sigma l =
   spc () ++ str "(maybe a bugged tactic)."
 
 let explain_undeclared_qualities env sigma l =
-  let n = Sorts.QVar.Set.cardinal l in
+  let n = Quality.QVar.Set.cardinal l in
   strbrk "Undeclared " ++ str (if n = 1 then "quality" else "qualities") ++ strbrk": " ++
-    prlist_with_sep spc (Termops.pr_evd_qvar sigma) (Sorts.QVar.Set.elements l) ++
+    prlist_with_sep spc (Termops.pr_evd_qvar sigma) (Quality.QVar.Set.elements l) ++
     spc () ++ str "(maybe a bugged tactic)."
 
 let explain_disallowed_sprop () =
@@ -887,7 +888,7 @@ let pr_relevance sigma r =
   match r with
   | Sorts.Relevant -> str "relevant"
   | Sorts.Irrelevant -> str "irrelevant"
-  | Sorts.RelevanceVar q -> str "a variable " ++ (* TODO names *) Sorts.QVar.raw_pr q
+  | Sorts.RelevanceVar q -> str "a variable " ++ (* TODO names *) Quality.QVar.raw_pr q
 
 let pr_binder env sigma = function
 | LocalAssum (na, t) ->
@@ -980,10 +981,10 @@ let explain_type_error env sigma err =
      explain_ill_typed_rec_body env sigma i lna vdefj vargs
   | WrongCaseInfo (ind,ci) ->
       explain_wrong_case_info env ind ci
-  | UnsatisfiedConstraints cst ->
-    explain_unsatisfied_constraints env sigma cst
-  | UnsatisfiedQConstraints cst ->
-    explain_unsatisfied_qconstraints env sigma cst
+  | UnsatisfiedLevelConstraints cst ->
+    explain_unsatisfied_level_constraints env sigma cst
+  | UnsatisfiedElimConstraints cst ->
+    explain_unsatisfied_elim_constraints env sigma cst
   | UndeclaredUniverses l ->
     explain_undeclared_universes env sigma l
   | UndeclaredQualities l ->
@@ -1191,7 +1192,7 @@ let explain_not_match_error = function
   | IncompatibleUniverses incon ->
     str"the universe constraints are inconsistent: " ++
     UGraph.explain_universe_inconsistency
-      Sorts.QVar.raw_pr
+      Quality.QVar.raw_pr
       UnivNames.pr_level_with_global_universes
       incon
   | IncompatiblePolymorphism (env, t1, t2) ->
@@ -1209,8 +1210,8 @@ let explain_not_match_error = function
       in
       let uctx = AbstractContext.repr auctx in
       Printer.pr_universe_instance_binder sigma
-        (UContext.instance uctx)
-        (UContext.constraints uctx)
+        (PolyContext.instance uctx)
+        (PolyContext.constraints uctx)
     in
     str "incompatible polymorphic binders: got" ++ spc () ++ h (pr_auctx got) ++ spc() ++
     str "but expected" ++ spc() ++ h (pr_auctx expect) ++
@@ -1659,7 +1660,7 @@ let rec vernac_interp_error_handler = function
   | UGraph.UniverseInconsistency i ->
     str "Universe inconsistency." ++ spc() ++
     UGraph.explain_universe_inconsistency
-      Sorts.QVar.raw_pr
+      Quality.QVar.raw_pr
       UnivNames.pr_level_with_global_universes
       i ++ str "."
   | TypeError(env,te) ->

@@ -126,7 +126,7 @@ val constructor_alltags : env -> constructor -> bool list
 val constructor_has_local_defs : env -> constructor -> bool
 val inductive_has_local_defs : env -> inductive -> bool
 
-val sorts_for_schemes : mind_specif -> Sorts.Quality.t list
+val sorts_for_schemes : mind_specif -> Quality.t list
 
 val is_squashed : env -> evar_map -> (mind_specif * EInstance.t) -> Inductive.squash option
 
@@ -141,11 +141,11 @@ val is_allowed_elimination : env -> evar_map -> (mind_specif * EInstance.t) -> E
 val make_allowed_elimination : env -> evar_map -> (mind_specif * EInstance.t) -> EConstr.ESorts.t -> evar_map option
 (** Returns [Some sigma'] if the elimination can be allowed, possibly adding constraints in [sigma'] *)
 
-val elim_sort : mind_specif -> Sorts.Quality.t
+val elim_sort : mind_specif -> Quality.t
 
-val top_allowed_sort : env -> inductive -> Sorts.Quality.t
+val top_allowed_sort : env -> inductive -> Quality.t
 
-val constant_sorts_below : Sorts.Quality.t -> Sorts.Quality.t list
+val constant_sorts_below : Quality.t -> Quality.t list
 
 (** (Co)Inductive records with primitive projections do not have eta-conversion,
     hence no dependent elimination. *)

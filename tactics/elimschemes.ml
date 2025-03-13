@@ -15,7 +15,6 @@
 
 (* This file builds schemes related to case analysis and recursion schemes *)
 
-open Sorts
 open Constr
 open Indrec
 open Declarations

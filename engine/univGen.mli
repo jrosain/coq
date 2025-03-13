@@ -13,6 +13,7 @@ open Constr
 open Environ
 open Univ
 open UVars
+open PolyConstraints
 
 type univ_length_mismatch = {
   gref : GlobRef.t;
@@ -26,15 +27,15 @@ exception UniverseLengthMismatch of univ_length_mismatch
 (** Side-effecting functions creating new universe levels. *)
 
 val new_univ_global : unit -> UGlobal.t
-val new_sort_global : unit -> Sorts.QVar.t
+val new_sort_global : unit -> Quality.QVar.t
 val fresh_level : unit -> Level.t
 
-val new_global_univ : unit -> Universe.t in_universe_context_set
+val new_global_univ : unit -> Universe.t in_poly_context_set
 
 (** Build a fresh instance for a given context, its associated substitution and
     the instantiated constraints. *)
 
-type sort_context_set = (Sorts.QVar.Set.t * Univ.Level.Set.t) * Univ.Constraints.t
+type sort_context_set = (Quality.QVar.Set.t * Univ.Level.Set.t) * poly_constraints
 
 type 'a in_sort_context_set = 'a * sort_context_set
 
@@ -52,7 +53,7 @@ val fresh_instance : AbstractContext.t -> Instance.t in_sort_context_set
 val fresh_instance_from : ?loc:Loc.t -> AbstractContext.t -> (GlobRef.t * Instance.t) option ->
   Instance.t in_sort_context_set
 
-val fresh_sort_quality : ?from_glob:bool -> Sorts.Quality.t -> Sorts.t in_sort_context_set
+val fresh_sort_quality : ?from_glob:bool -> Quality.t -> Sorts.t in_sort_context_set
 (** NB: QSort is treated as QType *)
 
 val fresh_constant_instance : env -> Constant.t ->

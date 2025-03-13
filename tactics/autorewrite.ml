@@ -22,7 +22,7 @@ type rew_rule = { rew_id : KerName.t;
                   rew_lemma : constr;
                   rew_type: types;
                   rew_pat: constr;
-                  rew_ctx: Univ.ContextSet.t;
+                  rew_ctx: PolyConstraints.ContextSet.t;
                   rew_l2r: bool;
                   rew_tac: Genarg.glob_generic_argument option }
 
@@ -357,7 +357,7 @@ let print_rewrite_hintdb bas =
                Pputils.pr_glb_generic env sigma tac) (mt ()) h.rew_tac)
            (find_rewrites bas))
 
-type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Genarg.raw_generic_argument option) CAst.t
+type raw_rew_rule = (constr PolyConstraints.in_poly_context_set * bool * Genarg.raw_generic_argument option) CAst.t
 
 let tclMAP_rev f args =
   List.fold_left (fun accu arg -> Tacticals.tclTHEN accu (f arg)) (Proofview.tclUNIT ()) args
@@ -373,7 +373,7 @@ let one_base where conds tac_main bas =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let subst, ctx' = UnivGen.fresh_universe_context_set_instance h.rew_ctx in
-    let subst = Sorts.QVar.Map.empty, subst in
+    let subst = Quality.QVar.Map.empty, subst in
     let c' = Vars.subst_univs_level_constr subst h.rew_lemma in
     let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx' in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (rewrite h.rew_l2r c' tc)

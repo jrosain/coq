@@ -452,7 +452,7 @@ let constraint_type_ord c1 c2 = match c1, c2 with
 
 (* Constraints and sets of constraints. *)
 
-type univ_constraint = Level.t * constraint_type * Level.t
+type level_constraint = Level.t * constraint_type * Level.t
 
 let pr_constraint_type op =
   let op_str = match op with
@@ -468,7 +468,7 @@ let hash_constraint_type = function
 
 module LvlConstraintOrd =
 struct
-  type t = univ_constraint
+  type t = level_constraint
   let compare (u,c,v) (u',c',v') =
     let i = constraint_type_ord c c' in
     if not (Int.equal i 0) then i
