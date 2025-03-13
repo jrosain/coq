@@ -65,35 +65,7 @@ struct
     Array.fold_left3 eq_constraint csts variance u u'
 end
 
-module Instance : sig
-    type t
-
-    val empty : t
-    val is_empty : t -> bool
-
-    val of_array : Quality.t array * Level.t array -> t
-    val to_array : t -> Quality.t array * Level.t array
-
-    val abstract_instance : int * int -> t
-
-    val append : t -> t -> t
-    val equal : t -> t -> bool
-    val length : t -> int * int
-
-    val hcons : t -> t
-    val hash : t -> int
-
-    val share : t -> t * int
-
-    val subst_fn : (Quality.QVar.t -> Quality.t) * (Level.t -> Level.t) -> t -> t
-
-    val pr : (Quality.QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
-    val levels : t -> Quality.Set.t * Level.Set.t
-
-    type mask = Quality.pattern array * int option array
-
-    val pattern_match : mask -> t -> ('term, Quality.t, Level.t) Partial_subst.t -> ('term, Quality.t, Level.t) Partial_subst.t option
-end =
+module Instance =
 struct
   type t = Quality.t array * Level.t array
 
@@ -184,13 +156,22 @@ struct
     let u = Array.fold_left (fun acc x -> Level.Set.add x acc) Level.Set.empty xu in
     q, u
 
-  let pr prq prl ?variance (q,u) =
+  let pr_qualities prq (q,_) =
+    if Array.is_empty q
+    then mt()
+    else prvect_with_sep spc (Quality.pr prq) q
+
+  let pr_levels prl ?variance (_,u) =
     let ppu i u =
       let v = Option.map (fun v -> v.(i)) variance in
       pr_opt_no_spc Variance.pr v ++ prl u
     in
-    (if Array.is_empty q then mt() else prvect_with_sep spc (Quality.pr prq) q ++ strbrk " | ")
-    ++ prvecti_with_sep spc ppu u
+    prvecti_with_sep spc ppu u
+
+  let pr prq prl ?variance (q,u) =
+    let sep = strbrk @@ if Array.is_empty q then "" else " | " in
+    pr_qualities prq (q,u) ++ sep
+    ++ pr_levels prl ?variance (q,u)
 
   let equal (xq,xu) (yq,yu) =
     CArray.equal Quality.equal xq yq
@@ -207,7 +188,7 @@ end
 
 let eq_sizes (a,b) (a',b') = Int.equal a a' && Int.equal b b'
 
-(* type 'a quconstraint_function = 'a -> 'a -> Sorts.QUConstraints.t -> Sorts.QUConstraints.t *)
+(* type 'a quconstraint_function = 'a -> 'a -> PolyConstraints.t -> PolyConstraints.t *)
 
 let enforce_eq_instances x y csts =
   let xq, xu = Instance.to_array x and yq, yu = Instance.to_array y in

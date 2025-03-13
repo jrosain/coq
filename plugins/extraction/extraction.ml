@@ -70,7 +70,7 @@ type flag = info * scheme
 (*s [flag_of_type] transforms a type [t] into a [flag].
   Really important function. *)
 
-let info_of_quality = let open Sorts.Quality in function
+let info_of_quality = let open Quality in function
   | QConstant (QSProp | QProp) -> Logic
   | QConstant QType | QVar _ -> Info
 
@@ -248,7 +248,7 @@ let check_sort_poly sigma gr u =
   let u = EConstr.EInstance.kind sigma u in
   let qs, _ = UVars.Instance.to_array u in
   if Array.exists (function
-      | Sorts.Quality.QConstant (QSProp|QProp) -> true
+      | Quality.QConstant (QSProp|QProp) -> true
       | QConstant QType | QVar _ -> false)
       qs
   then CErrors.user_err

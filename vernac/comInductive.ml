@@ -390,11 +390,11 @@ let non_template_levels sigma ~params ~arity ~constructors =
   (* locally making the conclusion qvar above_prop means its
      appearances in relevance marks aren't counted *)
   let sigma = match ESorts.kind sigma u with
-    | QSort (q, _) -> Evd.set_above_prop sigma (QVar q)
+    | QSort (q, _) -> Evd.set_elim_to_prop sigma (QVar q)
     | _ -> sigma
   in
   let add_levels c levels = EConstr.universes_of_constr sigma ~init:levels c in
-  let levels = Sorts.QVar.Set.empty, Univ.Level.Set.empty in
+  let levels = Quality.QVar.Set.empty, Univ.Level.Set.empty in
   let fold_params levels = function
     | LocalDef (_, b, t) -> add_levels b (add_levels t levels)
     | LocalAssum (_, t) ->
@@ -425,7 +425,7 @@ let non_template_levels sigma ~params ~arity ~constructors =
   in
   qvars, ulevels
 
-type linearity = Linear of Sorts.QVar.t option | NonLinear
+type linearity = Linear of Quality.QVar.t option | NonLinear
 
 let pseudo_sort_poly ~non_template_qvars ~template_univs sigma params arity =
   (* to be pseudo sort poly, every univ in the conclusion must be bound at a free quality *)
@@ -436,11 +436,11 @@ let pseudo_sort_poly ~non_template_qvars ~template_univs sigma params arity =
     match ESorts.kind sigma s with
     | SProp | Prop | Set -> None
     | QSort (q,u) ->
-      if not (Sorts.QVar.Set.mem q non_template_qvars)
+      if not (Quality.QVar.Set.mem q non_template_qvars)
       && Univ.Universe.for_all (fun (u,_) ->
              match Univ.Level.Map.find_opt u template_univs with
              | None | Some None -> false
-             | Some (Some q') -> QVar.equal q q')
+             | Some (Some q') -> Quality.QVar.equal q q')
            u
       then Some q
       else None
@@ -448,11 +448,11 @@ let pseudo_sort_poly ~non_template_qvars ~template_univs sigma params arity =
 
 let unbounded_from_below u cstrs =
   let open Univ in
-  Univ.Constraints.for_all (fun (l, d, r) ->
+  Univ.LvlConstraints.for_all (fun (l, d, r) ->
       match d with
       | Eq | Lt -> not (Univ.Level.equal l u) && not (Univ.Level.equal r u)
       | Le -> not (Univ.Level.equal r u))
-    cstrs
+    (PolyConstraints.levels cstrs)
 
 (* Returns the list [x_1, ..., x_n] of levels contributing to template
    polymorphism. The elements x_k is None if the k-th parameter
@@ -479,8 +479,8 @@ let template_polymorphic_univs sigma ~params ~arity ~constructors =
         | NonLinear -> false
         | Linear _ ->
           assert (not @@ Univ.Level.is_set u);
-          Univ.Level.Set.mem u (Univ.ContextSet.levels uctx) &&
-          unbounded_from_below u (Univ.ContextSet.constraints uctx) &&
+          Univ.Level.Set.mem u (PolyConstraints.ContextSet.levels uctx) &&
+          unbounded_from_below u (PolyConstraints.ContextSet.constraints uctx) &&
           not (Univ.Level.Set.mem u non_template_levels))
       paramslevels
   in
@@ -496,13 +496,14 @@ let template_polymorphic_univs sigma ~params ~arity ~constructors =
   pseudo_sort_poly, template_univs
 
 let split_universe_context subset (univs, csts) =
+  let csts = PolyConstraints.levels csts in
   let rem = Univ.Level.Set.diff univs subset in
   let subfilter (l, _, r) =
     let () = assert (not @@ Univ.Level.Set.mem r subset) in
     Univ.Level.Set.mem l subset
   in
-  let subcst, remcst = Univ.Constraints.partition subfilter csts in
-  (subset, subcst), (rem, remcst)
+  let subcst, remcst = Univ.LvlConstraints.partition subfilter csts in
+  (subset, (PolyConstraints.of_levels subcst)), (rem, (PolyConstraints.of_levels remcst))
 
 let warn_no_template_universe =
   CWarnings.create ~name:"no-template-universe"
@@ -516,18 +517,19 @@ let nontemplate_univ_entry ~poly sigma udecl =
   let sigma = Evd.collapse_sort_variables sigma in
   let uentry, _ as ubinders = Evd.check_univ_decl ~poly sigma udecl in
   let uentry, global = match uentry with
-    | UState.Polymorphic_entry uctx -> Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+    | UState.Polymorphic_entry uctx -> Polymorphic_ind_entry uctx, PolyConstraints.ContextSet.empty
     | UState.Monomorphic_entry uctx -> Monomorphic_ind_entry, uctx
   in
   sigma, uentry, ubinders, global
 
 let template_univ_entry sigma udecl ~template_univs pseudo_sort_poly =
+  let open Quality in
   let template_qvars = match pseudo_sort_poly with
     | Some q -> QVar.Set.singleton q
     | None -> QVar.Set.empty
   in
   let sigma = Evd.collapse_sort_variables ~except:template_qvars sigma in
-  let sigma = QVar.Set.fold (fun q sigma -> Evd.set_above_prop sigma (QVar q))
+  let sigma = QVar.Set.fold (fun q sigma -> Evd.set_elim_to_prop sigma (QVar q))
       template_qvars sigma
   in
   let uctx =
@@ -536,13 +538,13 @@ let template_univ_entry sigma udecl ~template_univs pseudo_sort_poly =
   let ubinders = UState.Monomorphic_entry uctx, Evd.universe_binders sigma in
   let template_univs, global = split_universe_context template_univs uctx in
   let uctx =
-    UVars.UContext.of_context_set
+    UVars.PolyContext.of_context_set
       (UState.compute_instance_binders @@ Evd.ustate sigma)
       template_qvars
       template_univs
   in
   let default_univs =
-    let inst = UVars.UContext.instance uctx in
+    let inst = UVars.PolyContext.instance uctx in
     let qs, us = UVars.Instance.to_array inst in
     UVars.Instance.of_array (Array.map (fun _ -> Quality.qtype) qs, us)
   in
@@ -616,7 +618,7 @@ let variance_of_entry ~cumulative ~variances uctx =
     if not cumulative then begin check_trivial_variances variances; None end
     else
       let lvs = Array.length variances in
-      let _, lus = UVars.UContext.size uctx in
+      let _, lus = UVars.PolyContext.size uctx in
       assert (lvs <= lus);
       Some (Array.append variances (Array.make (lus - lvs) None))
 
@@ -890,7 +892,7 @@ type t = {
   nuparams : int option;
   univ_binders : UState.named_universes_entry;
   implicits : DeclareInd.one_inductive_impls list;
-  uctx : Univ.ContextSet.t;
+  uctx : PolyConstraints.ContextSet.t;
   where_notations : Metasyntax.notation_interpretation_decl list;
   coercions : Libnames.qualid list;
   indlocs : DeclareInd.indlocs;

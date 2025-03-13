@@ -178,10 +178,10 @@ val univ_level_rem : Level.t -> Universe.t -> Universe.t -> Universe.t
 
 type constraint_type = AcyclicGraph.constraint_type = Lt | Le | Eq
 
-type univ_constraint = Level.t * constraint_type * Level.t
+type level_constraint = Level.t * constraint_type * Level.t
 
 module LvlConstraints : sig
-  include Stdlib.Set.S with type elt = univ_constraint
+  include Stdlib.Set.S with type elt = level_constraint
 
   val pr : (Level.t -> Pp.t) -> t -> Pp.t
 end
@@ -189,7 +189,7 @@ end
 module HLvlConstraints : sig
   include Hashcons.S with
     type t = LvlConstraints.t and
-    type u = univ_constraint -> univ_constraint
+    type u = level_constraint -> level_constraint
 end
 
 val hcons_lvl_constraints : HLvlConstraints.t -> HLvlConstraints.t
@@ -205,7 +205,6 @@ val pr_constraint_type : constraint_type -> Pp.t
 (* (** {6 Hash-consing } *) *)
 (* val hcons_constraints : Constraints.t -> Constraints.t *)
 (* val hcons_universe_set : Level.Set.t -> Level.Set.t *)
-(* val hcons_universe_context_set : ContextSet.t -> ContextSet.t *)
 
 (** {6 Hash-consing } *)
 

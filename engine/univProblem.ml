@@ -11,8 +11,8 @@
 open Univ
 
 type t =
-  | QEq of Sorts.Quality.t * Sorts.Quality.t
-  | QLeq of Sorts.Quality.t * Sorts.Quality.t
+  | QEq of Quality.t * Quality.t
+  | QLeq of Quality.t * Quality.t
   | ULe of Sorts.t * Sorts.t
   | UEq of Sorts.t * Sorts.t
   | ULub of Level.t * Level.t
@@ -21,7 +21,7 @@ type t =
 
 let is_trivial = function
   | QLeq (QConstant QProp, QConstant QType) -> true
-  | QLeq (a,b) | QEq (a, b) -> Sorts.Quality.equal a b
+  | QLeq (a,b) | QEq (a, b) -> Quality.equal a b
   | ULe (u, v) | UEq (u, v) -> Sorts.equal u v
   | ULub (u, v) | UWeak (u, v) -> Level.equal u v
 
@@ -39,13 +39,13 @@ module Set = struct
     let compare x y =
       match x, y with
       | QEq (a, b), QEq (a', b') ->
-        let i = Sorts.Quality.compare a a' in
+        let i = Quality.compare a a' in
         if i <> 0 then i
-        else Sorts.Quality.compare b b'
+        else Quality.compare b b'
       | QLeq (a, b), QLeq (a', b') ->
-        let i = Sorts.Quality.compare a a' in
+        let i = Quality.compare a a' in
         if i <> 0 then i
-        else Sorts.Quality.compare b b'
+        else Quality.compare b b'
       | ULe (u, v), ULe (u', v') ->
         let i = Sorts.compare u u' in
         if Int.equal i 0 then Sorts.compare v v'
@@ -79,8 +79,8 @@ module Set = struct
     else add cst s
 
   let pr_one = let open Pp in function
-    | QEq (a, b) -> Sorts.Quality.raw_pr a ++ str " = " ++ Sorts.Quality.raw_pr b
-    | QLeq (a, b) -> Sorts.Quality.raw_pr a ++ str " <= " ++ Sorts.Quality.raw_pr b
+    | QEq (a, b) -> Quality.raw_pr a ++ str " = " ++ Quality.raw_pr b
+    | QLeq (a, b) -> Quality.raw_pr a ++ str " <= " ++ Quality.raw_pr b
     | ULe (u, v) -> Sorts.debug_print u ++ str " <= " ++ Sorts.debug_print v
     | UEq (u, v) -> Sorts.debug_print u ++ str " = " ++ Sorts.debug_print v
     | ULub (u, v) -> Level.raw_pr u ++ str " /\\ " ++ Level.raw_pr v
@@ -108,7 +108,7 @@ let enforce_eq_instances_univs strict x y c =
   let xq, xu = UVars.Instance.to_array x and yq, yu = UVars.Instance.to_array y in
   let c = CArray.fold_left2
       (* TODO strict? *)
-      (fun c x y -> if Sorts.Quality.equal x y then c else Set.add (QEq (x,y)) c)
+      (fun c x y -> if Quality.equal x y then c else Set.add (QEq (x,y)) c)
       c xq yq
   in
   let c = CArray.fold_left2
@@ -119,7 +119,7 @@ let enforce_eq_instances_univs strict x y c =
 
 let enforce_eq_qualities qs qs' cstrs =
   CArray.fold_left2 (fun c a b ->
-      if Sorts.Quality.equal a b then c else Set.add (QEq (a, b)) c)
+      if Quality.equal a b then c else Set.add (QEq (a, b)) c)
     cstrs qs qs'
 
 let compare_cumulative_instances  cv_pb variances u u' cstrs =

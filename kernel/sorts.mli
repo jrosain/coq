@@ -10,21 +10,6 @@
 
 (** {6 The sorts of CCI. } *)
 
-(* JJJ what do i do with this? *)
-
-(* val enforce_eq_quality : Quality.t -> Quality.t -> QConstraints.t -> QConstraints.t *)
-
-(* val enforce_leq_quality : Quality.t -> Quality.t -> QConstraints.t -> QConstraints.t *)
-
-(* module QUConstraints : sig *)
-
-(*   type t = QConstraints.t * Univ.Constraints.t *)
-
-(*   val union : t -> t -> t *)
-
-(*   val empty : t *)
-(* end *)
-
 type t = private
   | SProp
   | Prop

@@ -223,9 +223,8 @@ let change_property_sort evd toSort princ princName =
           Term.decompose_prod (EConstr.Unsafe.to_constr (get_type decl))
         in
         let s = Constr.destSort ty in
-        Global.add_constraints
-          (UnivSubst.enforce_leq_sort
-             toSort s Univ.Constraints.empty);
+        Global.add_constraints @@
+          UnivSubst.enforce_elim_to_sort s toSort PolyConstraints.empty;
         Term.compose_prod args (Constr.mkSort toSort) )
   in
   let evd, princName_as_constr =
@@ -250,7 +249,7 @@ let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
     new_princ_name funs i proof_tac =
   try
     let f = funs.(i) in
-    let sigma, type_sort = Evd.fresh_sort_quality !evd Sorts.Quality.qtype in
+    let sigma, type_sort = Evd.fresh_sort_quality !evd Quality.qtype in
     evd := sigma;
     let new_sorts =
       match sorts with
@@ -292,7 +291,7 @@ let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
           Declare.definition_message name;
           names := name :: !names
         in
-        register_with_sort Sorts.Quality.qprop )
+        register_with_sort Quality.qprop )
     in
     let body, types, univs, hook, sigma0 =
       build_functional_principle (Global.env ()) !evd old_princ_type new_sorts funs i proof_tac
@@ -354,7 +353,7 @@ let generate_principle (evd : Evd.evar_map ref) pconstants on_error is_general
         List.map_i
           (fun i _x ->
             let env = Global.env () in
-            let princ = Indrec.lookup_eliminator env (ind_kn, i) Sorts.Quality.qprop in
+            let princ = Indrec.lookup_eliminator env (ind_kn, i) Quality.qprop in
             let evd = ref (Evd.from_env env) in
             let evd', uprinc = Evd.fresh_global env !evd princ in
             let _ = evd := evd' in
@@ -1275,7 +1274,7 @@ let get_funs_constant mp =
     in
     l_const
 
-let make_scheme evd (fas : (Constr.pconstant * Sorts.Quality.t) list) : _ list =
+let make_scheme evd (fas : (Constr.pconstant * Quality.t) list) : _ list =
   let exception Found_type of int in
   let env = Global.env () in
   let funs = List.map fst fas in
@@ -1469,7 +1468,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
                (fun (body, typ, _opaque, _univs) ->
                  (EConstr.of_constr body, EConstr.of_constr (Option.get typ)))
                (make_scheme evd
-                  (Array.map_to_list (fun const -> (const, Sorts.Quality.qtype)) funs)))
+                  (Array.map_to_list (fun const -> (const, Quality.qtype)) funs)))
       in
       let proving_tac =
         prove_fun_correct !evd graphs_constr schemes lemmas_types_infos
@@ -1527,7 +1526,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
       let mib, _mip = Inductive.lookup_mind_specif env graph_ind in
       let sigma, scheme =
         let sigma, inds = CArray.fold_left_map_i (fun i sigma _ ->
-            let sigma, s = Evd.fresh_sort_quality ~rigid:UnivRigid sigma (Sorts.Quality.qtype) in
+            let sigma, s = Evd.fresh_sort_quality ~rigid:UnivRigid sigma (Quality.qtype) in
             sigma, (((kn, i), u), true, s))
             !evd
             mib.mind_packets

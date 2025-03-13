@@ -28,7 +28,7 @@ open Eqschemes
 open Elimschemes
 
 (** Data of an inductive scheme with name resolved *)
-type resolved_scheme = Names.Id.t CAst.t * Indrec.dep_flag * Names.inductive * Sorts.Quality.t
+type resolved_scheme = Names.Id.t CAst.t * Indrec.dep_flag * Names.inductive * Quality.t
 
 (** flag for internal message display *)
 type internal_flag =
@@ -199,7 +199,7 @@ let declare_one_case_analysis_scheme ?loc ind =
   let (mib, mip) as specif = Global.lookup_inductive ind in
   let kind = Indrec.pseudo_sort_quality_for_elim ind mip in
   let dep, suff =
-    if Sorts.Quality.is_qprop kind then case_nodep, Some "case"
+    if Quality.is_qprop kind then case_nodep, Some "case"
     else if not (Inductiveops.has_dependent_elim specif) then
       case_nodep, None
     else case_dep, Some "case" in
@@ -217,7 +217,7 @@ let declare_one_case_analysis_scheme ?loc ind =
      - J: I think it's best to use Quality.eliminates_to for constant cases.
           Here, I label it as "constant" as we check whether it eliminates into
           qtype, thus the case (QVar, QVar) will never be called anyway. *)
-  if Sorts.Quality.eliminates_to kelim Sorts.Quality.qtype then
+  if Quality.eliminates_to kelim Quality.qtype then
     define_individual_scheme ?loc dep id ind
 
 (* Induction/recursion schemes *)
@@ -225,22 +225,22 @@ let declare_one_case_analysis_scheme ?loc ind =
 let declare_one_induction_scheme ?loc ind =
   let (mib,mip) as specif = Global.lookup_inductive ind in
   let kind = Indrec.pseudo_sort_quality_for_elim ind mip in
-  let from_prop = Sorts.Quality.is_qprop kind in
+  let from_prop = Quality.is_qprop kind in
   let depelim = Inductiveops.has_dependent_elim specif in
   let kelim = Inductiveops.constant_sorts_below @@ Inductiveops.elim_sort (mib,mip) in
   let kelim =
     if Global.sprop_allowed ()
     then kelim
-    else List.filter (fun s -> not (Sorts.Quality.is_qsprop s)) kelim
+    else List.filter (fun s -> not (Quality.is_qsprop s)) kelim
   in
   let elims =
-    List.filter (fun (sort,_) -> List.mem_f Sorts.Quality.equal sort kelim)
+    List.filter (fun (sort,_) -> List.mem_f Quality.equal sort kelim)
       (* NB: the order is important, it makes it so that _rec is
          defined using _rect but _ind is not. *)
-      [(Sorts.Quality.qtype, "rect");
-       (Sorts.Quality.qprop, "ind");
-       (Sorts.Quality.qtype, "rec"); (* backward-compatibility with set *)
-       (Sorts.Quality.qsprop, "sind")]
+      [(Quality.qtype, "rect");
+       (Quality.qprop, "ind");
+       (Quality.qtype, "rec"); (* backward-compatibility with set *)
+       (Quality.qsprop, "sind")]
   in
   let elims = List.map (fun (to_kind,dflt_suff) ->
       if from_prop then elim_scheme ~dep:false ~to_kind, Some dflt_suff
@@ -341,7 +341,7 @@ let sch_isrec = function
 
 (* Generate suffix for scheme given a target sort *)
 let scheme_suffix_gen {sch_type; sch_sort} sort =
-  let open Sorts.Quality in
+  let open Quality in
   (* The _ind/_rec_/case suffix *)
   let ind_suffix = match sch_isrec sch_type, sch_sort with
     | true  , QConstant QSProp
@@ -422,7 +422,7 @@ let do_mutual_induction_scheme ?(force_mutual=false) env ?(isrec=true) l =
     let cst = define ?loc ~poly fi sigma decl (Some decltype) in
     let kind =
       let open Elimschemes in
-      let open Sorts.Quality in
+      let open Quality in
       if isrec then Some (elim_scheme ~dep ~to_kind:sort)
       else match sort with
         | QConstant QType -> Some (if dep then case_dep else case_nodep)
@@ -501,7 +501,7 @@ let build_combined_scheme env schemes =
   *)
   let inprop =
     let inprop (_,t) =
-      Sorts.Quality.is_qprop
+      Quality.is_qprop
 	(Retyping.get_sort_quality_of env sigma (EConstr.of_constr t))
     in
     List.for_all inprop defs

@@ -144,9 +144,9 @@ GRAMMAR EXTEND Gram
       | "Type"; "@{"; u = universe; "}" -> { None, u } ] ]
   ;
   sort_quality:
-    [ [ "Prop" -> { Sorts.Quality.qprop }
-      | "SProp" -> { Sorts.Quality.qsprop }
-      | "Type" -> { Sorts.Quality.qtype } ] ]
+    [ [ "Prop" -> { Quality.qprop }
+      | "SProp" -> { Quality.qsprop }
+      | "Type" -> { Quality.qtype } ] ]
   ;
   universe_increment:
     [ [ "+"; n = natural -> { n }
