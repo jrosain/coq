@@ -577,8 +577,6 @@ type evar_map = {
   given_up : Evar.Set.t;
   shelf : Evar.t list list;
   extras : Store.t;
-  (** Elimination constraints *)
-  qualities : QGraph.t;
 }
 
 let find d e =
@@ -882,12 +880,6 @@ let add_universe_constraints d c =
 let add_constraints d c =
   { d with universes = UState.add_constraints d.universes c }
 
-let add_elimination_constraint d s1 s2 =
-  { d with qualities = QGraph.enforce_eliminates_to d.qualities s1 s2 }
-
-(* let add_equal_sorts_constraint d s1 s2 = *)
-(*   { d with qualities = QGraph.enforce_eq d.qualities s1 s2 } *)
-
 (*** /Lifting... ***)
 
 (* evar_map are considered empty disregarding histories *)
@@ -932,7 +924,6 @@ let empty = {
   given_up = Evar.Set.empty;
   shelf = [[]];
   extras = Store.empty;
-  qualities = QGraph.initial_quality_constraints;
 }
 
 let from_env ?binders e = { empty with universes = UState.from_env ?binders e }
@@ -1197,16 +1188,9 @@ let set_leq_sort evd s1 s2 =
 	 UnivProblem.Set.singleton (UnivProblem.ULe (u1,u2))
      else evd
 
-(* JJJ check the two functions below *)
-(* let set_eq_qualities evd q1 q2 = *)
-(*   add_elimination_constraint evd  *)
-(*   (\* add_equal_sorts_constraint evd q1 q2 *\) *)
-(*   add_universe_constraints evd (UnivProblem.Set.singleton (QEq (q1, q2))) *)
-
 let set_elim_to_prop evd q =
-  let evd = add_universe_constraints evd @@
-	      UnivProblem.Set.singleton (QLeq (Quality.qprop, q)) in
-  add_elimination_constraint evd q (Quality.qprop)
+  add_universe_constraints evd @@
+    UnivProblem.Set.singleton (QElimTo (q, Quality.qprop))
 
 let check_eq evd s s' =
   let ustate = evd.universes in

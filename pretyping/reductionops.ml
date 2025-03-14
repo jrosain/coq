@@ -1358,6 +1358,7 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Conversion.CUMUL)
   with
   | UGraph.UniverseInconsistency _ when catch_incon -> None
   | e ->
+     (* JJJ raised here *)
     let e = Exninfo.capture e in
     report_anomaly e
 

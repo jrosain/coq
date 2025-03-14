@@ -89,7 +89,6 @@ let enforce_eq_sort s1 s2 cst =
   enforce_eq_univ (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) @@
     PolyConstraints.enforce_eq_quality q1 q2 cst
 
-(* JJJ reverse all the calls for enforce_leq_sort *)
 let enforce_elim_to_sort s1 s2 cst =
   let q1 = Sorts.quality s1 and q2 = Sorts.quality s2 in
   enforce_leq_univ (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) @@

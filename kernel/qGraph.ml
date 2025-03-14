@@ -55,7 +55,7 @@ let add_quality g q =
   let g = G.add q g in (* Should it fail? Yes *)
   enforce_constraint (qtype, ElimConstraint.ElimTo, q) g
 
-let enforce_eliminates_to g s1 s2 =
+let enforce_eliminates_to s1 s2 g =
   enforce_constraint (s1, ElimConstraint.ElimTo, s2) g
 
 let enforce_eq g s1 s2 =
@@ -103,4 +103,4 @@ let is_empty g = Set.is_empty (domain g)
 
 let add_template_qvars =
   QVar.Set.fold
-    (fun v g -> enforce_eliminates_to g (QVar v) Quality.qprop)
+    (fun v -> enforce_eliminates_to (QVar v) Quality.qprop)

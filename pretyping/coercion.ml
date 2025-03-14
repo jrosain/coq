@@ -748,7 +748,7 @@ let rec inh_conv_coerce_to_fail ?loc ?use_coercions env sigma ?(flags=default_fl
           let trace = ProdCoe { na=name; ty=u1; dom=trace1; body=trace2 } in
           (sigma, mkLambda (name, u1, v2'), trace)
       | _ ->
-        Exninfo.iraise (NoCoercionNoUnifier (best_failed_sigma,e), info)
+         Exninfo.iraise (NoCoercionNoUnifier (best_failed_sigma,e), info)
 
 let allow_all_but_patvars sigma =
   let p evk =

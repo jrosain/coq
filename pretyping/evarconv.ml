@@ -1262,7 +1262,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             else UnifFailure (evd,NotSameHead)
 
         | Var var1, Var var2 ->
-            if Id.equal var1 var2 then
+            if Id.equal var1 var2 then 
               exact_ise_stack2 env evd (evar_conv_x flags) sk1 sk2
             else UnifFailure (evd,NotSameHead)
 
@@ -1452,7 +1452,7 @@ let evar_conv_x flags env evd pbty term1 term2 =
       str "Starting unification:" ++ spc() ++
       Termops.Internal.print_constr_env env evd term1 ++
       (match pbty with CONV -> strbrk " =~= " | CUMUL -> strbrk " <~= ") ++
-      Termops.Internal.print_constr_env env evd term2);
+	Termops.Internal.print_constr_env env evd term2);
   let res =
     evar_conv_x flags env evd pbty term1 term2
   in
