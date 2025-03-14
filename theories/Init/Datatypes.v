@@ -235,8 +235,6 @@ Register inr as core.sum.inr.
 (** [prod A B], written [A * B], is the product of [A] and [B];
     the pair [pair A B a b] of [a] and [b] is abbreviated [(a,b)] *)
 
-Set Debug "backtrace".
-
 #[universes(template)]
 Inductive prod (A B:Type) : Type :=
   pair : A -> B -> A * B

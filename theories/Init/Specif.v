@@ -393,6 +393,7 @@ Section sigT.
   (** Equivalence of equality of [sigT] with a [sigT] of equality *)
   (** We could actually prove an isomorphism here, and not just [<->],
       but for simplicity, we don't. *)
+  Set Debug "all".
   Definition eq_sigT_uncurried_iff {A P}
              (u v : { a : A & P a })
     : u = v <-> { p : u.1 = v.1 & rew p in u.2 = v.2 }.
