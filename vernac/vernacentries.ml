@@ -522,10 +522,9 @@ type constraint_sources = {
 
 let empty_sources = { edges = Univ.Level.Map.empty }
 
-(* JJJ check this function when I'm less tired *)
 let mk_sources () =
   let open Univ in
-  let srcs = DeclareUniv.constraint_sources () in (* HERE *)
+  let srcs = DeclareUniv.constraint_sources () in
   let pick_stricter_constraint (_,k as v) (_,k' as v') =
     match k, k' with
     | Le, Lt | Le, Eq -> v'
@@ -557,13 +556,13 @@ let mk_sources () =
     List.fold_left (fun edges dp ->
         let _, csts = Safe_typing.univs_of_library @@ Library.library_compiled dp in
         LvlConstraints.fold (fun cst edges -> add_edge cst (Library dp) edges)
-          (PolyConstraints.levels csts) edges) (* HERE *)
+          (PolyConstraints.levels csts) edges)
       edges libs
   in
   let edges =
     List.fold_left (fun edges (ref,csts) ->
         LvlConstraints.fold (fun cst edges -> add_edge cst (GlobRef ref) edges)
-          (PolyConstraints.levels csts) edges) (* AND HERE *)
+          (PolyConstraints.levels csts) edges)
       edges srcs
   in
   {
@@ -2081,7 +2080,7 @@ let check_may_eval env sigma redexp rc =
       Evarutil.j_nf_evar sigma (Retyping.get_judgment_of env sigma c)
     else
       let env = Evarutil.nf_env_evar sigma env in
-      let env = Environ.push_qualities (qs,csts) env in
+      let env = Environ.push_qualities qs csts env in
       let env = Environ.push_context_set (us,csts) env in
       let c = EConstr.to_constr sigma c in
       (* OK to call kernel which does not support evars *)

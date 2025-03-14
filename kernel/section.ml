@@ -68,7 +68,6 @@ let is_polymorphic_univ u sec =
   let _, us = Instance.to_array sec.all_poly_univs in
   Array.exists (fun u' -> Level.equal u u') us
 
-(* JJJ does this need to take qualities into account? *)
 let push_constraints uctx sec =
   if sec.has_poly_univs &&
      LvlConstraints.exists

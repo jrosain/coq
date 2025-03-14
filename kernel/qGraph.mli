@@ -24,7 +24,7 @@ val merge_constraints : ElimConstraints.t -> t -> t
 
 val check_constraints : ElimConstraints.t -> t -> bool
 
-val enforce_eliminates_to : t -> quality -> quality -> t
+val enforce_eliminates_to : quality -> quality -> t -> t
 (** Checks whether the first quality eliminates to the second. If it's
     consistent within the graph, then adds the constraint. *)
 

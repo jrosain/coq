@@ -857,7 +857,7 @@ let explain_non_linear_unification env sigma m t =
 let explain_unsatisfied_level_constraints env sigma cst =
   let cst = Univ.LvlConstraints.filter
 	      (fun cst -> not @@ UGraph.check_constraint (Evd.universes sigma) cst) cst in
-  strbrk "Unsatisfied constraints: " ++
+  strbrk "Unsatisfied level constraints: " ++
     Univ.LvlConstraints.pr (Termops.pr_evd_level sigma) cst ++
     spc () ++ str "(maybe a bugged tactic)."
 
@@ -865,6 +865,13 @@ let explain_unsatisfied_elim_constraints env sigma cst =
   strbrk "Unsatisfied quality constraints: " ++
   Quality.ElimConstraints.pr (Termops.pr_evd_qvar sigma) cst ++
   spc() ++ str "(maybe a bugged tactic)."
+
+let explain_unsatisfied_constraints env sigma csts =
+  let qc = PolyConstraints.qualities csts and lc = PolyConstraints.levels csts in
+  strbrk "Unsatisfied constraints: "  ++
+    Quality.ElimConstraints.pr (Termops.pr_evd_qvar sigma) qc ++
+    spc() ++ Univ.LvlConstraints.pr (Termops.pr_evd_level sigma) lc ++
+    spc() ++ str "(maybe a bugged tactic)."
 
 let explain_undeclared_universes env sigma l =
   let l = Univ.Level.Set.elements l in
@@ -984,7 +991,9 @@ let explain_type_error env sigma err =
   | UnsatisfiedLevelConstraints cst ->
     explain_unsatisfied_level_constraints env sigma cst
   | UnsatisfiedElimConstraints cst ->
-    explain_unsatisfied_elim_constraints env sigma cst
+     explain_unsatisfied_elim_constraints env sigma cst
+  | UnsatisfiedConstraints cst ->
+    explain_unsatisfied_constraints env sigma cst
   | UndeclaredUniverses l ->
     explain_undeclared_universes env sigma l
   | UndeclaredQualities l ->

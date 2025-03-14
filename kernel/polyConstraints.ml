@@ -49,6 +49,9 @@ let diff (qc, lc) (qc', lc') =
 let elements (qc, lc) =
   (ElimConstraints.elements qc, LvlConstraints.elements lc)
 
+let filter_levels f (qc, lc) =
+  make qc @@ LvlConstraints.filter f lc
+
 let pr prv prl (qc, lc) =
   let open Pp in
   v 0 (app (ElimConstraints.pr prv qc) (LvlConstraints.pr prl lc))

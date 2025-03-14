@@ -40,6 +40,8 @@ val diff : t -> t -> t
 
 val elements : t -> ElimConstraint.t list * level_constraint list
 
+val filter_levels : (LvlConstraints.elt -> bool) -> t -> t
+
 val pr : (QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> t -> Pp.t
 
 type elim_constraints_func = ElimConstraints.t -> ElimConstraints.t

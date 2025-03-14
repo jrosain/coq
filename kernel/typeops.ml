@@ -42,7 +42,7 @@ let conv_leq_vecti env v1 v2 =
 
 let check_constraints cst env =
   if Environ.check_constraints cst env then ()
-  else error_unsatisfied_level_constraints env cst
+  else error_unsatisfied_constraints env cst
 
 (* This should be a type (a priori without intention to be an assumption) *)
 let check_type env c t =

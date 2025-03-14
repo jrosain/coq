@@ -656,7 +656,7 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
       | Ok () -> not (UGraph.check_constraint before_univs c)
       | Error _ -> true
     in
-    let ctx = on_snd (Univ.Constraints.filter is_new_constraint) ctx in
+    let ctx = on_snd (PolyConstraints.filter_levels is_new_constraint) ctx in
     DeclareUniv.add_constraint_source (ConstRef kn) ctx
   in
   let () = DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) ubinders in
@@ -742,7 +742,8 @@ let declare_variable ~name ~kind ~typing_flags d =
           Global.push_section_context uctx;
           let mk_anon_names u =
             let qs, us = UVars.Instance.to_array u in
-            Array.make (Array.length qs) Anonymous, Array.make (Array.length us) Anonymous
+	    UVars.{ qualities = Array.make (Array.length qs) Anonymous
+		  ; levels = Array.make (Array.length us) Anonymous }
           in
           Global.push_section_context
             (UVars.PolyContext.of_context_set mk_anon_names Quality.QVar.Set.empty body_uctx);
