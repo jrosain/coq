@@ -226,7 +226,7 @@ val fix_undefined_variables : t -> t
 (** Universe minimization *)
 val minimize : t -> t
 
-val collapse_above_prop_sort_variables : to_prop:bool -> t -> t
+val collapse_elim_to_prop_sort_variables : to_prop:bool -> t -> t
 
 val collapse_sort_variables : ?except:Quality.QVar.Set.t -> t -> t
 

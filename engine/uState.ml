@@ -45,7 +45,7 @@ module QState : sig
   val unify_quality : fail:(unit -> t) -> Conversion.conv_pb -> Quality.t -> Quality.t -> t -> t
   val elim_to_prop : elt -> t -> bool
   val undefined : t -> QVar.Set.t
-  val collapse_above_prop : to_prop:bool -> t -> t
+  val collapse_elim_to_prop : to_prop:bool -> t -> t
   val collapse : ?except:QVar.Set.t -> t -> t
   val pr : (QVar.t -> Libnames.qualid option) -> t -> Pp.t
   val of_set : QVar.Set.t -> t
@@ -95,17 +95,16 @@ let set q qv m =
     else
       let constraints =
 	if elim_to_prop q m
-	then QGraph.enforce_eliminates_to (QVar qv) Quality.qprop m.constraints
-        (* if QSet.mem q m.above then QSet.add qv (QSet.remove q m.above) *)
+	then QGraph.enforce_eq (QVar q) (QVar qv) m.constraints
         else m.constraints
       in
       Some { rigid = m.rigid; qmap = QMap.add q (Some (QVar qv)) m.qmap; constraints }
-  | q, (QConstant qc as qv) ->
-    if qc == QSProp && QGraph.eliminates_to_prop m.constraints (QVar q) then None
+  | q, (QConstant _ as qv) ->
+    if is_qsprop qv && QGraph.eliminates_to_prop m.constraints (QVar q) then None
     else if QSet.mem q m.rigid then None
     else
-      Some { rigid = m.rigid; qmap = QMap.add q (Some qv) m.qmap; constraints = m.constraints }
-                                                                   (* QSet.remove q m.above *)
+      Some { rigid = m.rigid; qmap = QMap.add q (Some qv) m.qmap;
+	     constraints = QGraph.enforce_eq (QVar q) qv m.constraints }
 
 let set_elim_to_prop q m =
   let q = repr q m in
@@ -124,14 +123,15 @@ let unify_quality ~fail c q1 q2 local = match q1, q2 with
   | Some local -> local
   | None -> fail ()
   end
-| QVar qv1, QVar qv2 -> begin match set qv1 q2 local with
+| QVar qv1, QVar qv2 ->
+   begin match set qv1 q2 local with
     | Some local -> local
     | None -> match set qv2 q1 local with
       | Some local -> local
       | None -> fail ()
   end
 | QVar q, (QConstant (QType | QProp | QSProp) as qv)
-| (QConstant (QType | QProp | QSProp) as qv), QVar q ->
+  | (QConstant (QType | QProp | QSProp) as qv), QVar q ->
   begin match set q qv local with
   | Some local -> local
   | None -> fail ()
@@ -191,7 +191,7 @@ let undefined m =
   let m = QMap.filter (fun _ v -> Option.is_empty v) m.qmap in
   QMap.domain m
 
-let collapse_above_prop ~to_prop m =
+let collapse_elim_to_prop ~to_prop m =
   let map q v = match v with
     | None ->
       if not @@ QGraph.eliminates_to_prop m.constraints (QVar q) then None else
@@ -316,12 +316,11 @@ let merge_level_constraints uctx cstrs g =
     let printers = (pr_uctx_qvar uctx, pr_uctx_level uctx) in
     raise (UGraph.UniverseInconsistency (Some printers, i))
 
-let merge_elim_constraints cstrs ctx =
-  QState.merge_constraints cstrs ctx
-  (* try QGraph.merge_constraints cstrs g *)
-  (* with QGraph.QualitityInconsistency _ -> *)
-  (*   let printers = (pr_uctx_qvar uctx, pr_uctx_level uctx) in *)
-  (*   raise (UGraph.UniverseInconsistency (Some printers, i)) *)
+let merge_elim_constraints uctx cstrs ctx =
+  try QState.merge_constraints cstrs ctx
+  with QGraph.QualityInconsistency (_, i) ->
+    let printer = pr_uctx_qvar uctx in
+    raise (QGraph.QualityInconsistency (Some printer, i))
 
 let uname_union s t =
   if s == t then s
@@ -638,22 +637,14 @@ let process_universe_constraints uctx cstrs =
   let unify_universes cst local =
     let cst = nf_constraint local.local_sorts cst in
     if UnivProblem.is_trivial cst then local
-    else match cst with
-    | QEq (a, b) ->
+    else
       (* TODO sort_inconsistency should be able to handle raw
          qualities instead of having to make a dummy sort *)
       let mk q = Sorts.make q Universe.type0 in
-      unify_quality univs CONV (mk a) (mk b) local
-    | QElimTo (a, b) ->
-      (* TODO sort_inconsistency should be able to handle raw
-         qualities instead of having to make a dummy sort *)
-      let mk q = Sorts.make q Universe.type0 in
-      unify_quality univs CUMUL (mk b) (mk a) local
-    | QSElimTo (a, b) ->
-      (* TODO sort_inconsistency should be able to handle raw
-         qualities instead of having to make a dummy sort *)
-      let mk q = Sorts.make q Universe.type0 in
-      unify_quality univs CUMUL (mk b) (mk a) local
+      match cst with
+    | QEq (a, b) -> unify_quality univs CONV (mk a) (mk b) local
+    | QElimTo (a, b) -> unify_quality univs CUMUL (mk b) (mk a) local
+    | QSElimTo (a, b) -> unify_quality univs CUMUL (mk b) (mk a) local
     | ULe (l, r) ->
       let local = unify_quality univs CUMUL l r local in
       let l = normalize_sort local.local_sorts l in
@@ -752,7 +743,7 @@ let add_universe_constraints uctx cstrs =
     local = (univs, PolyConstraints.union local local');
     univ_variables = vars;
     universes = merge_level_constraints uctx (PolyConstraints.levels local') uctx.universes;
-    sort_variables = merge_elim_constraints (PolyConstraints.qualities local') uctx.sort_variables;
+    sort_variables = merge_elim_constraints uctx (PolyConstraints.qualities local') uctx.sort_variables;
     minim_extra = extra; }
 
 let problem_of_constraints cstrs =
@@ -1271,8 +1262,8 @@ let normalize_variables uctx =
 let fix_undefined_variables uctx =
   { uctx with univ_variables = UnivFlex.fix_undefined_variables uctx.univ_variables }
 
-let collapse_above_prop_sort_variables ~to_prop uctx =
-  { uctx with sort_variables = QState.collapse_above_prop ~to_prop uctx.sort_variables }
+let collapse_elim_to_prop_sort_variables ~to_prop uctx =
+  { uctx with sort_variables = QState.collapse_elim_to_prop ~to_prop uctx.sort_variables }
 
 let collapse_sort_variables ?except uctx =
   { uctx with sort_variables = QState.collapse ?except uctx.sort_variables }

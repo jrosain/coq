@@ -124,20 +124,20 @@ let local_check_scheme kind ind eff =
 
 let define ?loc internal role id c poly uctx =
   let id = compute_name internal id in
-  let uctx = UState.collapse_above_prop_sort_variables ~to_prop:true uctx in
+  let uctx = UState.collapse_elim_to_prop_sort_variables ~to_prop:true uctx in
   let uctx = UState.minimize uctx in
   let c = UState.nf_universes uctx c in
   let uctx = UState.restrict uctx (Vars.universes_of_constr c) in
   let univs = UState.univ_entry ~poly uctx in
   !declare_definition_scheme ~internal ~univs ~role ~name:id ?loc c
 
-  module Locmap : sig
+module Locmap : sig
 
-    type t
+  type t
 
-    val default : Loc.t option -> t
-    val make : ?default:Loc.t -> MutInd.t -> Loc.t option list -> t
-    val lookup : locmap:t -> Names.inductive -> Loc.t option
+  val default : Loc.t option -> t
+  val make : ?default:Loc.t -> MutInd.t -> Loc.t option list -> t
+  val lookup : locmap:t -> Names.inductive -> Loc.t option
 
 end = struct
 

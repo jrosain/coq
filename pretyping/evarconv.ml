@@ -1469,7 +1469,8 @@ let evar_unify = conv_fun evar_conv_x
 
 let evar_conv_hook = ref evar_conv_x
 
-let evar_conv_x flags = !evar_conv_hook flags
+let evar_conv_x flags =
+  !evar_conv_hook flags
 
 let set_evar_conv f = evar_conv_hook := f
 

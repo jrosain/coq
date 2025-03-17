@@ -335,13 +335,9 @@ let top_allowed_sort env (kn,i as ind) =
   elim_sort specif
 
 let constant_sorts_below top =
-  (* TTT: CHANGE - What to do
-     J: here, it's fine to use the constants as it's called to generate
-        elimination schemes. I've changed the function name to say that we are
-        treating only constants. *)
   List.filter
-	 (Quality.eliminates_to top)
-	 (Quality.all_constants)
+    (Quality.eliminates_to top)
+    (Quality.all_constants)
 
 let sorts_for_schemes specif =
   constant_sorts_below (elim_sort specif)

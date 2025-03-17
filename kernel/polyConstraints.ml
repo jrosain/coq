@@ -96,8 +96,10 @@ let enforce_leq_level u v c =
 
 let add_quality_or_fail q1 op q2 csts =
   match q1, q2 with
-  | Quality.(QConstant _), Quality.(QConstant _) -> raise (QGraph.QualitityInconsistency "JJJ TODO")
-  | _ -> add_quality (q1, op , q2) csts
+  | Quality.(QConstant _), Quality.(QConstant _) ->
+     let m = Pp.str"Cannot add elimination constraint between two constant sorts" in
+     raise (QGraph.QualityInconsistency (None, (op, q1, q2, Some m)))
+  | _ -> add_quality (q1, op, q2) csts
 
 let enforce_eq_quality q1 q2 csts =
   if Quality.equal q1 q2 then csts

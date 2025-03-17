@@ -1671,7 +1671,11 @@ let rec vernac_interp_error_handler = function
     UGraph.explain_universe_inconsistency
       Quality.QVar.raw_pr
       UnivNames.pr_level_with_global_universes
-      i ++ str "."
+		  i ++ str "."
+  | QGraph.QualityInconsistency i ->
+     str "Quality inconsistency." ++ spc() ++
+     QGraph.explain_quality_inconsistency
+       Quality.QVar.raw_pr i
   | TypeError(env,te) ->
     let te = of_type_error te in
     explain_type_error env (Evd.from_env env) te

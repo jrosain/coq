@@ -192,7 +192,7 @@ let constraint_obj =
     load_function = (fun _ c -> cache_constraint_source c);
     discharge_function = (fun x -> Some x);
     classify_function = (fun _ -> Escape);
-  } 
+  }
 
 (* XXX this seems like it could be merged with declare_univ_binders
    main issue is the filtering or redundant constraints (needed for perf / smaller vo file sizes) *)
