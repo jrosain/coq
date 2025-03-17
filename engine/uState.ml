@@ -184,7 +184,8 @@ let add ~check_fresh ~rigid q m =
     constraints = QGraph.add_quality m.constraints (QVar q) }
 
 let of_set qs =
-  { rigid = QSet.empty; qmap = QMap.bind (fun _ -> None) qs; constraints = QGraph.initial_quality_constraints }
+  let constraints = QSet.fold (fun q acc -> QGraph.add_quality acc (QVar q)) qs QGraph.initial_quality_constraints in
+  { rigid = QSet.empty; qmap = QMap.bind (fun _ -> None) qs; constraints }
 
 (* XXX what about [above]? *)
 let undefined m =
@@ -192,21 +193,23 @@ let undefined m =
   QMap.domain m
 
 let collapse_elim_to_prop ~to_prop m =
-  let map q v = match v with
-    | None ->
-      if not @@ QGraph.eliminates_to_prop m.constraints (QVar q) then None else
-      if to_prop then Some qprop
-      else Some qtype
-  | Some _ -> v
-  in
-  { rigid = m.rigid; qmap = QMap.mapi map m.qmap; constraints = QGraph.initial_quality_constraints }
+  QMap.fold (fun q v m ->
+      match v with
+      | Some _ -> m
+      | None ->
+        if not @@ QGraph.eliminates_to_prop m.constraints (QVar q) then m else
+        if to_prop then Option.get (set q qprop m)
+        else Option.get (set q qtype m)
+    )
+    m.qmap m
 
 let collapse ?(except=QSet.empty) m =
-  let map q v = match v with
-  | None -> if QSet.mem q m.rigid || QSet.mem q except then None else Some qtype
-  | Some _ -> v
-  in
-  { rigid = m.rigid; qmap = QMap.mapi map m.qmap; constraints = QGraph.initial_quality_constraints }
+  QMap.fold (fun q v m ->
+      match v with
+      | Some _ -> m
+      | None -> if QSet.mem q m.rigid || QSet.mem q except then m
+        else Option.get (set q qtype m))
+    m.qmap m
 
 let pr prqvar_opt { qmap; constraints; rigid } =
   let open Pp in
@@ -743,7 +746,7 @@ let add_universe_constraints uctx cstrs =
     local = (univs, PolyConstraints.union local local');
     univ_variables = vars;
     universes = merge_level_constraints uctx (PolyConstraints.levels local') uctx.universes;
-    sort_variables = merge_elim_constraints uctx (PolyConstraints.qualities local') uctx.sort_variables;
+    sort_variables = merge_elim_constraints uctx (PolyConstraints.qualities local') sorts;
     minim_extra = extra; }
 
 let problem_of_constraints cstrs =
