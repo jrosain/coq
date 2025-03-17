@@ -248,7 +248,7 @@ let template_subst_sort (subst : template_subst) = function
     | Some q -> Int.Map.get q (fst subst)
   in
   (* shortcut for impredicative quality *)
-  if Quality.(equal qprop q) then Sorts.prop
+  if Quality.is_qprop q then Sorts.prop
   else Sorts.make q (template_subst_universe subst u)
 
 let rec template_subst_ctx accu subs ctx params = match ctx, params with

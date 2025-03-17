@@ -943,7 +943,7 @@ struct
              (alternatively: return qtype?) *)
           let mk q = ESorts.make @@ Sorts.make q Univ.Universe.type0 in
           let unify sigma q' =
-            if Quality.(equal qprop q') then sigma
+            if Quality.is_qprop q' then sigma
             else Evd.set_eq_sort sigma (mk q) (mk q')
           in
           let sigma' = List.fold_left unify !sigma rest in

@@ -387,7 +387,7 @@ let get_template_binding_arity sigma c =
 
 let non_template_levels sigma ~params ~arity ~constructors =
   let ctx, u = EConstr.destArity sigma arity in
-  (* locally making the conclusion qvar above_prop means its
+  (* locally making the conclusion qvar eliminate to prop means its
      appearances in relevance marks aren't counted *)
   let sigma = match ESorts.kind sigma u with
     | QSort (q, _) -> Evd.set_elim_to_prop sigma (QVar q)
