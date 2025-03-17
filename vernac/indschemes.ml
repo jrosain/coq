@@ -210,13 +210,6 @@ let declare_one_case_analysis_scheme ?loc ind =
       Some Names.(Id.of_string (Id.to_string mip.mind_typename ^ "_" ^ suff))
   in
   let kelim = Inductiveops.elim_sort (mib,mip) in
-    (* in case the inductive has a type elimination, generates only one
-       induction scheme, the other ones share the same code with the
-       appropriate type *)
-  (* TTT: FIX - get graph differently?
-     - J: I think it's best to use Quality.eliminates_to for constant cases.
-          Here, I label it as "constant" as we check whether it eliminates into
-          qtype, thus the case (QVar, QVar) will never be called anyway. *)
   if Quality.eliminates_to kelim Quality.qtype then
     define_individual_scheme ?loc dep id ind
 

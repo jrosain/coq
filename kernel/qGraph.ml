@@ -25,28 +25,45 @@ module G = AcyclicGraph.Make(struct
 
 type t = G.t
 
-exception QualitityInconsistency of string
+type quality_inconsistency =
+  ((Quality.QVar.t -> Pp.t) option) * (ElimConstraint.kind * quality * quality * Pp.t option)
 
-let enforce_constraint0 (q1, cst, q2) g =
+exception QualityInconsistency of quality_inconsistency
+
+(* If s can eliminate to s', we want an edge between s and s'.
+   In the acyclic graph, it means setting s to be lower or equal than s'.
+   This function ensures a uniform behaviour between [check] and [enforce]. *)
+let to_graph_cstr k =
   let open ElimConstraint in
-  match cst with
-  | ElimTo -> G.enforce_leq q1 q2 g
-  | SElimTo -> G.enforce_lt q1 q2 g
-  | Eq -> G.enforce_eq q1 q2 g
+  match k with
+    | ElimTo -> AcyclicGraph.Le
+    | SElimTo -> AcyclicGraph.Lt
+    | Eq -> AcyclicGraph.Eq
 
-let enforce_constraint cstr g =
-  match enforce_constraint0 cstr g with
-  | None -> raise (QualitityInconsistency "Inconsistency")
+let check_func k =
+  let open AcyclicGraph in
+  match to_graph_cstr k with
+  | Le -> G.check_leq
+  | Lt -> G.check_lt
+  | Eq -> G.check_eq
+
+let enforce_func k =
+  let open AcyclicGraph in
+  match to_graph_cstr k with
+  | Le -> G.enforce_leq
+  | Lt -> G.enforce_lt
+  | Eq -> G.enforce_eq
+
+let enforce_constraint (q1,k,q2) g =
+  match enforce_func k q1 q2 g with
+  | None ->
+     let m = Pp.str"Impossible to enforce this constraint in the graph." in
+     raise @@ QualityInconsistency (None, (k, q1, q2, Some m))
   | Some g -> g
 
 let merge_constraints csts g = ElimConstraints.fold enforce_constraint csts g
 
-let check_constraint g (q1, c, q2) =
-  let open ElimConstraint in
-  match c with
-  | ElimTo -> G.check_leq g q1 q2
-  | SElimTo -> G.check_lt g q1 q2
-  | Eq -> G.check_eq g q1 q2
+let check_constraint g (q1, k, q2) = check_func k g q1 q2
 
 let check_constraints csts g = ElimConstraints.for_all (check_constraint g) csts
 
@@ -58,7 +75,7 @@ let add_quality g q =
 let enforce_eliminates_to s1 s2 g =
   enforce_constraint (s1, ElimConstraint.ElimTo, s2) g
 
-let enforce_eq g s1 s2 =
+let enforce_eq s1 s2 g =
   enforce_constraint (s1, ElimConstraint.Eq, s2) g
 
 (* let add_qvar q g = add_quality g (QVar q) *)
@@ -79,7 +96,7 @@ let initial_quality_constraints =
     g all_constants
 
 (* TTT: Rename to eliminates_to to keep it consistent with Quality? *)
-let is_allowed_elimination = G.check_leq
+let is_allowed_elimination = check_func ElimConstraint.ElimTo
 
 let sort_eliminates_to g s1 s2 =
   is_allowed_elimination g (Sorts.quality s1) (Sorts.quality s2)
@@ -104,3 +121,10 @@ let is_empty g = Set.is_empty (domain g)
 let add_template_qvars =
   QVar.Set.fold
     (fun v -> enforce_eliminates_to (QVar v) Quality.qprop)
+
+let explain_quality_inconsistency defprv (prv, (k, q1, q2, msg)) =
+  let open Pp in
+  let prv = match prv with None -> defprv | Some prv -> prv in
+  let msg = match msg with None -> mt () | Some m -> m in
+  str "Cannot enforce" ++ spc() ++ Quality.pr prv q1 ++ spc() ++
+    ElimConstraint.pr_kind k ++ spc() ++ Quality.pr prv q2 ++ spc() ++ msg

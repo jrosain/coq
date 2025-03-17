@@ -14,7 +14,10 @@ open Quality
 
 type t
 
-exception QualitityInconsistency of string (* FIXME : something else *)
+type quality_inconsistency =
+  ((Quality.QVar.t -> Pp.t) option) * (ElimConstraint.kind * quality * quality * Pp.t option)
+
+exception QualityInconsistency of quality_inconsistency
 
 exception AlreadyDeclared
 val add_quality : t -> quality -> t
@@ -28,7 +31,7 @@ val enforce_eliminates_to : quality -> quality -> t -> t
 (** Checks whether the first quality eliminates to the second. If it's
     consistent within the graph, then adds the constraint. *)
 
-val enforce_eq : t -> quality -> quality -> t
+val enforce_eq : quality -> quality -> t -> t
 (** Checks whether the first quality is equal to the second. If it's
     consistent within the graph, then adds the constraint. *)
 
@@ -58,3 +61,5 @@ val is_empty : t -> bool
 val add_template_qvars : QVar.Set.t -> t -> t
 (** Set all the qvars in the set to eliminate to Prop.
     Do not use outside kernel inductive typechecking. *)
+
+val explain_quality_inconsistency : (QVar.t -> Pp.t) -> quality_inconsistency -> Pp.t
