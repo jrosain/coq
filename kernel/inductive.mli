@@ -99,7 +99,7 @@ val is_squashed : env -> mind_specif puniverses -> squash option
 val is_allowed_elimination_actions : env -> Sorts.t -> bool allow_elimination_actions
 
 val is_allowed_elimination : env -> mind_specif puniverses -> Sorts.t -> bool
-val is_allowed_fixpoint : env -> Sorts.t -> Sorts.t -> bool
+val is_allowed_fixpoint : QGraph.t -> Sorts.t -> Sorts.t -> bool
 
 val is_private : mind_specif -> bool
 val is_primitive_record : mind_specif -> bool

@@ -409,9 +409,27 @@ let get_constructors env (ind,params) =
 
 let get_projections = Environ.get_projections
 
-let make_case_invert env sigma (IndType (((ind,u),params),indices)) ~case_relevance:r ci =
+let make_case_invert env sigma (IndType (((ind,u),params),indices)) ~case_relevance:r (ci : Constr.case_info) =
+  (* JJJ temporary copy of Typeops functions *)
+  (* ************************************* *)
+  let nf_relevance = function
+  | Sorts.RelevanceVar q as r ->
+    if UState.check_elim_to_prop (Evd.ustate sigma) (Quality.QVar q) then Sorts.Relevant
+    else r
+  | (Sorts.Irrelevant | Sorts.Relevant) as r -> r in
+  let should_invert_case r =
+    Sorts.relevance_equal (nf_relevance r) Sorts.Relevant &&
+      let mib,mip = Inductive.lookup_mind_specif env ci.ci_ind in
+	(* mind_relevance cannot be a pseudo sort poly variable so don't use check_relevance *)
+	Sorts.relevance_equal mip.mind_relevance Sorts.Irrelevant &&
+	  match Array.length mip.mind_nf_lc with
+	  | 0 -> true
+	  | 1 ->
+	     List.length (fst mip.mind_nf_lc.(0)) = List.length mib.mind_params_ctxt
+	  | _ -> false in
+  (* ************************************* *)
   let r = ERelevance.kind sigma r in
-  if Typeops.should_invert_case env r ci
+  if should_invert_case r
   then Constr.CaseInvert {indices=Array.of_list indices}
   else Constr.NoInvert
 

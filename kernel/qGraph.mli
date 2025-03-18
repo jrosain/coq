@@ -20,7 +20,7 @@ type quality_inconsistency =
 exception QualityInconsistency of quality_inconsistency
 
 exception AlreadyDeclared
-val add_quality : t -> quality -> t
+val add_quality : quality -> t -> t
 (** Add a quality to the graph. Enforces Type to be eliminable to the new quality *)
 
 val merge_constraints : ElimConstraints.t -> t -> t
@@ -30,6 +30,8 @@ val check_constraints : ElimConstraints.t -> t -> bool
 val enforce_eliminates_to : quality -> quality -> t -> t
 (** Checks whether the first quality eliminates to the second. If it's
     consistent within the graph, then adds the constraint. *)
+
+val enforce_strict_eliminates_to : quality -> quality -> t -> t
 
 val enforce_eq : quality -> quality -> t -> t
 (** Checks whether the first quality is equal to the second. If it's

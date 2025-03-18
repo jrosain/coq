@@ -68,12 +68,15 @@ let check_constraint g (q1, k, q2) = check_func k g q1 q2
 let check_constraints csts g = ElimConstraints.for_all (check_constraint g) csts
 
 exception AlreadyDeclared = G.AlreadyDeclared
-let add_quality g q =
+let add_quality q g =
   let g = G.add q g in (* Should it fail? Yes *)
   enforce_constraint (qtype, ElimConstraint.ElimTo, q) g
 
 let enforce_eliminates_to s1 s2 g =
   enforce_constraint (s1, ElimConstraint.ElimTo, s2) g
+
+let enforce_strict_eliminates_to q1 q2 g =
+  enforce_constraint (q1, ElimConstraint.SElimTo, q2) g
 
 let enforce_eq s1 s2 g =
   enforce_constraint (s1, ElimConstraint.Eq, s2) g

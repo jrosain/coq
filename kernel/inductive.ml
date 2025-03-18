@@ -453,12 +453,11 @@ let is_allowed_elimination env specifu s =
 
 (* We always allow fixpoints on values in Prop (for the accessibility predicate for instance). *)
 
-let is_allowed_fixpoint env sind star =
+let is_allowed_fixpoint g sind star =
   Sorts.equal sind Sorts.prop ||
-    QGraph.is_allowed_elimination
-	     (qualities env)
-	     (Sorts.quality sind)
-	     (Sorts.quality star)
+    QGraph.is_allowed_elimination g
+      (Sorts.quality sind)
+      (Sorts.quality star)
 
 let is_private (mib,_) = mib.mind_private = Some true
 let is_primitive_record (mib,_) =
@@ -1642,7 +1641,10 @@ let inductive_of_mutfix ?evars env ((nvect,bodynum),(names,types,bodies as recde
 	let sind = UVars.subst_instance_sort inst mip.mind_sort in
 	let u = Sorts.univ_of_sort sind in
 	let bsort = Sorts.of_relevance u names.(i).Context.binder_relevance in
-	if not (is_allowed_fixpoint env sind bsort) then
+	let constraints = match evars with
+	  | Some evars -> CClosure.qgraph evars
+	  | None -> Environ.qualities env in
+	if not (is_allowed_fixpoint constraints sind bsort) then
 	  raise_err env i @@ FixpointOnNonEliminable (sind, bsort)
     in
     res

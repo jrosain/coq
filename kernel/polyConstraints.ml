@@ -29,6 +29,8 @@ let of_qualities qc = make qc LvlConstraints.empty
 
 let of_levels lc = make ElimConstraints.empty lc
 
+let set_levels lc (qc,_) = make qc lc
+
 let empty = (ElimConstraints.empty, LvlConstraints.empty)
 
 let is_empty (qc, lc) =

@@ -75,6 +75,8 @@ val nf_universes : t -> Constr.t -> Constr.t
 val ugraph : t -> UGraph.t
 (** The current graph extended with the local constraints *)
 
+val qgraph : t -> QGraph.t
+
 val is_algebraic : Level.t -> t -> bool
 (** Can this universe be instantiated with an algebraic
     universe (ie it appears in inferred types only). *)
@@ -126,6 +128,8 @@ val add_universe_constraints : t -> UnivProblem.Set.t -> t
 *)
 
 val check_elim_constraints : t -> Quality.ElimConstraints.t -> bool
+
+val check_elim_to_prop : t -> Quality.t -> bool
 
 val check_universe_constraints : t -> UnivProblem.Set.t -> bool
 
@@ -230,16 +234,18 @@ val collapse_elim_to_prop_sort_variables : to_prop:bool -> t -> t
 
 val collapse_sort_variables : ?except:Quality.QVar.Set.t -> t -> t
 
-type ('a, 'b, 'c) gen_universe_decl = {
+type ('a, 'b, 'c, 'd) gen_universe_decl = {
   univdecl_qualities : 'a;
   univdecl_extensible_qualities : bool;
-  univdecl_instance : 'b; (* Declared universes *)
+  univdecl_elim_constraints : 'b;
+  univdecl_extensible_elim_constraints : bool;
+  univdecl_instance : 'c; (* Declared universes *)
   univdecl_extensible_instance : bool; (* Can new universes be added *)
-  univdecl_constraints : 'c; (* Declared constraints *)
-  univdecl_extensible_constraints : bool (* Can new constraints be added *) }
+  univdecl_lvl_constraints : 'd; (* Declared constraints *)
+  univdecl_extensible_lvl_constraints : bool (* Can new constraints be added *) }
 
 type universe_decl =
-  (Quality.QVar.t list, Level.t list, PolyConstraints.t) gen_universe_decl
+  (Quality.QVar.t list, Quality.ElimConstraints.t, Level.t list, LvlConstraints.t) gen_universe_decl
 
 val default_univ_decl : universe_decl
 

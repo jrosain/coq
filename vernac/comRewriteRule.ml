@@ -389,18 +389,25 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
         evd
         udecl.univdecl_instance
     in
-    let cstrs =
-      udecl.univdecl_constraints |> List.to_seq
+    let elim_cstrs =
+      udecl.univdecl_elim_constraints |> List.to_seq
+      |> Seq.map (Constrintern.interp_elim_constraint evd)
+      |> Quality.ElimConstraints.of_seq
+    in
+    let lvl_cstrs =
+      udecl.univdecl_lvl_constraints |> List.to_seq
       |> Seq.map (Constrintern.interp_level_constraint evd)
-      |> Univ.LvlConstraints.of_seq |> PolyConstraints.of_levels
+      |> Univ.LvlConstraints.of_seq
     in
     let decl = {
       univdecl_qualities = qualities;
       univdecl_extensible_qualities = udecl.univdecl_extensible_qualities;
+      univdecl_elim_constraints = elim_cstrs;
+      univdecl_extensible_elim_constraints = udecl.univdecl_extensible_elim_constraints;
       univdecl_instance = instance;
       univdecl_extensible_instance = udecl.univdecl_extensible_instance;
-      univdecl_constraints = cstrs;
-      univdecl_extensible_constraints = udecl.univdecl_extensible_constraints;
+      univdecl_lvl_constraints = lvl_cstrs;
+      univdecl_extensible_lvl_constraints = udecl.univdecl_extensible_lvl_constraints;
     } in
     evd, decl
   in
