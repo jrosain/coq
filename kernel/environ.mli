@@ -79,6 +79,8 @@ val named_context_val : env -> named_context_val
 
 val set_universes : UGraph.t -> env -> env
 
+val set_qualities : QGraph.t -> env -> env
+
 val typing_flags    : env -> typing_flags
 val is_impredicative_set : env -> bool
 val type_in_type : env -> bool

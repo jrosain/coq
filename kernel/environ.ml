@@ -471,7 +471,7 @@ let add_universes ~strict ctx g =
 
 let add_qualities ctx g =
   let qs, _ = UVars.Instance.to_array (UVars.PolyContext.instance ctx) in
-  let g = Array.fold_left QGraph.add_quality g qs in
+  let g = Array.fold_right QGraph.add_quality qs g in
   QGraph.merge_constraints
     (PolyConstraints.qualities @@ UVars.PolyContext.constraints ctx) g
 
@@ -493,7 +493,7 @@ let push_context_set ?(strict=false) ctx env =
 
 let add_qualities_set qvars csts g =
   let g = Quality.QVar.Set.fold
-	    (fun qvar g -> QGraph.add_quality g (Quality.QVar qvar))
+	    (fun q -> QGraph.add_quality (Quality.QVar q))
        	    qvars g
   in QGraph.merge_constraints (PolyConstraints.qualities csts) g
 

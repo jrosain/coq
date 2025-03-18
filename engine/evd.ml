@@ -854,7 +854,8 @@ let evar_handler sigma =
   | exception Not_found -> false (* Should be an anomaly *)
   in
   let evar_repack ev = mkLEvar sigma ev in
-  { CClosure.evar_expand; evar_irrelevant; evar_repack; qvar_irrelevant }
+  let qgraph = UState.qgraph sigma.universes in
+  { CClosure.evar_expand; evar_irrelevant; evar_repack; qvar_irrelevant; qgraph }
 
 let existential_type_opt d (n, args) =
   match find_undefined d n with
@@ -1048,7 +1049,7 @@ let check_univ_decl_early ~poly ~with_obls sigma udecl terms =
   let () =
     if with_obls && not poly &&
        (not udecl.UState.univdecl_extensible_instance
-        || not udecl.UState.univdecl_extensible_constraints)
+        || not udecl.UState.univdecl_extensible_lvl_constraints)
     then
       CErrors.user_err
         Pp.(str "Non extensible universe declaration not supported \

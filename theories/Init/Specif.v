@@ -40,6 +40,7 @@ Inductive sig2 (A:Type) (P Q:A -> Prop) : Type :=
 (** [(sigT A P)], or more suggestively [{x:A & (P x)}] is a Sigma-type.
     Similarly for [(sigT2 A P Q)], also written [{x:A & (P x) & (Q x)}]. *)
 
+Comments Hello.
 #[universes(template)]
 Inductive sigT (A:Type) (P:A -> Type) : Type :=
     existT : forall x:A, P x -> sigT P.
@@ -393,7 +394,6 @@ Section sigT.
   (** Equivalence of equality of [sigT] with a [sigT] of equality *)
   (** We could actually prove an isomorphism here, and not just [<->],
       but for simplicity, we don't. *)
-  Set Debug "all".
   Definition eq_sigT_uncurried_iff {A P}
              (u v : { a : A & P a })
     : u = v <-> { p : u.1 = v.1 & rew p in u.2 = v.2 }.

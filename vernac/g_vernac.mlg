@@ -231,6 +231,10 @@ let test_univ_decl =
   let open Procq.Lookahead in
   to_entry "test_univ_decl" (lk_ident_list >> lk_kw "|" >> lk_ident_list >> (lk_kw "+" <+> lk_empty) >> (lk_kw "|" <+> lk_kw "|}"))
 
+let test_qelim_decl =
+  let open Procq.Lookahead in
+  to_entry "test_qelim_decl" (lk_ident_list >> lk_kw "|" >> lk_list (lk_ident >> lk_kw "->" >> lk_ident) >> (lk_kw "|" <+> lk_kw "}"))
+
 let test_cumul_univ_decl =
   let open Procq.Lookahead in
   let lk_list_variance_ident = lk_list (lk_kw "+" <+> lk_kw "*" <+> lk_kw "=" <+> lk_ident) in
@@ -349,27 +353,52 @@ GRAMMAR EXTEND Gram
         ext = [ "+" -> { true } | -> { false } ]; "}" -> { (l',ext) }
       | ext = [ "}" -> { true } | bar_cbrace -> { false } ] -> { ([], ext) } ] ]
   ;
+  elim_constraint:
+    [ [ l = sort_quality_var; "->";
+        r = sort_quality_var -> { (l, Quality.ElimConstraint.ElimTo, r) } ] ]
+  ;
+  sort_elim_constraints: 
+    [ [ "|"; l' = LIST0 elim_constraint SEP ",";
+        ext = [ "+" -> { true } | -> { false } ] -> { (l',ext) }
+    ] ]
+  ;
   univ_decl:
-    [ [ "@{" ; test_univ_decl; l0 = LIST0 identref; "|";  l = LIST0 identref; ext = [ "+" -> { true } | -> { false } ];
+    [ [ "@{" ; test_qelim_decl; l0 = LIST0 identref; s = sort_elim_constraints; "|";  l = LIST0 identref; ext = [ "+" -> { true } | -> { false } ];
          cs = univ_decl_constraints
          ->
          { let open UState in
          { univdecl_qualities = l0;
            univdecl_extensible_qualities = false;
+           univdecl_elim_constraints = fst s;
+           univdecl_extensible_elim_constraints = snd s;
            univdecl_instance = l;
            univdecl_extensible_instance = ext;
-           univdecl_constraints = fst cs;
-           univdecl_extensible_constraints = snd cs } }
+           univdecl_lvl_constraints = fst cs;
+           univdecl_extensible_lvl_constraints = snd cs } }
+    | "@{" ; test_univ_decl; l0 = LIST0 identref; "|";  l = LIST0 identref; ext = [ "+" -> { true } | -> { false } ];
+         cs = univ_decl_constraints
+         ->
+         { let open UState in
+         { univdecl_qualities = l0;
+           univdecl_extensible_qualities = false;
+           univdecl_elim_constraints = [];
+           univdecl_extensible_elim_constraints = false;
+           univdecl_instance = l;
+           univdecl_extensible_instance = ext;
+           univdecl_lvl_constraints = fst cs;
+           univdecl_extensible_lvl_constraints = snd cs } }
     | "@{" ; l = LIST0 identref; ext = [ "+" -> { true } | -> { false } ];
          cs = univ_decl_constraints
          ->
          { let open UState in
          { univdecl_qualities = [];
            univdecl_extensible_qualities = false;
+           univdecl_elim_constraints = [];
+           univdecl_extensible_elim_constraints = false;
            univdecl_instance = l;
            univdecl_extensible_instance = ext;
-           univdecl_constraints = fst cs;
-           univdecl_extensible_constraints = snd cs } }
+           univdecl_lvl_constraints = fst cs;
+           univdecl_extensible_lvl_constraints = snd cs } }
     ] ]
   ;
   variance:
@@ -386,17 +415,19 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   cumul_univ_decl:
-    [ [ "@{" ; test_cumul_univ_decl; l0 = LIST0 identref; "|";
+    [ [ "@{" ; test_cumul_univ_decl; l0 = LIST0 identref; qs = sort_elim_constraints; "|";
         l = LIST0 variance_identref; ext = [ "+" -> { true } | -> { false } ];
          cs = univ_decl_constraints
          ->
          { let open UState in
          { univdecl_qualities = l0;
            univdecl_extensible_qualities = false;
+           univdecl_elim_constraints = fst qs;
+           univdecl_extensible_elim_constraints = snd qs;
            univdecl_instance = l;
            univdecl_extensible_instance = ext;
-           univdecl_constraints = fst cs;
-           univdecl_extensible_constraints = snd cs } }
+           univdecl_lvl_constraints = fst cs;
+           univdecl_extensible_lvl_constraints = snd cs } }
 
        | "@{" ; l = LIST0 variance_identref; ext = [ "+" -> { true } | -> { false } ];
          cs = univ_decl_constraints
@@ -404,10 +435,12 @@ GRAMMAR EXTEND Gram
          { let open UState in
          { univdecl_qualities = [];
            univdecl_extensible_qualities = false;
+           univdecl_elim_constraints = [];
+           univdecl_extensible_elim_constraints = false;
            univdecl_instance = l;
            univdecl_extensible_instance = ext;
-           univdecl_constraints = fst cs;
-           univdecl_extensible_constraints = snd cs } }
+           univdecl_lvl_constraints = fst cs;
+           univdecl_extensible_lvl_constraints = snd cs } }
     ] ]
   ;
   ident_decl:
