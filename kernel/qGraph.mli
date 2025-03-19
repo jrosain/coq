@@ -25,6 +25,7 @@ val add_quality : quality -> t -> t
 
 val merge_constraints : ElimConstraints.t -> t -> t
 
+val check_constraint : t -> ElimConstraint.t -> bool
 val check_constraints : ElimConstraints.t -> t -> bool
 
 val enforce_eliminates_to : quality -> quality -> t -> t

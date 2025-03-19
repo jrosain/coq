@@ -30,6 +30,8 @@ val of_qualities : ElimConstraints.t -> t
 
 val of_levels : LvlConstraints.t -> t
 
+val set_qualities : ElimConstraints.t -> t -> t
+
 val set_levels : LvlConstraints.t -> t -> t
 
 val add_quality : ElimConstraint.t -> t -> t

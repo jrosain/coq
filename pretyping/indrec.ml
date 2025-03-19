@@ -147,7 +147,7 @@ let check_valid_elimination env sigma (ind, u as pind) ~dep s =
       raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (false, ind)))
   in
   let () = check_privacy_block specif in
-  match Inductiveops.make_allowed_elimination env sigma (specif,u) s with
+  match Inductiveops.make_allowed_elimination sigma (specif,u) s with
   | Some sigma -> sigma
   | None ->
     let s = EConstr.ESorts.kind sigma s in
@@ -649,7 +649,7 @@ let build_case_analysis_scheme_default env sigma pity kind =
 let check_arities env sigma listdepkind =
   let _ = List.fold_left
      (fun ln (((_,ni as mind),u),mibi,mipi,dep,s) ->
-       if not @@ Inductiveops.is_allowed_elimination env sigma ((mibi,mipi),u) s then
+       if not @@ Inductiveops.is_allowed_elimination sigma ((mibi,mipi),u) s then
         let s = ESorts.kind sigma s in
         let u = EInstance.kind sigma u in
         raise

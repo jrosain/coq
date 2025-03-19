@@ -86,20 +86,20 @@ type 'a allow_elimination_actions =
   ; squashed_to_quality : Quality.t -> 'a }
 
 val is_squashed_gen :
-  env -> ('a -> Sorts.t -> Quality.t) -> ('a -> Quality.Set.elt -> Quality.t)
+  QGraph.t -> ('a -> Sorts.t -> Quality.t) -> ('a -> Quality.Set.elt -> Quality.t)
   -> (mind_specif * 'a) -> squash option
 
 val allowed_elimination_gen :
-  env -> ('a -> Sorts.t -> Quality.t) -> ('a -> Quality.Set.elt -> Quality.t)
+  QGraph.t -> ('a -> Sorts.t -> Quality.t) -> ('a -> Quality.Set.elt -> Quality.t)
       -> 'b allow_elimination_actions -> (mind_specif * 'a) -> Sorts.t -> 'b
 
 
 val is_squashed : env -> mind_specif puniverses -> squash option
 
-val is_allowed_elimination_actions : env -> Sorts.t -> bool allow_elimination_actions
+val is_allowed_elimination_actions : QGraph.t -> Sorts.t -> bool allow_elimination_actions
 
 val is_allowed_elimination : env -> mind_specif puniverses -> Sorts.t -> bool
-val is_allowed_fixpoint : QGraph.t -> Sorts.t -> Sorts.t -> bool
+val is_allowed_fixpoint : (Quality.t -> Quality.t -> bool) -> Sorts.t -> Sorts.t -> bool
 
 val is_private : mind_specif -> bool
 val is_primitive_record : mind_specif -> bool
