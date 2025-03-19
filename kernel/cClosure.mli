@@ -129,7 +129,7 @@ type evar_handler = {
   evar_repack : Evar.t * constr list -> constr;
   evar_irrelevant : constr pexistential -> bool;
   qvar_irrelevant : Quality.QVar.t -> bool;
-  qgraph : QGraph.t
+  elim_to : Quality.t -> Quality.t -> bool;
 }
 
 val default_evar_handler : env -> evar_handler
@@ -138,7 +138,7 @@ val create_conv_infos :
 val create_clos_infos :
   ?univs:UGraph.t -> ?evars:evar_handler -> reds -> env -> clos_infos
 val oracle_of_infos : clos_infos -> Conv_oracle.oracle
-val qgraph : evar_handler -> QGraph.t
+val elim_to : evar_handler -> Quality.t -> Quality.t -> bool
 
 val create_tab : unit -> clos_tab
 

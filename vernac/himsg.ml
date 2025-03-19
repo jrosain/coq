@@ -241,6 +241,7 @@ let explain_elim_arity env sigma ind c okinds =
         if ppunivs then Flags.with_option Constrextern.print_universes pp ()
         else pp ()
       in
+      let env = Environ.set_qualities (UState.qgraph @@ Evd.ustate sigma) env in
       let squash = Option.get (Inductive.is_squashed env (specif, snd ind)) in
       match squash with
       | SquashToSet ->
@@ -284,11 +285,11 @@ let explain_elim_arity env sigma ind c okinds =
         let ppt = ppt ~ppunivs:true () in
         hov 0
           (str "the return type has sort" ++ spc () ++ ppt ++ spc () ++
-           str "while it should be in sort quality " ++ pr_evd_qvar sigma squashq ++ str ".") ++
+           str "while it should be in a sort " ++ pr_evd_qvar sigma squashq ++ str " eliminates to.") ++
         fnl () ++
         hov 0
           (str "Elimination of a sort polymorphic inductive object instantiated to a variable sort quality" ++ spc() ++
-           str "is only allowed on a predicate in the same sort quality.")
+           str "is only allowed on itself or with an explicit elimination constraint to the target sort.")
   in
   hov 0 (
     str "Incorrect elimination" ++

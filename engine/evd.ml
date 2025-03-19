@@ -854,8 +854,11 @@ let evar_handler sigma =
   | exception Not_found -> false (* Should be an anomaly *)
   in
   let evar_repack ev = mkLEvar sigma ev in
-  let qgraph = UState.qgraph sigma.universes in
-  { CClosure.evar_expand; evar_irrelevant; evar_repack; qvar_irrelevant; qgraph }
+  let elim_to q1 q2 =
+    let q1 = UState.nf_quality sigma.universes q1 in
+    let q2 = UState.nf_quality sigma.universes q2 in
+    QGraph.is_allowed_elimination (UState.qgraph sigma.universes) q1 q2 in
+  { CClosure.evar_expand; evar_irrelevant; evar_repack; qvar_irrelevant; elim_to }
 
 let existential_type_opt d (n, args) =
   match find_undefined d n with
