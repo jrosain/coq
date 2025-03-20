@@ -1629,20 +1629,17 @@ let inductive_of_mutfix ?evars env ((nvect,bodynum),(names,types,bodies as recde
             else anomaly ~label:"check_one_fix" (Pp.str "Bad occurrence of recursive call.")
         | _ -> raise_err env i NotEnoughAbstractionInFixBody
     in
-    let ((ind, _), _) as res = check_occur fixenv 1 def in
+    let ((ind, inst), _) as res = check_occur fixenv 1 def in
     let _, mip = lookup_mind_specif env ind in
     (* recursive sprop means non record with projections -> squashed *)
     let () =
       if Environ.is_type_in_type env (GlobRef.IndRef ind) then ()
       else
-	let sind  = mip.mind_sort in
+	let sind = UVars.subst_instance_sort inst mip.mind_sort in
 	let u = Sorts.univ_of_sort sind in
 	let bsort = Sorts.of_relevance u names.(i).Context.binder_relevance in
 	if not (is_allowed_fixpoint sind bsort) then
 	  raise_err env i @@ FixpointOnNonEliminable (sind, bsort)
-		    (* Currently, it's not allowing fixpoints on qvar with a *)
-		    (* qvar as target. It's going to be fixed once we have *)
-		    (* actual elimination constraints. *)
     in
     res
   in
