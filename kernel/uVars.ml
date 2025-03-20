@@ -493,6 +493,17 @@ let subst_sort_level_quality subst = function
   | Quality.QVar q ->
     subst_sort_level_qvar subst q
 
+let subst_univs_elim_constraint subst (q1,k,q2) =
+  let q1 = subst_sort_level_quality subst q1 in
+  let q2 = subst_sort_level_quality subst q2 in
+  (q1,k,q2)
+
+let subst_univs_constraints subst csts =
+  PolyConstraints.fold
+    ( (fun c -> Quality.ElimConstraints.add (subst_univs_elim_constraint subst c))
+    , (fun c -> Option.fold_right LvlConstraints.add (subst_univs_level_constraint (snd subst) c)))
+    csts PolyConstraints.empty
+
 let subst_sort_level_sort (_,usubst as subst) s =
   let fq qv = subst_sort_level_qvar subst qv in
   let fu u = subst_univs_level_universe usubst u in
@@ -523,7 +534,7 @@ let abstract_universes uctx =
   let nas = PolyContext.names uctx in
   let instance = PolyContext.instance uctx in
   let subst = make_instance_subst instance in
-  let cstrs = subst_univs_level_constraints (snd subst)
+  let cstrs = subst_univs_constraints subst
       (PolyContext.constraints uctx)
   in
   let ctx = (nas, cstrs) in

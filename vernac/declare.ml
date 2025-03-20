@@ -243,7 +243,7 @@ let make_univs_immediate_default ~poly ~opaque ~uctx ~udecl ~eff ~used_univs bod
      the actually used universes.
      TODO: check if restrict is really necessary now. *)
   let uctx = UState.restrict uctx used_univs in
-  let utyp = UState.check_univ_decl ~poly uctx udecl in (* JJJ check if elimination constraint is properly added *)
+  let utyp = UState.check_univ_decl ~poly uctx udecl in
   let utyp = match fst utyp with
     | Polymorphic_entry _ -> utyp
     | Monomorphic_entry uctx ->

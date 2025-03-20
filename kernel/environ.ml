@@ -581,7 +581,7 @@ let no_link_info = NotLinked
 
 let add_constant_key kn cb linkinfo env =
   let new_constants =
-    Cmap_env.add kn (cb,(ref linkinfo, ref None)) env.env_constants in (* JJJ nat'_elim should be added with elim constr *)
+    Cmap_env.add kn (cb,(ref linkinfo, ref None)) env.env_constants in
   let irr_constants = if cb.const_relevance != Sorts.Relevant
     then Cmap_env.add kn cb.const_relevance env.irr_constants
     else env.irr_constants
