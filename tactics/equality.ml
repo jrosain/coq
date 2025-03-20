@@ -979,7 +979,7 @@ let gen_absurdity id =
 
 let ind_scheme_of_eq lbeq to_kind =
   (* use ind rather than case by compatibility *)
-  let kind = Elimschemes.elim_scheme ~dep:false ~to_kind in
+  let kind = Elimschemes.elim_scheme ~dep:false ~to_kind ~cheat:false in
   find_scheme kind (destIndRef lbeq.eq) >>= fun c ->
   Proofview.tclUNIT (GlobRef.ConstRef c)
 

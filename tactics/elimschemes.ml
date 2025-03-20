@@ -105,9 +105,9 @@ let rect_dep =
   declare_individual_scheme_object "rect_dep"
     (fun env _ x -> build_induction_scheme_in_type env true Quality.qtype x)
 
-(* let rec_dep = *)
-(*   declare_individual_scheme_object "rec_dep" *)
-(*     (optimize_non_type_induction_scheme rect_dep true InSet) *)
+let rec_dep =
+  declare_individual_scheme_object "rec_dep"
+    (optimize_non_type_induction_scheme rect_dep true Quality.qtype)
 
 let ind_dep =
   declare_individual_scheme_object "ind_dep"
@@ -121,9 +121,9 @@ let rect_nodep =
   declare_individual_scheme_object "rect_nodep"
     (fun env _ x -> build_induction_scheme_in_type env false Quality.qtype x)
 
-(* let rec_nodep = *)
-(*   declare_individual_scheme_object "rec_nodep" *)
-(*     (optimize_non_type_induction_scheme rect_nodep false InSet) *)
+let rec_nodep =
+  declare_individual_scheme_object "rec_nodep"
+    (optimize_non_type_induction_scheme rect_nodep false Quality.qtype)
 
 let ind_nodep =
   declare_individual_scheme_object "ind_nodep"
@@ -133,14 +133,16 @@ let sind_nodep =
   declare_individual_scheme_object "sind_nodep"
     (fun env _ x -> build_induction_scheme_in_type env false Quality.qsprop x)
 
-let elim_scheme ~dep ~to_kind =
+let elim_scheme ~dep ~to_kind ~cheat =
   let open Quality in
   match dep, to_kind with
   | false, QConstant QSProp -> sind_nodep
   | false, QConstant QProp -> ind_nodep
+  | false, QConstant QType when cheat -> rec_nodep
   | false, (QConstant QType | QVar _) -> rect_nodep
   | true, QConstant QSProp -> sind_dep
   | true, QConstant QProp -> ind_dep
+  | true, QConstant QType when cheat -> rec_dep
   | true, (QConstant QType | QVar _) -> rect_dep
 
 (* Case analysis *)

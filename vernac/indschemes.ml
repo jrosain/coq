@@ -230,18 +230,18 @@ let declare_one_induction_scheme ?loc ind =
     else List.filter (fun s -> not (Sorts.Quality.is_qsprop s)) kelim
   in
   let elims =
-    List.filter (fun (sort,_) -> List.mem_f Sorts.Quality.equal sort kelim)
+    List.filter (fun (sort,_,_) -> List.mem_f Sorts.Quality.equal sort kelim)
       (* NB: the order is important, it makes it so that _rec is
          defined using _rect but _ind is not. *)
-      [(Sorts.Quality.qtype, "rect");
-       (Sorts.Quality.qprop, "ind");
-       (Sorts.Quality.qtype, "rec"); (* backward-compatibility with set *)
-       (Sorts.Quality.qsprop, "sind")]
+      [(Sorts.Quality.qtype, "rect", false);
+       (Sorts.Quality.qprop, "ind", false);
+       (Sorts.Quality.qtype, "rec", true);
+       (Sorts.Quality.qsprop, "sind", false)]
   in
-  let elims = List.map (fun (to_kind,dflt_suff) ->
-      if from_prop then elim_scheme ~dep:false ~to_kind, Some dflt_suff
-      else if depelim then elim_scheme ~dep:true ~to_kind, Some dflt_suff
-      else elim_scheme ~dep:false ~to_kind, None)
+  let elims = List.map (fun (to_kind,dflt_suff,cheat) ->
+      if from_prop then elim_scheme ~dep:false ~to_kind ~cheat, Some dflt_suff
+      else if depelim then elim_scheme ~dep:true ~to_kind ~cheat, Some dflt_suff
+      else elim_scheme ~dep:false ~to_kind ~cheat, None)
       elims
   in
   List.iter (fun (kind, suff) ->
@@ -419,7 +419,7 @@ let do_mutual_induction_scheme ?(force_mutual=false) env ?(isrec=true) l =
     let kind =
       let open Elimschemes in
       let open Sorts.Quality in
-      if isrec then Some (elim_scheme ~dep ~to_kind:sort)
+      if isrec then Some (elim_scheme ~dep ~to_kind:sort ~cheat:false)
       else match sort with
         | QConstant QType -> Some (if dep then case_dep else case_nodep)
         | QConstant QProp -> Some (if dep then casep_dep else casep_nodep)

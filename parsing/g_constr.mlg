@@ -146,6 +146,7 @@ GRAMMAR EXTEND Gram
   sort_quality:
     [ [ "Prop" -> { Sorts.Quality.qprop }
       | "SProp" -> { Sorts.Quality.qsprop }
+      | "Set" -> { Sorts.Quality.qtype }
       | "Type" -> { Sorts.Quality.qtype } ] ]
   ;
   universe_increment:
