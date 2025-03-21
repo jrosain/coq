@@ -30,6 +30,10 @@ val declare_congr_scheme : ?loc:Loc.t -> inductive -> unit
 
 val declare_rewriting_schemes : ?loc:Loc.t -> inductive -> unit
 
+(** Transform a [sort_name_expr] of inductive schemes (i.e., [sort_name_expr]
+    built using [sort_quality] in the grammar) into an actual sort quality *)
+val sort_name_expr_to_quality : Constrexpr.sort_name_expr -> Sorts.Quality.t
+
 (** Mutual Minimality/Induction scheme.
     [force_mutual] forces the construction of eliminators having the same predicates and
     methods even if some of the inductives are not recursive.

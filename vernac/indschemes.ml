@@ -340,14 +340,14 @@ let scheme_suffix_gen {sch_type; sch_sort} sort =
   let open Sorts.Quality in
   (* The _ind/_rec_/case suffix *)
   let ind_suffix = match sch_isrec sch_type, sch_sort with
-    | true  , QConstant QSProp
-    | true  , QConstant QProp  -> "_ind"
-    | true  , _                -> "_rec"
-    | false , _                -> "_case" in
+    | true  , CSProp
+    | true  , CProp  -> "_ind"
+    | true  , _      -> "_rec"
+    | false , _      -> "_case" in
   (* SProp and Type have an auxillary ending to the _ind suffix *)
   let aux_suffix = match sch_sort with
-    | QConstant QSProp -> "s"
-    | QConstant QType  -> "t"
+    | CSProp     -> "s"
+    | CRawType _ -> "t"
     | _       -> "" in
   (* Some schemes are deliminated with _dep or no_dep *)
   let dep_suffix = match sch_isdep sch_type , sort with
@@ -362,12 +362,21 @@ let smart_ind qid =
   if Dumpglob.dump() then Dumpglob.add_glob ?loc:qid.loc (IndRef ind);
   ind
 
+let sort_name_expr_to_quality sch_sort =
+  let open Constrexpr in
+  match sch_sort with
+  | CSProp -> Sorts.Quality.qsprop
+  | CProp -> Sorts.Quality.qprop
+  | CSet -> Sorts.Quality.qtype
+  | CRawType _ -> Sorts.Quality.qtype
+  | _ -> assert false
+
 (* Resolve the name of a scheme using an environment and extract some
    important data such as the inductive type involved, whether it is a dependent
    eliminator and its sort. *)
 let name_and_process_scheme env = function
   | (Some id, {sch_type; sch_qualid; sch_sort}) ->
-    (id, sch_isdep sch_type, smart_ind sch_qualid, sch_sort)
+    (id, sch_isdep sch_type, smart_ind sch_qualid, sort_name_expr_to_quality sch_sort)
   | (None, ({sch_type; sch_qualid; sch_sort} as sch)) ->
     (* If no name has been provided, we build one from the types of the ind requested *)
     let ind = smart_ind sch_qualid in
@@ -378,7 +387,7 @@ let name_and_process_scheme env = function
     let suffix = scheme_suffix_gen sch sort_of_ind in
     let newid = Nameops.add_suffix (Nametab.basename_of_global (Names.GlobRef.IndRef ind)) suffix in
     let newref = CAst.make newid in
-    (newref, sch_isdep sch_type, ind, sch_sort)
+    (newref, sch_isdep sch_type, ind, sort_name_expr_to_quality sch_sort)
 
 let do_mutual_induction_scheme ?(force_mutual=false) env ?(isrec=true) l =
   let sigma, inst =

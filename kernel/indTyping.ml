@@ -563,7 +563,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
     | Some (Some _) ->
       match check_record data with
       | None -> data, record, None
-      | Some _ as reason -> 
+      | Some _ as reason ->
         (* if someone tried to declare a record as SProp but it can't
            be primitive we must squash. *)
         let data = List.map (fun (a,b,univs) ->

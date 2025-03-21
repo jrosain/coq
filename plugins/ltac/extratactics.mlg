@@ -310,7 +310,7 @@ VERNAC COMMAND EXTEND DeriveInversionClear
 
 | #[ polymorphic; ] [ "Derive" "Inversion_clear" identref(na) "with" constr(c) ] => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:polymorphic na c Sorts.Quality.qprop false inv_clear_tac }
+      add_inversion_lemma_exn ~poly:polymorphic na c CProp false inv_clear_tac }
 END
 
 VERNAC COMMAND EXTEND DeriveInversion
@@ -321,7 +321,7 @@ VERNAC COMMAND EXTEND DeriveInversion
 
 | #[ polymorphic; ] [ "Derive" "Inversion" identref(na) "with" constr(c) ] => { seff na }
   -> {
-      add_inversion_lemma_exn ~poly:polymorphic na c Sorts.Quality.qprop false inv_tac }
+      add_inversion_lemma_exn ~poly:polymorphic na c CProp false inv_tac }
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversion

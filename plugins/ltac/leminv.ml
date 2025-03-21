@@ -242,6 +242,7 @@ let add_inversion_lemma ~poly (name:lident) env sigma t sort dep inv_op =
  * inv_op = InvNoThining (derives de semi inversion lemma) *)
 
 let add_inversion_lemma_exn ~poly na com comsort bool tac =
+  let comsort = Indschemes.sort_name_expr_to_quality comsort in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let c, uctx = Constrintern.interp_type env sigma com in

@@ -323,10 +323,25 @@ let make_allowed_elimination env sigma ((mib,_),_ as specifu) s =
 	(EConstr.ESorts.kind sigma s)
 
 (* XXX questionable for sort poly inductives *)
-let elim_sort (_,mip) =
-  (* Always allow fixpoints on Prop and impredicative sets *)
+let elim_sort (mib,mip) =
+  let is_record =
+    match mib.mind_record with
+    | NotRecord | FakeRecord -> false
+    | PrimRecord _ -> true in
+  let has_args mip =
+    let rec types_prod t = match Constr.kind t with
+      | Prod(_,ct,t) -> ct::(types_prod t)
+      | _ -> []
+    in
+    let field_types =
+      List.skipn mib.mind_nparams (types_prod mip.mind_user_lc.(0)) in
+    List.exists (fun t -> List.length (types_prod t) > 1) field_types in
+  (* Allow large elimination on non-squashed inductives except when it's
+     a primitive record in SProp such that any of its "subconstructors" has
+     arguments (we could allow arguments in SProp but the current test is enough
+     of a hack). *)
   if Option.is_empty mip.mind_squashed &&
-       (Sorts.is_prop mip.mind_sort || Sorts.is_set mip.mind_sort)
+       not (is_record && has_args mip && Sorts.is_sprop mip.mind_sort)
   then Sorts.Quality.qtype
   else Sorts.quality mip.mind_sort
 

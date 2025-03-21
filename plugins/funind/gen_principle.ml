@@ -2132,6 +2132,7 @@ let do_generate_principle fixl : unit =
   | None -> ()
 
 let build_scheme fas =
+  let fas = List.map (fun (id,qualid,sch_sort) -> (id,qualid,Indschemes.sort_name_expr_to_quality sch_sort)) fas in
   let env = Global.env () in
   let evd = ref (Evd.from_env env) in
   let pconstants =
@@ -2172,7 +2173,8 @@ let build_scheme fas =
       Declare.definition_message princ_id.v)
     fas bodies_types
 
-let build_case_scheme fa =
+let build_case_scheme (id,qualid,sch_sort) =
+  let fa = (id,qualid,Indschemes.sort_name_expr_to_quality sch_sort) in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   (*   let id_to_constr id =  *)

@@ -144,10 +144,10 @@ GRAMMAR EXTEND Gram
       | "Type"; "@{"; u = universe; "}" -> { None, u } ] ]
   ;
   sort_quality:
-    [ [ "Prop" -> { Sorts.Quality.qprop }
-      | "SProp" -> { Sorts.Quality.qsprop }
-      | "Set" -> { Sorts.Quality.qtype }
-      | "Type" -> { Sorts.Quality.qtype } ] ]
+    [ [ "Prop" -> { CProp }
+      | "SProp" -> { CSProp }
+      | "Set" -> { CSet }
+      | "Type" -> { CRawType (Univ.Level.var 1) } ] ]
   ;
   universe_increment:
     [ [ "+"; n = natural -> { n }
