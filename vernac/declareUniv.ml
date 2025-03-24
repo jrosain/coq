@@ -162,8 +162,13 @@ let do_universe ~poly l =
 let do_constraint ~poly l =
   let evd = Evd.from_env (Global.env ()) in
   let constraints = List.fold_left (fun acc cst ->
-      let cst = Constrintern.interp_level_constraint evd cst in
-      PolyConstraints.add_level cst acc)
+      match cst with
+      | Constrexpr.LvlCst (l,d,r as cst) ->
+	 let cst = Constrintern.interp_level_constraint evd cst in
+	 PolyConstraints.add_level cst acc
+      | Constrexpr.ElimCst (l,d,r as cst) ->
+	 let cst = Constrintern.interp_elim_constraint evd cst in
+	 PolyConstraints.add_quality cst acc)
       PolyConstraints.empty l
   in
   match poly with

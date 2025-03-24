@@ -227,7 +227,7 @@ let declare_one_induction_scheme ?loc ind =
     else List.filter (fun s -> not (Quality.is_qsprop s)) kelim
   in
   let elims =
-    List.filter (fun (sort,_) -> List.mem_f Quality.equal sort kelim)
+    List.filter (fun (sort,_,_) -> List.mem_f Quality.equal sort kelim)
       (* NB: the order is important, it makes it so that _rec is
          defined using _rect but _ind is not. *)
       [(Quality.qtype, "rect", false);
@@ -362,10 +362,10 @@ let smart_ind qid =
 let sort_name_expr_to_quality sch_sort =
   let open Constrexpr in
   match sch_sort with
-  | CSProp -> Sorts.Quality.qsprop
-  | CProp -> Sorts.Quality.qprop
-  | CSet -> Sorts.Quality.qtype
-  | CRawType _ -> Sorts.Quality.qtype
+  | CSProp -> Quality.qsprop
+  | CProp -> Quality.qprop
+  | CSet -> Quality.qtype
+  | CRawType _ -> Quality.qtype
   | _ -> assert false
 
 (* Resolve the name of a scheme using an environment and extract some

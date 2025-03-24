@@ -66,6 +66,10 @@ let pr_uconstraint (l, d, r) =
   pr_sort_name_expr l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
   pr_sort_name_expr r
 
+let pr_pconstraint = function
+  | LvlCst (l,d,r as c) -> pr_uconstraint c
+  | ElimCst (l,d,r as c) -> pr_elim_constraint c
+
 let pr_full_univ_name_list = function
   | None -> mt()
   | Some (ql, ul) ->
@@ -993,7 +997,7 @@ let pr_synpure_vernac_expr v =
   | VernacConstraint v ->
     return (
       hov 2 (keyword "Constraint" ++ spc () ++
-             prlist_with_sep (fun _ -> str",") pr_uconstraint v)
+             prlist_with_sep (fun _ -> str",") pr_pconstraint v)
     )
 
   (* Gallina extensions *)
