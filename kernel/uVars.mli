@@ -118,6 +118,9 @@ sig
   val instance : t -> Instance.t
   val constraints : t -> PolyConstraints.t
 
+  val pr : (Quality.QVar.t -> Pp.t) -> (Level.t -> Pp.t)
+    -> ?variance:(Variance.t array) -> t -> Pp.t
+
   val union : t -> t -> t
   (** Keeps the order of the instances *)
 
@@ -142,6 +145,7 @@ sig
   val to_context_set : t -> QVar.Set.t * ContextSet.t
   (** Discard the names and order of the universes *)
 
+  val hcons : t Hashcons.f
 end
 (** A value in a universe context. *)
 type 'a in_poly_context = 'a * PolyContext.t
@@ -183,6 +187,10 @@ sig
   val names : t -> bound_names
   (** Return the names of the bound universe variables *)
 
+  val pr : (Quality.QVar.t -> Pp.t) -> (Level.t -> Pp.t)
+    -> ?variance:(Variance.t array) -> t -> Pp.t
+
+  val hcons : t Hashcons.f
 end
 
 type 'a univ_abstracted = {
@@ -243,15 +251,3 @@ val abstract_universes : PolyContext.t -> Instance.t * AbstractContext.t
 (** TODO: move universe abstraction out of the kernel *)
 
 val make_abstract_instance : AbstractContext.t -> Instance.t
-
-(** {6 Pretty-printing of universes. } *)
-
-val pr_poly_context : (QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array ->
-  PolyContext.t -> Pp.t
-val pr_abstract_context : (QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array ->
-  AbstractContext.t -> Pp.t
-
-(** {6 Hash-consing } *)
-
-val hcons_poly_context : PolyContext.t Hashcons.f
-val hcons_abstract_universe_context : AbstractContext.t Hashcons.f

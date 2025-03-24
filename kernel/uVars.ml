@@ -350,8 +350,6 @@ end
 type poly_context = PolyContext.t
 type 'a in_poly_context = 'a * poly_context
 
-let hcons_poly_context = PolyContext.hcons
-
 module AbstractContext =
 struct
   type t = bound_names constrained
@@ -404,8 +402,6 @@ type 'a univ_abstracted = {
 let map_univ_abstracted f {univ_abstracted_value;univ_abstracted_binder} =
   let univ_abstracted_value = f univ_abstracted_value in
   {univ_abstracted_value;univ_abstracted_binder}
-
-let hcons_abstract_universe_context = AbstractContext.hcons
 
 (** Substitutions. *)
 
@@ -529,7 +525,3 @@ let abstract_universes uctx =
   in
   let ctx = (nas, cstrs) in
   instance, ctx
-
-let pr_poly_context = PolyContext.pr
-
-let pr_abstract_context = AbstractContext.pr

@@ -286,7 +286,7 @@ let prqvar q = Quality.QVar.raw_pr q
 let ppqvarset l = pp (hov 1 (str "{" ++ prlist_with_sep spc Quality.QVar.raw_pr (Quality.QVar.Set.elements l) ++ str "}"))
 let ppuniverse_set l = pp (Level.Set.pr prlev l)
 let ppuniverse_instance l = pp (Instance.pr prqvar prlev l)
-let ppuniverse_context l = pp (pr_poly_context prqvar prlev l)
+let ppuniverse_context l = pp (UVars.PolyContext.pr prqvar prlev l)
 let ppuniverse_context_set l = pp (ContextSet.pr prqvar prlev l)
 let ppuniverse_subst l = pp (UnivSubst.pr_universe_subst Level.raw_pr l)
 let ppuniverse_opt_subst l = pp (UnivFlex.pr Level.raw_pr l)
@@ -314,7 +314,7 @@ let ppaucontext auctx =
   in
   let prqvar l = prgen prqvar Quality.QVar.var_index names.qualities l in
   let prlev l = prgen prlev Level.var_index names.levels l in
-  pp (pr_poly_context prqvar prlev (AbstractContext.repr auctx))
+  pp (PolyContext.pr prqvar prlev (AbstractContext.repr auctx))
 
 let pp_partialfsubst psubst =
   pp (Partial_subst.pr (fun f -> pr_constr (CClosure.term_of_fconstr f)) (Quality.pr prqvar) (Universe.pr prlev) psubst)

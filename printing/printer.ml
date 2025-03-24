@@ -258,7 +258,7 @@ let pr_universe_ctx sigma ?variance c =
     fnl()++
     pr_in_comment
       (v 0
-         (UVars.pr_poly_context (Termops.pr_evd_qvar sigma) (Termops.pr_evd_level sigma)
+         (UVars.PolyContext.pr (Termops.pr_evd_qvar sigma) (Termops.pr_evd_level sigma)
             ?variance c))
   else
     mt()
@@ -272,7 +272,7 @@ let pr_abstract_universe_ctx sigma ?variance ?priv c =
     let prlev u = Termops.pr_evd_level sigma u in
     let pub =
       (if has_priv then str "Public universes:" ++ fnl() else mt()) ++
-	v 0 (UVars.pr_abstract_context prqvar prlev ?variance c) in
+	v 0 (UVars.AbstractContext.pr prqvar prlev ?variance c) in
     let priv = if has_priv
 	       then fnl() ++ str "Private universes:" ++ fnl() ++
 		      v 0 (ContextSet.pr prqvar prlev priv)
