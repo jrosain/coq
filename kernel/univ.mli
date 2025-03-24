@@ -189,12 +189,4 @@ module LvlConstraints : sig
   val hcons : t Hashcons.f
 end
 
-(* (\** A value in a universe context set. *\) *)
-(* type 'a in_universe_context_set = 'a * ContextSet.t *)
-
-(* (\** {6 Pretty-printing of universes. } *\) *)
-
 val pr_constraint_type : constraint_type -> Pp.t
-(* val pr_universe_context_set : (Level.t -> Pp.t) -> ContextSet.t -> Pp.t *)
-
-val hcons_univ : Universe.t -> Universe.t

@@ -66,9 +66,6 @@ sig
   val hash : t -> int
   (** Hash value *)
 
-  val share : t -> t * int
-  (** Simultaneous hash-consing and hash-value computation *)
-
   val pr_qualities : (QVar.t -> Pp.t) -> t -> Pp.t
   val pr_levels : (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
   val pr : (QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t

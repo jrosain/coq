@@ -60,25 +60,22 @@ let pr prv prl (qc, lc) =
   let open Pp in
   v 0 (app (ElimConstraints.pr prv qc) (LvlConstraints.pr prl lc))
 
-type elim_constraints_func = ElimConstraints.t -> ElimConstraints.t
-type lvl_constraints_func  = LvlConstraints.t -> LvlConstraints.t
-
 module HPolyConstraints =
   Hashcons.Make(
     struct
       type t = poly_constraints
-      type u = elim_constraints_func * lvl_constraints_func
-      let hashcons (qf, uf) (qc, uc) = (qf qc, uf uc)
+      let hashcons (qf, uf) =
+	let hqf, qf = ElimConstraints.hcons qf in
+	let huf, uf = LvlConstraints.hcons uf in
+	Hashset.Combine.(combine hqf huf), (qf, uf)
       let eq (qc, uc) (qc', uc') =
 	qc == qc' && uc == uc'
-      let hash = Hashtbl.hash
     end)
 
-let hcons_poly_constraints =
+let hcons =
   Hashcons.simple_hcons
     HPolyConstraints.generate
-    HPolyConstraints.hcons
-    (hcons_elim_constraints, hcons_lvl_constraints)
+    HPolyConstraints.hcons ()
 
 (** A value with universe constraints. *)
 type 'a constrained = 'a * t
@@ -152,32 +149,20 @@ module ContextSet = struct
   let levels (univs, _cst) = univs
 
   let size (univs,_) = Level.Set.cardinal univs
+
+  module HContextSet =
+  Hashcons.Make(
+    struct
+      type nonrec t = t
+      let hashcons (lvls, csts) =
+	let hlvls, lvls = Univ.Level.Set.hcons lvls in
+	let hcsts, csts = hcons csts in
+	Hashset.Combine.combine hlvls hcsts, (lvls, csts)
+      let eq (qc, uc) (qc', uc') =
+	qc == qc' && uc == uc'
+    end)
+
+  let hcons = Hashcons.simple_hcons HContextSet.generate HContextSet.hcons ()
 end
 
 type 'a in_poly_context_set = 'a * ContextSet.t
-
-(** Pretty-printing *)
-
-(* replaced by exposure of pr in ContextSet *)
-(* let pr_poly_context_set = ContextSet.pr *)
-
-module HLvls =
-  Hashcons.Make(
-    struct
-      type t = Level.Set.t
-      type u = Level.t -> Level.t
-      let hashcons huc s =
-        Level.Set.fold (fun x -> Level.Set.add (huc x)) s Level.Set.empty
-      let eq s s' =
-        Level.Set.equal s s'
-      let hash = Hashtbl.hash
-    end)
-
-
-let hcons_lvls =
-  Hashcons.simple_hcons HLvls.generate HLvls.hcons Level.hcons
-
-let hcons_poly_context_set (v, c) =
-  (hcons_lvls v, hcons_poly_constraints c)
-
-(* let hcons_univ x = Universe.hcons x *)

@@ -248,8 +248,6 @@ module Level = struct
 
 end
 
-type universe_level = Level.t
-
 (* An algebraic universe [universe] is either a universe variable
    [Level.t] or a formal universe known to be greater than some
    universe variables and strictly greater than some (other) universe
@@ -481,18 +479,16 @@ end
 module HLvlConstraint =
   Hashcons.Make(
     struct
-      type t = univ_constraint
+      type t = level_constraint
       let hashcons (l1,k,l2) =
         let hl1, l1 = Level.hcons l1 in
         let hl2, l2 = Level.hcons l2 in
         Hashset.Combine.(combinesmall (hash_constraint_type k) (combine hl1 hl2)), (l1, k, l2)
       let eq (l1,k,l2) (l1',k',l2') =
         l1 == l1' && k == k' && l2 == l2'
-      let hash = Hashtbl.hash
     end)
 
-let hcons_univ_constraint =
-  Hashcons.simple_hcons HUnivConstraint.generate HUnivConstraint.hcons ()
+let hcons_lvl_constraint = Hashcons.simple_hcons HLvlConstraint.generate HLvlConstraint.hcons ()
 
 module LvlConstraints =
 struct
@@ -504,9 +500,9 @@ struct
       hov 0 (prl u1 ++ pr_constraint_type op ++ prl u2))
         (elements c))
 
-  module Hconstraints = CSet.Hashcons(UConstraintOrd)(struct
-      type t = UConstraintOrd.t
-      let hcons = hcons_constraint
+  module Hconstraints = CSet.Hashcons(LvlConstraintOrd)(struct
+      type t = LvlConstraintOrd.t
+      let hcons = hcons_lvl_constraint
     end)
 
   let hcons = Hashcons.simple_hcons Hconstraints.generate Hconstraints.hcons ()
@@ -519,5 +515,3 @@ let univ_level_rem u v min =
   match Universe.level v with
   | Some u' -> if Level.equal u u' then min else v
   | None -> List.filter (fun (l, n) -> not (Int.equal n 0 && Level.equal u l)) v
-
-let hcons_univ = Universe.hcons

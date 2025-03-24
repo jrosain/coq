@@ -24,6 +24,8 @@ sig
 
   val hash : t -> int
 
+  val hcons : t Hashcons.f
+
   val raw_pr : t -> Pp.t
   (** Using this is incorrect when names are available, typically from an evar map. *)
 
@@ -85,7 +87,7 @@ val raw_pr : t -> Pp.t
 
 val hash : t -> int
 
-val hcons : t -> t
+val hcons : t Hashcons.f
 
 (* XXX Inconsistent naming: this one should be subst_fn *)
 val subst : (QVar.t -> t) -> t -> t
@@ -118,6 +120,8 @@ module ElimConstraint : sig
   val pr : (QVar.t -> Pp.t) -> t -> Pp.t
 
   val raw_pr : t -> Pp.t
+
+  val hcons : t Hashcons.f
 end
 
 module ElimConstraints : sig
@@ -125,12 +129,6 @@ module ElimConstraints : sig
   val trivial : t -> bool
 
   val pr : (QVar.t -> Pp.t) -> t -> Pp.t
-end
 
-module HElimConstraints : sig
-  include Hashcons.S with
-    type t = ElimConstraints.t and
-    type u = ElimConstraint.t -> ElimConstraint.t
+  val hcons : t Hashcons.f
 end
-
-val hcons_elim_constraints : HElimConstraints.t -> HElimConstraints.t

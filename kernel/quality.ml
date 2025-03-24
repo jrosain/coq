@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Pp
-open Util
 
 module QVar =
 struct
@@ -222,6 +221,11 @@ module ElimConstraint = struct
   let eq_kind : kind -> kind -> bool = (=)
   let compare_kind : kind -> kind -> int = Stdlib.compare
 
+  let hash_kind = function
+    | Eq -> 0
+    | ElimTo -> 1
+    | SElimTo -> 2
+
   let pr_kind = function
     | Eq -> str "="
     | ElimTo -> str "=>"
@@ -250,11 +254,27 @@ module ElimConstraint = struct
     hov 1 (pr prq a ++ spc() ++ pr_kind k ++ spc() ++ pr prq b)
 
   let raw_pr x = pr QVar.raw_pr x
+
+  module Hstruct = struct
+    type nonrec t = t
+
+    let hashcons (q1,k,q2) =
+      let hq1, q1 = hcons q1 in
+      let hq2, q2 = hcons q2 in
+      Hashset.Combine.(combinesmall (hash_kind k) (combine hq1 hq2)), (q1,k,q2)
+
+    let eq (q1,k,q2) (q1',k',q2') =
+      eq_kind k k' && q1 == q1' && q2 == q2'
+  end
+
+  module Hasher = Hashcons.Make(Hstruct)
+
+  let hcons = Hashcons.simple_hcons Hasher.generate Hasher.hcons ()
 end
 
 module ElimConstraints =
 struct
-  module S = CSet.Make(ElimConstraint)
+  module S = Stdlib.Set.Make(ElimConstraint)
   include S
 
   let trivial = for_all ElimConstraint.trivial
@@ -262,35 +282,12 @@ struct
   let pr prv c =
     v 0 (prlist_with_sep spc (fun (u1,op,u2) ->
       hov 0 (pr prv u1 ++ ElimConstraint.pr_kind op ++ pr prv u2))
-       (elements c))
-end
+	   (elements c))
 
-module HElimConstraint =
-  Hashcons.Make(
-    struct
+  module HConstraints = CSet.Hashcons(ElimConstraint)(struct
       type t = ElimConstraint.t
-      type u = quality -> quality
-      let hashcons hul (l1,k,l2) = (hul l1, k, hul l2)
-      let eq (l1,k,l2) (l1',k',l2') =
-        l1 == l1' && k == k' && l2 == l2'
-      let hash = Hashtbl.hash
+      let hcons = ElimConstraint.hcons
     end)
 
-module HElimConstraints =
-  Hashcons.Make(
-    struct
-      type t = ElimConstraints.t
-      type u = ElimConstraint.t -> ElimConstraint.t
-      let hashcons huc s =
-        ElimConstraints.fold (fun x -> ElimConstraints.add (huc x)) s ElimConstraints.empty
-      let eq s s' =
-        List.for_all2eq (==)
-          (ElimConstraints.elements s)
-          (ElimConstraints.elements s')
-      let hash = Hashtbl.hash
-    end)
-
-let hcons_elim_constraint =
-  Hashcons.simple_hcons HElimConstraint.generate HElimConstraint.hcons hcons
-let hcons_elim_constraints =
-  Hashcons.simple_hcons HElimConstraints.generate HElimConstraints.hcons hcons_elim_constraint
+  let hcons = Hashcons.simple_hcons HConstraints.generate HConstraints.hcons ()
+end

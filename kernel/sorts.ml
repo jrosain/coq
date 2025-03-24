@@ -145,7 +145,7 @@ module HSorts =
         | (SProp | Prop | Set | Type _ | QSort _), _ -> false
     end)
 
-let hcons = Hashcons.simple_hcons Hsorts.generate Hsorts.hcons ()
+let hcons = Hashcons.simple_hcons HSorts.generate HSorts.hcons ()
 
 (** On binders: is this variable proof relevant *)
 type relevance = Relevant | Irrelevant | RelevanceVar of QVar.t

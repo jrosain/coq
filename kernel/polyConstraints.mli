@@ -48,16 +48,7 @@ val filter_levels : (LvlConstraints.elt -> bool) -> t -> t
 
 val pr : (QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> t -> Pp.t
 
-type elim_constraints_func = ElimConstraints.t -> ElimConstraints.t
-type lvl_constraints_func  = LvlConstraints.t -> LvlConstraints.t
-
-module HPolyConstraints : sig
-  include Hashcons.S with
-    type t = poly_constraints and
-    type u = elim_constraints_func * lvl_constraints_func
-end
-
-val hcons_poly_constraints : HPolyConstraints.t -> HPolyConstraints.t
+val hcons : t Hashcons.f
 
 type 'a constrained = 'a * t
 
@@ -111,8 +102,8 @@ sig
   (** The number of universes in the context *)
 
   val pr : (QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> t -> Pp.t
+
+  val hcons : t Hashcons.f
 end
 
 type 'a in_poly_context_set = 'a * ContextSet.t
-
-val hcons_poly_context_set : ContextSet.t -> ContextSet.t
