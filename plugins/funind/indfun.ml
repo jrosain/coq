@@ -76,7 +76,7 @@ let functional_induction with_clean c princl pat =
               let princ_name =
                 Indrec.make_elimination_ident
                   (Label.to_id (Constant.label c'))
-                  (elimination_sort_of_goal gl)
+                  (UnivGen.QualityOrSet.of_quality @@ elimination_sort_of_goal gl)
               in
               let princ_ref =
                 match

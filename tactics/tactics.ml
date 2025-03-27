@@ -1721,7 +1721,9 @@ let default_elim with_evars clear_flag (c,_ as cx) =
       let sigma, t = Typing.type_of env sigma c in
       let (ind,u) = eval_to_quantified_ind env sigma t in
       if is_nonrec env ind then raise IsNonrec;
-      let sigma, elim = find_ind_eliminator env sigma ind (Retyping.get_sort_quality_of env sigma concl) in
+      let sigma, elim = find_ind_eliminator env sigma ind
+			  (UnivGen.QualityOrSet.of_quality @@
+			     Retyping.get_sort_quality_of env sigma concl) in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
       (general_elim with_evars clear_flag cx (ElimConstant elim))
     end)
@@ -3215,7 +3217,8 @@ let exfalso =
     let sigma = Proofview.Goal.sigma gl in
     let (sigma, f) = Evd.fresh_global env sigma (Rocqlib.lib_ref "core.False.type") in
     let (ind, _) = reduce_to_atomic_ind env sigma f in
-    let s = Retyping.get_sort_quality_of env sigma (Proofview.Goal.concl gl) in
+    let s = UnivGen.QualityOrSet.of_quality @@
+	      Retyping.get_sort_quality_of env sigma (Proofview.Goal.concl gl) in
     let sigma, elimc = find_ind_eliminator env sigma (fst ind) s in
     let elimc = mkConstU elimc in
     let elimt = Retyping.get_type_of env sigma elimc in
