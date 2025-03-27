@@ -1365,7 +1365,7 @@ let add_subnames_of ?loc len n ns full_n ref =
         | exception Not_found -> ns
         | None -> ns
         | Some ref -> (len, ref) :: ns)
-      ns Sorts.all_families
+      ns Sorts.Quality.all
 
 let interp_names m ns =
   let dp_m = Nametab.dirpath_of_module m in
