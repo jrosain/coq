@@ -1138,6 +1138,7 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
       let tac = destruct_tac with_evars id dep in
       sigma, false, tac, indsign
     | ElimOver (id, (mind, u)) ->
+       let s = UnivGen.QualityOrSet.of_quality s in
        let sigma, ind = find_ind_eliminator env sigma mind s in
        (* FIXME: we should store this instead of recomputing it *)
        let elimt = Retyping.get_type_of env sigma (mkConstU ind) in
@@ -1186,7 +1187,8 @@ let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyp
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let sort = Tacticals.elimination_sort_of_goal gl in
+  let sort = UnivGen.QualityOrSet.of_quality @@
+               Tacticals.elimination_sort_of_goal gl in
   let sigma, ty, elim_info = find_induction_type env sigma isrec elim hyp0 sort in
   let letins, avoid, t = atomize_param_of_ind env sigma ty in
   let letins = tclMAP (fun (na, c) -> Tactics.letin_tac None (Name na) c None allHypsAndConcl) letins in

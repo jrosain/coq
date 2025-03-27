@@ -79,7 +79,7 @@ val fresh_instance : AbstractContext.t -> Instance.t in_sort_context_set
 val fresh_instance_from : ?loc:Loc.t -> AbstractContext.t -> (GlobRef.t * Instance.t) option ->
   Instance.t in_sort_context_set
 
-val fresh_sort_quality : Sorts.Quality.t -> Sorts.t in_sort_context_set
+val fresh_sort_quality : QualityOrSet.t -> Sorts.t in_sort_context_set
 (** NB: QSort is treated as QType *)
 
 val fresh_constant_instance : env -> Constant.t ->
