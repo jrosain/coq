@@ -23,6 +23,7 @@ open Constr
 open Context
 open Genarg
 open Clenv
+open PolyConstraints
 
 let with_env_evm f x =
   let env = Global.env() in
@@ -283,14 +284,14 @@ let prqvar q = Quality.QVar.raw_pr q
 let ppqvarset l = pp (hov 1 (str "{" ++ prlist_with_sep spc Quality.QVar.raw_pr (Quality.QVar.Set.elements l) ++ str "}"))
 let ppuniverse_set l = pp (Level.Set.pr prlev l)
 let ppuniverse_instance l = pp (Instance.pr prqvar prlev l)
-let ppuniverse_context l = pp (UVars.pr_universe_context prqvar prlev l)
-let ppuniverse_context_set l = pp (ContextSet.pr prlev l)
-let ppuniverse_subst l = pp (UnivSubst.pr_universe_subst Level.raw_pr l)
-let ppuniverse_opt_subst l = pp (UnivFlex.pr Level.raw_pr l)
-let ppqvar_subst l = pp (UVars.pr_quality_level_subst Quality.QVar.raw_pr l)
-let ppuniverse_level_subst l = pp (Univ.pr_universe_level_subst Level.raw_pr l)
+let ppuniverse_context l = pp (PolyContext.pr prqvar prlev l)
+let ppuniverse_context_set l = pp (ContextSet.pr prqvar prlev l)
+let ppuniverse_subst l = pp (UnivSubst.pr_universe_subst prlev l)
+let ppuniverse_opt_subst l = pp (UnivFlex.pr prlev l)
+let ppqvar_subst l = pp (UVars.pr_quality_level_subst prqvar l)
+let ppuniverse_level_subst l = pp (UVars.pr_universe_level_subst prlev l)
 let ppustate l = pp (UState.pr l)
-let ppconstraints c = pp (Constraints.pr Level.raw_pr c)
+let ppconstraints c = pp (PolyConstraints.pr prqvar prlev c)
 let ppuniverseconstraints c = pp (UnivProblem.Set.pr c)
 let ppuniverse_context_future c =
   let ctx = Future.force c in
@@ -302,16 +303,16 @@ let ppnamedcontextval e =
   pp (pr_named_context env sigma (named_context_of_val e))
 
 let ppaucontext auctx =
-  let qnas, unas = AbstractContext.names auctx in
+  let names = AbstractContext.names auctx in
   let prgen pr var_index nas l = match var_index l with
     | Some n -> (match nas.(n) with
         | Anonymous -> pr l
         | Name id -> Id.print id)
     | None -> pr l
   in
-  let prqvar l = prgen prqvar Quality.QVar.var_index qnas l in
-  let prlev l = prgen prlev Level.var_index unas l in
-  pp (pr_universe_context prqvar prlev (AbstractContext.repr auctx))
+  let prqvar l = prgen prqvar Quality.QVar.var_index names.qualities l in
+  let prlev l = prgen prlev Level.var_index names.levels l in
+  pp (PolyContext.pr prqvar prlev (AbstractContext.repr auctx))
 
 let pp_partialfsubst psubst =
   pp (Partial_subst.pr (fun f -> pr_constr (CClosure.term_of_fconstr f)) (Quality.pr prqvar) (Universe.pr prlev) psubst)

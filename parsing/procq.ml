@@ -345,6 +345,7 @@ module Constr =
     let universe_name = Entry.make "universe_name"
     let sort = Entry.make "sort"
     let sort_quality_or_set = Entry.make "sort_quality_or_set"
+    let sort_quality_var = Entry.make "sort_quality_var"
     let pattern = Entry.make "pattern"
     let constr_pattern = Entry.make "constr_pattern"
     let cpattern = Entry.make "cpattern"

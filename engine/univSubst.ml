@@ -8,10 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Sorts
+open Quality
 open Util
 open Constr
 open Univ
+open PolyConstraints
 open UVars
 
 type 'a universe_map = 'a Level.Map.t
@@ -39,12 +40,12 @@ let subst_univs_universe fn ul =
     let substs = List.fold_left Universe.sup u subst in
     List.fold_left (fun acc (u, n) -> Universe.sup acc (addn n (Universe.make u))) substs nosubst
 
-let enforce_eq u v c =
-  if Universe.equal u v then c else match Universe.level u, Universe.level v with
-  | Some u, Some v -> enforce_eq_level u v c
+let enforce_eq_univ u v csts =
+  if Universe.equal u v then csts else match Universe.level u, Universe.level v with
+  | Some u, Some v -> enforce_eq_level u v csts
   | _ -> CErrors.anomaly (Pp.str "A universe comparison can only happen between variables.")
 
-let constraint_add_leq v u c =
+let constraint_add_leq_lvls v u c =
   let eq (x, n) (y, m) = Int.equal m n && Level.equal x y in
   (* We just discard trivial constraints like u<=u *)
   if eq v u then c
@@ -53,17 +54,17 @@ let constraint_add_leq v u c =
     | (x,n), (y,m) ->
     let j = m - n in
       if j = -1 (* n = m+1, v+1 <= u <-> v < u *) then
-        Constraints.add (x,Lt,y) c
+        PolyConstraints.add_level (x,Lt,y) c
       else if j <= -1 (* n = m+k, v+k <= u and k>0 *) then
         if Level.equal x y then (* u+k <= u with k>0 *)
-          Constraints.add (x,Lt,x) c
+          PolyConstraints.add_level (x,Lt,x) c
         else CErrors.anomaly (Pp.str"Unable to handle arbitrary u+k <= v constraints.")
       else if j = 0 then
-        Constraints.add (x,Le,y) c
+        PolyConstraints.add_level (x,Le,y) c
       else (* j >= 1 *) (* m = n + k, u <= v+k *)
         if Level.equal x y then c (* u <= u+k, trivial *)
         else if Level.is_set x then c (* Prop,Set <= u+S k, trivial *)
-        else Constraints.add (x,Le,y) c (* u <= v implies u <= v+k *)
+        else PolyConstraints.add_level (x,Le,y) c (* u <= v implies u <= v+k *)
 
 let check_univ_leq_one u v =
   let leq (u,n) (v,n') =
@@ -77,77 +78,54 @@ let check_univ_leq u v =
   Universe.for_all (fun u -> check_univ_leq_one u v) u
 
 let enforce_leq u v c =
-  List.fold_left (fun c v -> (List.fold_left (fun c u -> constraint_add_leq u v c) c u)) c v
+  List.fold_left (fun c v -> (List.fold_left (fun c u -> constraint_add_leq_lvls u v c) c u)) c v
 
-let enforce_leq u v c =
+let enforce_leq_univ u v c =
   if check_univ_leq u v then c
   else enforce_leq (Universe.repr u) (Universe.repr v) c
 
-let get_algebraic = function
-| Prop | SProp | QSort _ -> assert false
-| Set -> Universe.type0
-| Type u -> u
+let enforce_eq_sort s1 s2 cst =
+  let q1 = Sorts.quality s1 and q2 = Sorts.quality s2 in
+  enforce_eq_univ (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) @@
+    PolyConstraints.enforce_eq_quality q1 q2 cst
 
-let enforce_eq_sort s1 s2 cst = match s1, s2 with
-| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
-| (((Prop | Set | Type _ | QSort _) as s1), (Prop | SProp as s2))
-| ((Prop | SProp as s1), ((Prop | Set | Type _ | QSort _) as s2)) ->
-  raise (UGraph.UniverseInconsistency (None, (Eq, s1, s2, None)))
-| (Set | Type _), (Set | Type _) ->
-  enforce_eq (get_algebraic s1) (get_algebraic s2) cst
-| QSort (q1, u1), QSort (q2, u2) ->
-  if Quality.QVar.equal q1 q2 then enforce_eq u1 u2 cst
-  else raise (UGraph.UniverseInconsistency (None, (Eq, s1, s2, None)))
-| (QSort _, (Set | Type _)) | ((Set | Type _), QSort _) ->
-  raise (UGraph.UniverseInconsistency (None, (Eq, s1, s2, None)))
+let enforce_elim_to_sort s1 s2 cst =
+  let q1 = Sorts.quality s1 and q2 = Sorts.quality s2 in
+  enforce_leq_univ (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) @@
+    PolyConstraints.enforce_elim_to q1 q2 cst
 
-let enforce_leq_sort s1 s2 cst = match s1, s2 with
-| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
-| (Prop, (Set | Type _)) -> cst
-| (((Prop | Set | Type _ | QSort _) as s1), (Prop | SProp as s2))
-| ((SProp as s1), ((Prop | Set | Type _ | QSort _) as s2)) ->
-  raise (UGraph.UniverseInconsistency (None, (Le, s1, s2, None)))
-| (Set | Type _), (Set | Type _) ->
-  enforce_leq (get_algebraic s1) (get_algebraic s2) cst
-| QSort (q1, u1), QSort (q2, u2) ->
-  if Quality.QVar.equal q1 q2 then enforce_leq u1 u2 cst
-  else raise (UGraph.UniverseInconsistency (None, (Eq, s1, s2, None)))
-| (QSort _, (Set | Type _)) | ((Prop | Set | Type _), QSort _) ->
-  raise (UGraph.UniverseInconsistency (None, (Eq, s1, s2, None)))
+(* JJJ not sure, should we also get a qgraph?? *)
+let enforce_leq_alg_sort s1 s2 g =
+  let q1 = Sorts.quality s1 and q2 = Sorts.quality s2 in
+  if Quality.equal q1 q2 then
+    if Quality.is_qtype q1 || Quality.is_qvar q1
+    then
+      let lcsts, g = UGraph.enforce_leq_alg (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) g in
+      PolyConstraints.make ElimConstraints.empty lcsts, g
+    else PolyConstraints.empty, g
+  else if Quality.is_qprop q1 && Quality.is_qtype q2
+  then PolyConstraints.empty, g
+  else raise @@ UGraph.UniverseInconsistency (None, (Eq, s1, s2, None))
 
-let enforce_leq_alg_sort s1 s2 g = match s1, s2 with
-| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> Constraints.empty, g
-| (Prop, (Set | Type _)) -> Constraints.empty, g
-| (((Prop | Set | Type _ | QSort _) as s1), (Prop | SProp as s2))
-| ((SProp as s1), ((Prop | Set | Type _ | QSort _) as s2)) ->
-  raise (UGraph.UniverseInconsistency (None, (Le, s1, s2, None)))
-| (Set | Type _), (Set | Type _) ->
-  UGraph.enforce_leq_alg (get_algebraic s1) (get_algebraic s2) g
-| QSort (q1, u1), QSort (q2, u2) ->
-  if Quality.QVar.equal q1 q2 then UGraph.enforce_leq_alg u1 u2 g
-  else raise (UGraph.UniverseInconsistency (None, (Eq, s1, s2, None)))
-| (QSort _, (Set | Type _)) | ((Prop | Set | Type _), QSort _) ->
-  raise (UGraph.UniverseInconsistency (None, (Eq, s1, s2, None)))
-
-let enforce_univ_constraint (u,d,v) =
+let enforce_level_constraint (u,d,v) =
   match d with
-  | Eq -> enforce_eq u v
-  | Le -> enforce_leq u v
-  | Lt -> enforce_leq (Universe.super u) v
+  | Eq -> enforce_eq_univ u v
+  | Le -> enforce_leq_univ u v
+  | Lt -> enforce_leq_univ (Universe.super u) v
 
 let subst_univs_constraint fn (u,d,v as c) cstrs =
   let u' = fn u in
   let v' = fn v in
   match u', v' with
-  | None, None -> Constraints.add c cstrs
-  | Some u, None -> enforce_univ_constraint (u,d,Universe.make v) cstrs
-  | None, Some v -> enforce_univ_constraint (Universe.make u,d,v) cstrs
-  | Some u, Some v -> enforce_univ_constraint (u,d,v) cstrs
+  | None, None -> PolyConstraints.add_level c cstrs
+  | Some u, None -> enforce_level_constraint (u,d,Universe.make v) cstrs
+  | None, Some v -> enforce_level_constraint (Universe.make u,d,v) cstrs
+  | Some u, Some v -> enforce_level_constraint (u,d,v) cstrs
 
 let subst_univs_constraints subst csts =
-  Constraints.fold
+  LvlConstraints.fold
     (fun c cstrs -> subst_univs_constraint subst c cstrs)
-    csts Constraints.empty
+    (PolyConstraints.levels csts) PolyConstraints.empty
 
 let level_subst_of f =
   fun l ->

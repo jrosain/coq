@@ -270,7 +270,7 @@ let rec template_subst_ctx accu subs ctx params = match ctx, params with
 let template_subst_ctx subst ctx params = template_subst_ctx [] subst ctx params
 
 let instantiate_template_constraints subst templ =
-  let cstrs = UVars.UContext.constraints (UVars.AbstractContext.repr templ.template_context) in
+  let cstrs = UVars.PolyContext.constraints (UVars.AbstractContext.repr templ.template_context) in
   let fold (u, cst, v) accu =
     (* v is not a local universe by the unbounded from below property *)
     let u = match Level.var_index u with
@@ -279,14 +279,14 @@ let instantiate_template_constraints subst templ =
     in
     (* if qsort, it is above prop *)
     let fold accu (u, n) = match n, cst with
-      | 0, _ -> Constraints.add (u, cst, v) accu
-      | 1, Le -> Constraints.add (u, Lt, v) accu
+      | 0, _ -> PolyConstraints.add_level (u, cst, v) accu
+      | 1, Le -> PolyConstraints.add_level (u, Lt, v) accu
       | 1, (Eq | Lt) -> assert false (* FIXME? *)
       | _ -> assert false
     in
     List.fold_left fold accu (Univ.Universe.repr u)
   in
-  Constraints.fold fold cstrs Constraints.empty
+  LvlConstraints.fold fold (PolyConstraints.levels cstrs) PolyConstraints.empty
 
 let instantiate_template_universes mib args =
   let templ = match mib.mind_template with
@@ -390,9 +390,9 @@ let abstract_constructor_type_relatively_to_inductive_types_context ntyps mind t
 
 let raw_eliminates_to = QGraph.ElimTable.eliminates_to
 
-let eliminates_to = QGraph.eliminates_to QGraph.initial_graph
+let eliminates_to = QGraph.eliminates_to
 
-let sort_eliminates_to s s' = eliminates_to (Sorts.quality s) (Sorts.quality s')
+let sort_eliminates_to g s s' = eliminates_to g (Sorts.quality s) (Sorts.quality s')
 
 type squash = SquashToSet | SquashToQuality of Quality.t
 
@@ -402,7 +402,7 @@ type 'a allow_elimination_actions =
   ; squashed_to_set_above : 'a
   ; squashed_to_quality : Quality.t -> 'a }
 
-let is_squashed_gen indsort_to_quality squashed_to_quality ((_,mip),u) =
+let is_squashed_gen constraints indsort_to_quality squashed_to_quality ((_,mip),u) =
   let s = mip.mind_sort in
   match mip.mind_squashed with
   | None -> None
@@ -417,13 +417,13 @@ let is_squashed_gen indsort_to_quality squashed_to_quality ((_,mip),u) =
         (* impredicative set squashes are always quashed,
            so here if inds=Set it is a sort poly squash (see "foo6" in test sort_poly.v) *)
         if Quality.Set.for_all
-	     (fun q -> eliminates_to indq (squashed_to_quality u q))
+	     (fun q -> eliminates_to constraints indq (squashed_to_quality u q))
              squash
         then None
         else Some (SquashToQuality indq)
 
-let allowed_elimination_gen indsort_to_quality squashed_to_quality actions specifu s =
-  match is_squashed_gen indsort_to_quality squashed_to_quality specifu with
+let allowed_elimination_gen constraints indsort_to_quality squashed_to_quality actions specifu s =
+  match is_squashed_gen constraints indsort_to_quality squashed_to_quality specifu with
   | None -> actions.not_squashed
   | Some SquashToSet ->
     begin match s with
@@ -435,30 +435,31 @@ let allowed_elimination_gen indsort_to_quality squashed_to_quality actions speci
 let loc_indsort_to_quality u s = Sorts.quality (UVars.subst_instance_sort u s)
 let loc_squashed_to_quality = UVars.subst_instance_quality
 
-let is_squashed =
-  is_squashed_gen
+let is_squashed env =
+  is_squashed_gen (qualities env)
     loc_indsort_to_quality
     loc_squashed_to_quality
 
-let is_allowed_elimination_actions s =
+let is_allowed_elimination_actions g s =
   { not_squashed = true
   ; squashed_to_set_below = true
   (* XXX in [Type u] case, should we check [u == set] in the ugraph? *)
   ; squashed_to_set_above = false
   ; squashed_to_quality
-    = fun indq -> eliminates_to indq (Sorts.quality s)}
+    = fun indq -> eliminates_to g indq (Sorts.quality s)}
 
-let is_allowed_elimination specifu s =
-  allowed_elimination_gen
+let is_allowed_elimination env specifu s =
+  let g = qualities env in
+  allowed_elimination_gen g
     loc_indsort_to_quality
     loc_squashed_to_quality
-    (is_allowed_elimination_actions s)
+    (is_allowed_elimination_actions g s)
     specifu s
 
 (* We always allow fixpoints on values in Prop (for the accessibility predicate for instance). *)
-let is_allowed_fixpoint sind star =
+let is_allowed_fixpoint elim_to sind star =
   Sorts.equal sind Sorts.prop ||
-    eliminates_to
+    elim_to
       (Sorts.quality sind)
       (Sorts.quality star)
 
@@ -1653,7 +1654,10 @@ let inductive_of_mutfix ?evars env ((nvect,bodynum),(names,types,bodies as recde
 	  | Relevant when Universe.is_type0 u -> Sorts.set
 	  | Relevant -> Sorts.make Quality.qtype u
 	  | RelevanceVar q -> Sorts.qsort q u in
-	if not (is_allowed_fixpoint sind bsort) then
+	let elim_to = match evars with
+	  | Some evars -> CClosure.elim_to evars
+	  | None -> eliminates_to @@ qualities env in
+	if not (is_allowed_fixpoint elim_to sind bsort) then
 	  raise_err env i @@ FixpointOnNonEliminable (sind, bsort)
     in
     res

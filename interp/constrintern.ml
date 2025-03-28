@@ -2949,23 +2949,56 @@ let interp_known_level evd u =
   let u = intern_sort_name ~local_univs:{bound = bound_univs evd; unb_univs=false} u in
   known_glob_level evd u
 
-let interp_univ_constraint evd (u,c,v) =
+let interp_level_constraint evd (u,c,v) =
   let u = interp_known_level evd u in
   let v = interp_known_level evd v in
   u,c,v
 
-let interp_univ_constraints env evd cstrs =
+let interp_level_constraints env evd cstrs =
   let interp (evd,cstrs) cstr =
-    let cstr = interp_univ_constraint evd cstr in
+    let cstr = interp_level_constraint evd cstr in
     try
-      let evd = Evd.add_constraints evd (Univ.Constraints.singleton cstr) in
-      evd, Univ.Constraints.add cstr cstrs
+      let evd = Evd.add_constraints evd @@
+		  PolyConstraints.of_levels @@
+		    Univ.LvlConstraints.singleton cstr in
+      evd, Univ.LvlConstraints.add cstr cstrs
     with UGraph.UniverseInconsistency e as exn ->
       let _, info = Exninfo.capture exn in
       CErrors.user_err ~info
         (UGraph.explain_universe_inconsistency (Termops.pr_evd_qvar evd) (Termops.pr_evd_level evd) e)
   in
-  List.fold_left interp (evd,Univ.Constraints.empty) cstrs
+  List.fold_left interp (evd, Univ.LvlConstraints.empty) cstrs
+
+let known_glob_quality evd q =
+  let open Quality in
+  match q with
+  | GQConstant q -> QConstant q
+  | GQualVar (GLocalQVar _) -> assert false
+  | GQualVar (GQVar q | GRawQVar q) -> QVar q
+
+let interp_known_quality evd q =
+  let q = intern_quality ~local_univs:{bound = bound_univs evd; unb_univs=false} q in
+  known_glob_quality evd q
+
+let interp_elim_constraint evd (q1,k,q2) =
+  let q1 = interp_known_quality evd q1 in
+  let q2 = interp_known_quality evd q2 in
+  q1,k,q2
+
+let interp_elim_constraints env evd cstrs =
+  let interp (evd,cstrs) cstr =
+    let cstr = interp_elim_constraint evd cstr in
+    try
+      let evd = Evd.add_constraints evd @@
+		  PolyConstraints.of_qualities @@
+		    Quality.ElimConstraints.singleton cstr in
+      evd, Quality.ElimConstraints.add cstr cstrs
+    with QGraph.QualityInconsistency e as exn ->
+      let _, info = Exninfo.capture exn in
+      CErrors.user_err ~info
+        (QGraph.explain_quality_inconsistency (Termops.pr_evd_qvar evd) e)
+  in
+  List.fold_left interp (evd, Quality.ElimConstraints.empty) cstrs
 
 let interp_univ_decl env decl =
   let open UState in
@@ -2980,14 +3013,17 @@ let interp_univ_decl env decl =
       evd
       decl.univdecl_instance
   in
-  let evd, cstrs = interp_univ_constraints env evd decl.univdecl_constraints in
+  let evd, elim_cstrs = interp_elim_constraints env evd decl.univdecl_elim_constraints in
+  let evd, lvl_cstrs = interp_level_constraints env evd decl.univdecl_lvl_constraints in
   let decl = {
     univdecl_qualities = qualities;
     univdecl_extensible_qualities = decl.univdecl_extensible_qualities;
+    univdecl_elim_constraints = elim_cstrs;
+    univdecl_extensible_elim_constraints = decl.univdecl_extensible_elim_constraints;
     univdecl_instance = instance;
     univdecl_extensible_instance = decl.univdecl_extensible_instance;
-    univdecl_constraints = cstrs;
-    univdecl_extensible_constraints = decl.univdecl_extensible_constraints;
+    univdecl_lvl_constraints = lvl_cstrs;
+    univdecl_extensible_lvl_constraints = decl.univdecl_extensible_lvl_constraints;
   }
   in evd, decl
 
@@ -3006,14 +3042,17 @@ let interp_cumul_univ_decl env decl =
       evd
       binders
   in
-  let evd, cstrs = interp_univ_constraints env evd decl.univdecl_constraints in
+  let evd, elim_cstrs = interp_elim_constraints env evd decl.univdecl_elim_constraints in
+  let evd, lvl_cstrs = interp_level_constraints env evd decl.univdecl_lvl_constraints in
   let decl = {
     univdecl_qualities = qualities;
     univdecl_extensible_qualities = decl.univdecl_extensible_qualities;
+    univdecl_elim_constraints = elim_cstrs;
+    univdecl_extensible_elim_constraints = decl.univdecl_extensible_elim_constraints;
     univdecl_instance = instance;
     univdecl_extensible_instance = decl.univdecl_extensible_instance;
-    univdecl_constraints = cstrs;
-    univdecl_extensible_constraints = decl.univdecl_extensible_constraints;
+    univdecl_lvl_constraints = lvl_cstrs;
+    univdecl_extensible_lvl_constraints = decl.univdecl_extensible_lvl_constraints;
   }
   in
   evd, decl, variances

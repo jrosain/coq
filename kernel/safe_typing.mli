@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Names
+open PolyConstraints
 
 type vodigest =
   | Dvo_or_vi of Digest.t        (* The digest of the seg_lib part *)
@@ -58,13 +59,13 @@ val concat_private : private_constants -> private_constants -> private_constants
     [e1] must be more recent than those of [e2]. *)
 
 val inline_private_constants :
-  Environ.env -> private_constants Entries.proof_output -> Constr.constr Univ.in_universe_context_set
+  Environ.env -> private_constants Entries.proof_output -> Constr.constr in_poly_context_set
 (** Abstract the private constants of a proof over the proof output *)
 
 val push_private_constants : Environ.env -> private_constants -> Environ.env
 (** Push the constants in the environment if not already there. *)
 
-val universes_of_private : private_constants -> Univ.ContextSet.t
+val universes_of_private : private_constants -> ContextSet.t
 
 val is_curmod_library : safe_environment -> bool
 
@@ -93,7 +94,7 @@ val add_constant :
 
 (** Similar to add_constant but also returns a certificate *)
 val add_private_constant :
-  Label.t -> Univ.ContextSet.t -> side_effect_declaration -> (Constant.t * private_constants) safe_transformer
+  Label.t -> ContextSet.t -> side_effect_declaration -> (Constant.t * private_constants) safe_transformer
 
 (** {5 Delayed proofs} *)
 
@@ -121,7 +122,7 @@ val is_filled_opaque : Opaqueproof.opaque_handle -> safe_environment -> bool
 
 (** Get the proof term that was checked by the kernel. *)
 val repr_certificate : opaque_certificate ->
-  Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes
+  Constr.t * ContextSet.t Opaqueproof.delayed_universes
 
 (** {5 Rewrite rules} *)
 
@@ -149,10 +150,10 @@ val add_modtype :
 (** Adding universe constraints *)
 
 val push_context_set :
-  strict:bool -> Univ.ContextSet.t -> safe_transformer0
+  strict:bool -> ContextSet.t -> safe_transformer0
 
 val add_constraints :
-  Univ.Constraints.t -> safe_transformer0
+  PolyConstraints.t -> safe_transformer0
 
 (* (\** Generator of universes *\) *)
 (* val next_universe : int safe_transformer *)
@@ -186,7 +187,7 @@ val push_named_def :
   Id.t * Entries.section_def_entry -> safe_transformer0
 
 (** Add local universes to a polymorphic section *)
-val push_section_context : UVars.UContext.t -> safe_transformer0
+val push_section_context : UVars.PolyContext.t -> safe_transformer0
 
 (** {6 Interactive module functions } *)
 
@@ -233,7 +234,7 @@ type compiled_library
 
 val dirpath_of_library : compiled_library -> DirPath.t
 val module_of_library : compiled_library -> Mod_declarations.module_body
-val univs_of_library : compiled_library -> Univ.ContextSet.t
+val univs_of_library : compiled_library -> ContextSet.t
 val check_flags_for_library : compiled_library -> safe_transformer0
 
 val start_library : DirPath.t -> ModPath.t safe_transformer

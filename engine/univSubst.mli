@@ -22,7 +22,7 @@ type quality_subst_fn = Quality.QVar.t -> Quality.t
 val level_subst_of : universe_subst_fn -> universe_level_subst_fn
 (** The resulting function must never be called on a level which would produce an algebraic. *)
 
-val subst_univs_constraints : universe_subst_fn -> Constraints.t -> Constraints.t
+val subst_univs_constraints : universe_subst_fn -> PolyConstraints.t -> PolyConstraints.t
 
 (** Full universes substitutions into terms *)
 
@@ -46,11 +46,11 @@ val subst_univs_universe : universe_subst_fn -> Universe.t -> Universe.t
 
 val pr_universe_subst : (Level.t -> Pp.t) -> universe_subst -> Pp.t
 
-val enforce_eq : Universe.t constraint_function
-val enforce_leq : Universe.t constraint_function
+val enforce_eq_univ : Universe.t PolyConstraints.constraint_function
+val enforce_leq_univ : Universe.t PolyConstraints.constraint_function
 
-val enforce_eq_sort : Sorts.t -> Sorts.t -> Univ.Constraints.t -> Univ.Constraints.t
-val enforce_leq_sort : Sorts.t -> Sorts.t -> Univ.Constraints.t -> Univ.Constraints.t
+val enforce_eq_sort : Sorts.t PolyConstraints.constraint_function
+val enforce_elim_to_sort : Sorts.t PolyConstraints.constraint_function
 
 (** Picks an arbitrary set of constraints sufficient to ensure [u <= v]. *)
-val enforce_leq_alg_sort : Sorts.t -> Sorts.t -> UGraph.t -> Univ.Constraints.t * UGraph.t
+val enforce_leq_alg_sort : Sorts.t -> Sorts.t -> UGraph.t -> PolyConstraints.t * UGraph.t

@@ -175,9 +175,9 @@ let convert_instances_cumul pb var u u' (s, check) =
 let get_cumulativity_constraints cv_pb variance u u' =
   match cv_pb with
   | CONV ->
-    UVars.enforce_eq_variance_instances variance u u' Sorts.QUConstraints.empty
+    UVars.enforce_eq_variance_instances variance u u' PolyConstraints.empty
   | CUMUL ->
-    UVars.enforce_leq_variance_instances variance u u' Sorts.QUConstraints.empty
+    UVars.enforce_leq_variance_instances variance u u' PolyConstraints.empty
 
 let inductive_cumulativity_arguments (mind,ind) =
   mind.Declarations.mind_nparams +

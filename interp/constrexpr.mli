@@ -41,11 +41,15 @@ type sort_expr = (qvar_expr option * (sort_name_expr * int) list Glob_term.glob_
 type instance_expr = quality_expr list * univ_level_expr list
 
 (** Constraints don't have anonymous universes *)
-type univ_constraint_expr = sort_name_expr * Univ.constraint_type * sort_name_expr
+type level_constraint_expr = sort_name_expr * Univ.constraint_type * sort_name_expr
+type elim_constraint_expr = quality_expr * Quality.ElimConstraint.kind * quality_expr
 
-type universe_decl_expr = (lident list, lident list, univ_constraint_expr list) UState.gen_universe_decl
+type poly_constraint_expr = LvlCst of level_constraint_expr
+  | ElimCst of elim_constraint_expr
+
+type universe_decl_expr = (lident list, elim_constraint_expr list, lident list, level_constraint_expr list) UState.gen_universe_decl
 type cumul_univ_decl_expr =
-  (lident list, (lident * UVars.Variance.t option) list, univ_constraint_expr list) UState.gen_universe_decl
+  (lident list, elim_constraint_expr list, (lident * UVars.Variance.t option) list, level_constraint_expr list) UState.gen_universe_decl
 
 type ident_decl = lident * universe_decl_expr option
 type cumul_ident_decl = lident * cumul_univ_decl_expr option

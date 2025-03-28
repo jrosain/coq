@@ -128,6 +128,7 @@ type evar_handler = {
   evar_repack : Evar.t * constr list -> constr;
   evar_irrelevant : constr pexistential -> bool;
   qvar_irrelevant : Quality.QVar.t -> bool;
+  elim_to : Quality.t -> Quality.t -> bool;
 }
 
 let default_evar_handler env = {
@@ -135,9 +136,12 @@ let default_evar_handler env = {
   evar_repack = (fun _ -> assert false);
   evar_irrelevant = (fun _ -> assert false);
   qvar_irrelevant = (fun q ->
-      assert (Quality.QVar.Set.mem q (Environ.qualities env));
+      assert (Quality.QVar.Set.mem q (Environ.quality_vars env));
       false);
+  elim_to = QGraph.ElimTable.eliminates_to;
 }
+
+let elim_to evar = evar.elim_to
 
 (** Reduction cache *)
 type infos_cache = {

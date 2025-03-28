@@ -93,6 +93,7 @@ Section Defs.
 
   (** An Equivalence is a PreOrder plus symmetry. *)
 
+  Set Debug "backtrace".
   Global Instance Equivalence_PreOrder {R} `(E:Equivalence R) : PreOrder R | 10 :=
     { }.
 

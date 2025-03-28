@@ -224,7 +224,7 @@ let change_property_sort evd toSort princ princName =
         in
         let s = Constr.destSort ty in
         Global.add_constraints @@
-          UnivSubst.enforce_leq_sort toSort s Univ.Constraints.empty;
+          UnivSubst.enforce_elim_to_sort s toSort PolyConstraints.empty;
         Term.compose_prod args (Constr.mkSort toSort) )
   in
   let evd, princName_as_constr =

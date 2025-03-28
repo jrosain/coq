@@ -187,8 +187,9 @@ let u_ident = Id.of_string "u"
 
 let universe_binders_with_opt_names orig names =
   let open Univ in
-  let qorig, uorig = UVars.AbstractContext.names orig in
-  let qorig, uorig as orig = Array.to_list qorig, Array.to_list uorig in
+  let orig = UVars.AbstractContext.names orig in
+  let qorig, uorig as orig =
+    Array.to_list orig.qualities, Array.to_list orig.levels in
   let qdecl, udecl = match names with
   | None -> orig
   | Some (gref, (qdecl, udecl)) ->
@@ -245,30 +246,37 @@ let universe_binders_with_opt_names orig names =
   names
 
 let pr_universe_ctx_set sigma c =
-  if !Detyping.print_universes && not (Univ.ContextSet.is_empty c) then
-    fnl()++pr_in_comment (v 0 (Univ.ContextSet.pr (Termops.pr_evd_level sigma) c))
+  if !Detyping.print_universes && not (PolyConstraints.ContextSet.is_empty c) then
+    fnl() ++ (pr_in_comment @@
+		v 0 @@
+		  PolyConstraints.ContextSet.pr (Termops.pr_evd_qvar sigma) (Termops.pr_evd_level sigma) c)
   else
     mt()
 
 let pr_universe_ctx sigma ?variance c =
-  if !Detyping.print_universes && not (UVars.UContext.is_empty c) then
+  if !Detyping.print_universes && not (UVars.PolyContext.is_empty c) then
     fnl()++
     pr_in_comment
       (v 0
-         (UVars.pr_universe_context (Termops.pr_evd_qvar sigma) (Termops.pr_evd_level sigma)
+         (UVars.PolyContext.pr (Termops.pr_evd_qvar sigma) (Termops.pr_evd_level sigma)
             ?variance c))
   else
     mt()
 
 let pr_abstract_universe_ctx sigma ?variance ?priv c =
-  let open Univ in
-  let priv = Option.default Univ.ContextSet.empty priv in
+  let open PolyConstraints in
+  let priv = Option.default ContextSet.empty priv in
   let has_priv = not (ContextSet.is_empty priv) in
   if !Detyping.print_universes && (not (UVars.AbstractContext.is_empty c) || has_priv) then
     let prqvar u = Termops.pr_evd_qvar sigma u in
     let prlev u = Termops.pr_evd_level sigma u in
-    let pub = (if has_priv then str "Public universes:" ++ fnl() else mt()) ++ v 0 (UVars.pr_abstract_universe_context prqvar prlev ?variance c) in
-    let priv = if has_priv then fnl() ++ str "Private universes:" ++ fnl() ++ v 0 (Univ.ContextSet.pr prlev priv) else mt() in
+    let pub =
+      (if has_priv then str "Public universes:" ++ fnl() else mt()) ++
+	v 0 (UVars.AbstractContext.pr prqvar prlev ?variance c) in
+    let priv = if has_priv
+	       then fnl() ++ str "Private universes:" ++ fnl() ++
+		      v 0 (ContextSet.pr prqvar prlev priv)
+	       else mt() in
     fnl()++pr_in_comment (pub ++ priv)
   else
     mt()
@@ -284,19 +292,31 @@ let pr_global_env = Nametab.pr_global_env
 let pr_global = pr_global_env Id.Set.empty
 
 let pr_universe_instance_binder evd inst csts =
-  let open Univ in
+  let open Univ in let open Quality in
   let prqvar = Termops.pr_evd_qvar evd in
+  let prq q =
+    match q with
+    | QConstant _ -> assert false
+    | QVar q -> prqvar q in
   let prlev = Termops.pr_evd_level evd in
-  let pcsts = if Constraints.is_empty csts then begin
-      if fst (UVars.Instance.length inst) = 0 then mt()
-      else str " |"
-    end
-    else strbrk " | " ++
-         prlist_with_sep pr_comma
-           (fun (u,d,v) -> hov 0 (prlev u ++ pr_constraint_type d ++ prlev v))
-           (Constraints.elements csts)
-  in
-  str"@{" ++ UVars.Instance.pr prqvar prlev inst ++ pcsts ++ str"}"
+  (* Builds a printer for constraints *)
+  let prcsts (type a b t) (module S: Stdlib.Set.S with type elt = a * b * a and type t = t)
+	proj prf prc constraints =
+    if S.is_empty constraints then begin
+	if proj (UVars.Instance.length inst) = 0 then mt()
+	else str " |"
+      end
+    else
+      let c = S.elements constraints in
+      strbrk " | " ++
+	prlist_with_sep pr_comma
+	  (fun (a,k,b) -> hov 0 (prf a ++ prc k ++ prf b)) c in
+  let qcsts = prcsts (module ElimConstraints) fst prq
+		ElimConstraint.pr_kind @@ PolyConstraints.qualities csts in
+  let pcsts = prcsts (module LvlConstraints) snd prlev pr_constraint_type @@
+		PolyConstraints.levels csts in
+  str"@{" ++ UVars.Instance.pr_qualities prqvar inst ++ qcsts ++
+    UVars.Instance.pr_levels prlev inst ++ pcsts ++ str"}"
 
 let pr_universe_instance evd inst =
   let prqvar = Termops.pr_evd_qvar evd in

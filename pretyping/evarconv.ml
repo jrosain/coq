@@ -458,8 +458,8 @@ let is_applied o n = match o with FullyApplied -> true | NumArgs m -> Int.equal 
 
 let compare_heads pbty env evd ~nargs term term' =
   let check_strict evd u u' =
-    let cstrs = UVars.enforce_eq_instances u u' Sorts.QUConstraints.empty in
-    try Success (Evd.add_quconstraints evd cstrs)
+    let cstrs = UVars.enforce_eq_instances u u' PolyConstraints.empty in
+    try Success (Evd.add_constraints evd cstrs)
     with UGraph.UniverseInconsistency p -> UnifFailure (evd, UnifUnivInconsistency p)
   in
   match EConstr.kind evd term, EConstr.kind evd term' with
@@ -1262,7 +1262,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             else UnifFailure (evd,NotSameHead)
 
         | Var var1, Var var2 ->
-            if Id.equal var1 var2 then
+            if Id.equal var1 var2 then 
               exact_ise_stack2 env evd (evar_conv_x flags) sk1 sk2
             else UnifFailure (evd,NotSameHead)
 
@@ -1454,7 +1454,7 @@ let evar_conv_x flags env evd pbty term1 term2 =
       str "Starting unification:" ++ spc() ++
       Termops.Internal.print_constr_env env evd term1 ++
       (match pbty with CONV -> strbrk " =~= " | CUMUL -> strbrk " <~= ") ++
-      Termops.Internal.print_constr_env env evd term2);
+	Termops.Internal.print_constr_env env evd term2);
   let res =
     evar_conv_x flags env evd pbty term1 term2
   in
@@ -1471,7 +1471,8 @@ let evar_unify = conv_fun evar_conv_x
 
 let evar_conv_hook = ref evar_conv_x
 
-let evar_conv_x flags = !evar_conv_hook flags
+let evar_conv_x flags =
+  !evar_conv_hook flags
 
 let set_evar_conv f = evar_conv_hook := f
 

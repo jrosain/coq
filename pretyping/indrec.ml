@@ -16,8 +16,8 @@ open Pp
 open CErrors
 open Util
 open Names
-open Libnames
 open Nameops
+open Libnames
 open Constr
 open EConstr
 open Context

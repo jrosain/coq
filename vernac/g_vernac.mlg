@@ -94,6 +94,16 @@ let warn_chdir_pwd = CWarnings.create ~name:"change-dir-pwd-deprecated" ~categor
     (fun () -> strbrk "Command \"Cd\" as a synonym of \"Pwd\" is deprecated." ++ spc () ++
                strbrk "Use \"Pwd\" instead.")
 
+let rec elim_constraints = function
+  | [] -> []
+  | ElimCst (q1,k,q2) :: t -> (q1,k,q2) :: elim_constraints t
+  | h :: t -> elim_constraints t
+
+let rec lvl_constraints = function
+  | [] -> []
+  | LvlCst (l1,k,l2) :: t -> (l1,k,l2) :: lvl_constraints t
+  | h :: t -> lvl_constraints t
+
 }
 
 GRAMMAR EXTEND Gram
@@ -236,6 +246,10 @@ let test_cumul_univ_decl =
   let lk_list_variance_ident = lk_list (lk_kw "+" <+> lk_kw "*" <+> lk_kw "=" <+> lk_ident) in
   to_entry "test_cumul_univ_decl" (lk_ident_list >> lk_kw "|" >> lk_list_variance_ident >> (lk_kw "+" <+> lk_empty) >> (lk_kw "|" <+> lk_kw "|}"))
 
+let test_lvl_cst =
+  let open Procq.Lookahead in
+  let univ = lk_qualid <+> lk_kws ["Set";"Prop"] in
+  to_entry "test_lvl_cst" (univ >> lk_kws ["<"; "="; "<="] >> univ)
 
 }
 
@@ -296,7 +310,7 @@ GRAMMAR EXTEND Gram
           { VernacPrimitive(id, r, typopt) }
       | IDENT "Universe"; l = LIST1 identref -> { VernacUniverse l }
       | IDENT "Universes"; l = LIST1 identref -> { VernacUniverse l }
-      | IDENT "Constraint"; l = LIST1 univ_constraint SEP "," -> { VernacConstraint l }
+      | IDENT "Constraint"; l = LIST1 poly_constraint SEP "," -> { VernacConstraint l }
       | IDENT "Rewrite"; IDENT "Rule"; id = identref; ":="; OPT"|"; rules = LIST1 rewrite_rule SEP "|" ->
           { VernacAddRewRule (id, rules) }
       | IDENT "Rewrite"; IDENT "Rules"; id = identref; ":="; OPT"|"; rules = LIST1 rewrite_rule SEP "|" ->
@@ -340,12 +354,15 @@ GRAMMAR EXTEND Gram
       | IDENT "Inline" -> { DefaultInline }
       | -> { NoInline } ] ]
   ;
-  univ_constraint:
-    [ [ l = universe_name; ord = [ "<" -> { Univ.Lt } | "=" -> { Univ.Eq } | "<=" -> { Univ.Le } ];
-        r = universe_name -> { (l, ord, r) } ] ]
+  poly_constraint:
+    [ [ test_lvl_cst; l = universe_name;
+      	ord = [ "<" -> { Univ.Lt } | "=" -> { Univ.Eq } | "<=" -> { Univ.Le } ];
+        r = universe_name -> { LvlCst (l, ord, r) }
+	| l = sort_quality_var; "->"; r = sort_quality_var
+	  -> { ElimCst (l, Quality.ElimConstraint.ElimTo, r) } ] ]
   ;
   univ_decl_constraints:
-    [ [ "|"; l' = LIST0 univ_constraint SEP ",";
+    [ [ "|"; l' = LIST0 poly_constraint SEP ",";
         ext = [ "+" -> { true } | -> { false } ]; "}" -> { (l',ext) }
       | ext = [ "}" -> { true } | bar_cbrace -> { false } ] -> { ([], ext) } ] ]
   ;
@@ -356,20 +373,24 @@ GRAMMAR EXTEND Gram
          { let open UState in
          { univdecl_qualities = l0;
            univdecl_extensible_qualities = false;
+           univdecl_elim_constraints = elim_constraints @@ fst cs;
+           univdecl_extensible_elim_constraints = snd cs;
            univdecl_instance = l;
            univdecl_extensible_instance = ext;
-           univdecl_constraints = fst cs;
-           univdecl_extensible_constraints = snd cs } }
+           univdecl_lvl_constraints = lvl_constraints @@ fst cs;
+           univdecl_extensible_lvl_constraints = snd cs } }
     | "@{" ; l = LIST0 identref; ext = [ "+" -> { true } | -> { false } ];
          cs = univ_decl_constraints
          ->
          { let open UState in
          { univdecl_qualities = [];
            univdecl_extensible_qualities = false;
+           univdecl_elim_constraints = elim_constraints @@ fst cs;
+           univdecl_extensible_elim_constraints = snd cs;
            univdecl_instance = l;
            univdecl_extensible_instance = ext;
-           univdecl_constraints = fst cs;
-           univdecl_extensible_constraints = snd cs } }
+           univdecl_lvl_constraints = lvl_constraints @@ fst cs;
+           univdecl_extensible_lvl_constraints = snd cs } }
     ] ]
   ;
   variance:
@@ -393,10 +414,12 @@ GRAMMAR EXTEND Gram
          { let open UState in
          { univdecl_qualities = l0;
            univdecl_extensible_qualities = false;
+           univdecl_elim_constraints = elim_constraints @@ fst cs;
+           univdecl_extensible_elim_constraints = snd cs;
            univdecl_instance = l;
            univdecl_extensible_instance = ext;
-           univdecl_constraints = fst cs;
-           univdecl_extensible_constraints = snd cs } }
+           univdecl_lvl_constraints = lvl_constraints @@ fst cs;
+           univdecl_extensible_lvl_constraints = snd cs } }
 
        | "@{" ; l = LIST0 variance_identref; ext = [ "+" -> { true } | -> { false } ];
          cs = univ_decl_constraints
@@ -404,10 +427,12 @@ GRAMMAR EXTEND Gram
          { let open UState in
          { univdecl_qualities = [];
            univdecl_extensible_qualities = false;
+           univdecl_elim_constraints = elim_constraints @@ fst cs;
+           univdecl_extensible_elim_constraints = snd cs;
            univdecl_instance = l;
            univdecl_extensible_instance = ext;
-           univdecl_constraints = fst cs;
-           univdecl_extensible_constraints = snd cs } }
+           univdecl_lvl_constraints = lvl_constraints @@ fst cs;
+           univdecl_extensible_lvl_constraints = snd cs } }
     ] ]
   ;
   ident_decl:

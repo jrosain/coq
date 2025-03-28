@@ -146,33 +146,41 @@ let do_universe ~poly l =
   match poly with
   | false ->
     let ctx = List.fold_left (fun ctx (_,qid) -> Level.Set.add (Level.make qid) ctx)
-        Level.Set.empty l, Constraints.empty
+        Level.Set.empty l, PolyConstraints.empty
     in
     Global.push_context_set ctx
   | true ->
     let names = CArray.map_of_list (fun (na,_) -> Name na) l in
     let us = CArray.map_of_list (fun (_,l) -> Level.make l) l in
     let ctx =
-      UVars.UContext.make ([||],names) (UVars.Instance.of_array ([||],us), Constraints.empty)
+      UVars.PolyContext.make
+	{ qualities = [| |];
+	  levels = names } (UVars.Instance.of_array ([||],us), PolyConstraints.empty)
     in
     Global.push_section_context ctx
 
 let do_constraint ~poly l =
-  let open Univ in
   let evd = Evd.from_env (Global.env ()) in
   let constraints = List.fold_left (fun acc cst ->
-      let cst = Constrintern.interp_univ_constraint evd cst in
-      Constraints.add cst acc)
-      Constraints.empty l
+      match cst with
+      | Constrexpr.LvlCst (l,d,r as cst) ->
+	 let cst = Constrintern.interp_level_constraint evd cst in
+	 PolyConstraints.add_level cst acc
+      | Constrexpr.ElimCst (l,d,r as cst) ->
+	 let cst = Constrintern.interp_elim_constraint evd cst in
+	 PolyConstraints.add_quality cst acc)
+      PolyConstraints.empty l
   in
   match poly with
   | false ->
+     let open PolyConstraints in
     let uctx = ContextSet.add_constraints constraints ContextSet.empty in
     Global.push_context_set uctx
   | true ->
-    let uctx = UVars.UContext.make
-        ([||],[||])
-        (UVars.Instance.empty,constraints)
+     let uctx = UVars.PolyContext.make
+		  { qualities = [| |];
+		    levels = [| |] }
+		  (UVars.Instance.empty,constraints)
     in
     Global.push_section_context uctx
 
@@ -195,7 +203,7 @@ let constraint_obj =
    main issue is the filtering or redundant constraints (needed for perf / smaller vo file sizes) *)
 let add_constraint_source x ctx =
   let _, csts = ctx in
-  if Univ.Constraints.is_empty csts then ()
+  if PolyConstraints.is_empty csts then ()
   else
     let v = x, csts in
     Lib.add_leaf (constraint_obj v)
