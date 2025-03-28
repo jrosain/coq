@@ -213,10 +213,15 @@ val check_duplicate : ?loc:Loc.t -> (qualid * constr_expr) list -> unit
 (** Check that a list of record field definitions doesn't contain
     duplicates. *)
 
-val interp_univ_constraint
+val interp_elim_constraint
+  : Evd.evar_map
+  -> quality_expr * Quality.ElimConstraint.kind * quality_expr
+  -> Quality.ElimConstraint.t
+
+val interp_level_constraint
   : Evd.evar_map
   -> sort_name_expr * Univ.constraint_type * sort_name_expr
-  -> Univ.univ_constraint
+  -> Univ.level_constraint
 
 (** Local universe and constraint declarations. *)
 val interp_univ_decl : Environ.env -> universe_decl_expr ->

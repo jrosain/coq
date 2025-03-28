@@ -241,30 +241,31 @@ let type_case_branches env sigma (ind,largs) specif pj c =
   sigma, (lc, ty, ESorts.relevance_of_sort ps)
 
 let unify_relevance sigma r1 r2 =
+  let open Quality in
   match ERelevance.kind sigma r1, ERelevance.kind sigma r2 with
   | Relevant, Relevant | Irrelevant, Irrelevant -> Some sigma
   | Relevant, Irrelevant | Irrelevant, Relevant -> None
   | Irrelevant, RelevanceVar q | RelevanceVar q, Irrelevant ->
     let sigma =
-      Evd.add_quconstraints sigma
-        (Quality.ElimConstraints.singleton (Quality.qsprop, Equal, Quality.QVar q),
-         Univ.Constraints.empty)
+      Evd.add_constraints sigma @@
+	PolyConstraints.of_qualities @@
+	  ElimConstraints.singleton (qsprop, Equal, QVar q)
     in
     Some sigma
   | Relevant, RelevanceVar q | RelevanceVar q, Relevant ->
     let sigma =
-      Evd.add_quconstraints sigma
-        (Quality.ElimConstraints.singleton (QVar q, ElimTo, Quality.qprop),
-         Univ.Constraints.empty)
+      Evd.add_constraints sigma @@
+	PolyConstraints.of_qualities @@
+	  ElimConstraints.singleton (QVar q, ElimTo, qprop)
     in
     Some sigma
   | RelevanceVar q1, RelevanceVar q2 ->
-    if Quality.QVar.equal q1 q2 then Some sigma
+    if QVar.equal q1 q2 then Some sigma
     else
       let sigma =
-        Evd.add_quconstraints sigma
-          (Quality.ElimConstraints.singleton (QVar q1, Equal, Quality.QVar q2),
-           Univ.Constraints.empty)
+        Evd.add_constraints sigma @@
+	  PolyConstraints.of_qualities @@
+	    ElimConstraints.singleton (QVar q1, Equal, QVar q2)
       in
       Some sigma
 
@@ -303,7 +304,6 @@ let check_type_fixpoint ?loc env sigma lna lar vdefj =
         error_ill_typed_rec_body ?loc env sigma
           i lna vdefj lar)
     sigma vdefj lar
-
 
 (* FIXME: might depend on the level of actual parameters!*)
 let check_allowed_sort env sigma ind c p =

@@ -10,9 +10,10 @@
 
 open Util
 open Names
-open Univ
+open PolyConstraints
 open UVars
 open Cooking
+open Univ
 
 module NamedDecl = Context.Named.Declaration
 
@@ -30,7 +31,7 @@ type 'a t = {
       with global declarations *)
   mono_universes : ContextSet.t;
   (** Global universes introduced in the section *)
-  poly_universes : UContext.t;
+  poly_universes : PolyContext.t;
   (** Universes local to the section *)
   all_poly_univs : Instance.t;
   (** All polymorphic universes, including from previous sections. *)
@@ -56,11 +57,11 @@ let add_emap e v (cmap, imap) = match e with
 | SecInductive ind -> (cmap, Mindmap_env.add ind v imap)
 
 let push_local_universe_context ctx sec =
-  if UContext.is_empty ctx then sec
+  if PolyContext.is_empty ctx then sec
   else
     let sctx = sec.poly_universes in
-    let poly_universes = UContext.union sctx ctx in
-    let all_poly_univs = Instance.append sec.all_poly_univs (UContext.instance ctx) in
+    let poly_universes = PolyContext.union sctx ctx in
+    let all_poly_univs = Instance.append sec.all_poly_univs (PolyContext.instance ctx) in
     { sec with poly_universes; all_poly_univs; has_poly_univs = true }
 
 let is_polymorphic_univ u sec =
@@ -69,9 +70,9 @@ let is_polymorphic_univ u sec =
 
 let push_constraints uctx sec =
   if sec.has_poly_univs &&
-     Constraints.exists
+     LvlConstraints.exists
        (fun (l,_,r) -> is_polymorphic_univ l sec || is_polymorphic_univ r sec)
-       (snd uctx)
+       (PolyConstraints.levels @@ ContextSet.constraints uctx)
   then CErrors.user_err
       Pp.(str "Cannot add monomorphic constraints which refer to section polymorphic universes.");
   let uctx' = sec.mono_universes in
@@ -83,7 +84,7 @@ let open_section ~custom prev =
     prev;
     context = [];
     mono_universes = ContextSet.empty;
-    poly_universes = UContext.empty;
+    poly_universes = PolyContext.empty;
     all_poly_univs = Option.cata (fun sec -> sec.all_poly_univs) Instance.empty prev;
     has_poly_univs = Option.cata has_poly_univs false prev;
     entries = [];

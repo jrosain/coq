@@ -65,15 +65,3 @@ type pattern =
   | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
 
 val pattern_match : pattern -> t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t option
-
-val enforce_eq_quality : Quality.t -> Quality.t -> Quality.ElimConstraints.t -> Quality.ElimConstraints.t
-
-val enforce_elim_to_quality : Quality.t -> Quality.t -> Quality.ElimConstraints.t -> Quality.ElimConstraints.t
-
-module QUConstraints : sig
-  type t = Quality.ElimConstraints.t * Univ.Constraints.t
-
-  val empty : t
-
-  val union : t -> t -> t
-end

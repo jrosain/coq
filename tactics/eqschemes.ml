@@ -820,8 +820,8 @@ let build_congr env (eq,refl,ctx) ind =
   let uni, ctx' = UnivGen.new_global_univ () in
   let ctx =
     let (qs,us),csts = ctx in
-    let us, csts = Univ.ContextSet.union (us,csts) ctx' in
-    ((qs, us), UnivSubst.enforce_leq uni (univ_of_eq env eq) csts) in
+    let us, csts = PolyConstraints.ContextSet.union (us,csts) ctx' in
+    ((qs, us), UnivSubst.enforce_leq_univ uni (univ_of_eq env eq) csts) in
   let c =
   my_it_mkLambda_or_LetIn paramsctxt
      (mkNamedLambda (make_annot varB Sorts.Relevant) (mkType uni)

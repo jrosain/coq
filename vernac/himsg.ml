@@ -285,11 +285,11 @@ let explain_elim_arity env sigma ind c okinds =
         let ppt = ppt ~ppunivs:true () in
         hov 0
           (str "the return type has sort" ++ spc () ++ ppt ++ spc () ++
-           str "while it should be in sort quality " ++ pr_evd_qvar sigma squashq ++ str ".") ++
+           str "while it should be in a sort " ++ pr_evd_qvar sigma squashq ++ str " eliminates to.") ++
         fnl () ++
         hov 0
           (str "Elimination of a sort polymorphic inductive object instantiated to a variable sort quality" ++ spc() ++
-           str "is only allowed on a predicate in the same sort quality.")
+           str "is only allowed on itself or with an explicit elimination constraint to the target sort.")
   in
   hov 0 (
     str "Incorrect elimination" ++
@@ -855,16 +855,24 @@ let explain_non_linear_unification env sigma m t =
   strbrk " which would require to abstract twice on " ++
   pr_leconstr_env env sigma t ++ str "."
 
-let explain_unsatisfied_constraints env sigma cst =
-  let cst = Univ.Constraints.filter (fun cst -> not @@ UGraph.check_constraint (Evd.universes sigma) cst) cst in
-  strbrk "Unsatisfied constraints: " ++
-    Univ.Constraints.pr (Termops.pr_evd_level sigma) cst ++
+let explain_unsatisfied_level_constraints env sigma cst =
+  let cst = Univ.LvlConstraints.filter
+	      (fun cst -> not @@ UGraph.check_constraint (Evd.universes sigma) cst) cst in
+  strbrk "Unsatisfied level constraints: " ++
+    Univ.LvlConstraints.pr (Termops.pr_evd_level sigma) cst ++
     spc () ++ str "(maybe a bugged tactic)."
 
 let explain_unsatisfied_elim_constraints env sigma cst =
   strbrk "Unsatisfied elimination constraints: " ++
   Quality.ElimConstraints.pr (Termops.pr_evd_qvar sigma) cst ++
   spc() ++ str "(maybe a bugged tactic)."
+
+let explain_unsatisfied_constraints env sigma csts =
+  let qc = PolyConstraints.qualities csts and lc = PolyConstraints.levels csts in
+  strbrk "Unsatisfied constraints: "  ++
+    Quality.ElimConstraints.pr (Termops.pr_evd_qvar sigma) qc ++
+    spc() ++ Univ.LvlConstraints.pr (Termops.pr_evd_level sigma) lc ++
+    spc() ++ str "(maybe a bugged tactic)."
 
 let explain_undeclared_universes env sigma l =
   let l = Univ.Level.Set.elements l in
@@ -981,10 +989,12 @@ let explain_type_error env sigma err =
      explain_ill_typed_rec_body env sigma i lna vdefj vargs
   | WrongCaseInfo (ind,ci) ->
       explain_wrong_case_info env ind ci
+  | UnsatisfiedLevelConstraints cst ->
+    explain_unsatisfied_level_constraints env sigma cst
+  | UnsatisfiedElimConstraints cst ->
+     explain_unsatisfied_elim_constraints env sigma cst
   | UnsatisfiedConstraints cst ->
     explain_unsatisfied_constraints env sigma cst
-  | UnsatisfiedElimConstraints cst ->
-    explain_unsatisfied_elim_constraints env sigma cst
   | UndeclaredUniverses l ->
     explain_undeclared_universes env sigma l
   | UndeclaredQualities l ->
@@ -1210,8 +1220,8 @@ let explain_not_match_error = function
       in
       let uctx = AbstractContext.repr auctx in
       Printer.pr_universe_instance_binder sigma
-        (UContext.instance uctx)
-        (UContext.constraints uctx)
+        (PolyContext.instance uctx)
+        (PolyContext.constraints uctx)
     in
     str "incompatible polymorphic binders: got" ++ spc () ++ h (pr_auctx got) ++ spc() ++
     str "but expected" ++ spc() ++ h (pr_auctx expect) ++
@@ -1662,7 +1672,11 @@ let rec vernac_interp_error_handler = function
     UGraph.explain_universe_inconsistency
       Quality.QVar.raw_pr
       UnivNames.pr_level_with_global_universes
-      i ++ str "."
+		  i ++ str "."
+  | QGraph.QualityInconsistency i ->
+     str "Quality inconsistency." ++ spc() ++
+     QGraph.explain_quality_inconsistency
+       Quality.QVar.raw_pr i
   | TypeError(env,te) ->
     let te = of_type_error te in
     explain_type_error env (Evd.from_env env) te

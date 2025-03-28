@@ -9,6 +9,8 @@
 (************************************************************************)
 
 open Univ
+open Quality
+open PolyConstraints
 
 (** {6 Support for universe polymorphism } *)
 
@@ -43,8 +45,8 @@ sig
   val empty : t
   val is_empty : t -> bool
 
-  val of_array : Quality.t array * Level.t array -> t
-  val to_array : t -> Quality.t array * Level.t array
+  val of_array : quality array * Level.t array -> t
+  val to_array : t -> quality array * Level.t array
 
   val abstract_instance : int * int -> t
   (** Instance of the given size made of QVar/Level.var *)
@@ -64,31 +66,31 @@ sig
   val hash : t -> int
   (** Hash value *)
 
-  val pr : (Quality.QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
+  val pr_qualities : (QVar.t -> Pp.t) -> t -> Pp.t
+  val pr_levels : (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
+  val pr : (QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
   (** Pretty-printing, no comments *)
 
   val levels : t -> Quality.Set.t * Level.Set.t
   (** The set of levels in the instance *)
 
   val subst_fn
-    : (Quality.QVar.t -> Quality.t) * (Level.t -> Level.t)
+    : (QVar.t -> quality) * (Level.t -> Level.t)
     -> t -> t
 
   type mask = Quality.pattern array * int option array
 
-  val pattern_match : mask -> t -> ('term, Quality.t, Level.t) Partial_subst.t -> ('term, Quality.t, Level.t) Partial_subst.t option
+  val pattern_match : mask -> t -> ('term, quality, Level.t) Partial_subst.t -> ('term, quality, Level.t) Partial_subst.t option
   (** Pattern matching, as used by the rewrite rules mechanism *)
 end
 
 val eq_sizes : int * int -> int * int -> bool
-(** Convenient function to compare the result of Instance.length, UContext.size etc *)
+(** Convenient function to compare the result of Instance.length, PolyContext.size etc *)
 
-type 'a quconstraint_function = 'a -> 'a -> Sorts.QUConstraints.t -> Sorts.QUConstraints.t
+val enforce_eq_instances : Instance.t constraint_function
 
-val enforce_eq_instances : Instance.t quconstraint_function
-
-val enforce_eq_variance_instances : Variance.t array -> Instance.t quconstraint_function
-val enforce_leq_variance_instances : Variance.t array -> Instance.t quconstraint_function
+val enforce_eq_variance_instances : Variance.t array -> Instance.t constraint_function
+val enforce_leq_variance_instances : Variance.t array -> Instance.t constraint_function
 
 type 'a puniverses = 'a * Instance.t
 val out_punivs : 'a puniverses -> 'a
@@ -96,13 +98,15 @@ val in_punivs : 'a -> 'a puniverses
 
 val eq_puniverses : ('a -> 'a -> bool) -> 'a puniverses -> 'a puniverses -> bool
 
-type bound_names = Names.Name.t array * Names.Name.t array
+type bound_names =
+  { qualities : Names.Name.t array
+  ; levels : Names.Name.t array }
 
-(** A vector of universe levels with universe Constraints.t,
-    representing local universe variables and associated Constraints.t;
+(** A vector of universe levels with universe PolyConstraints.t,
+    representing local universe variables and associated PolyConstraints.t;
     the names are user-facing names for printing *)
 
-module UContext :
+module PolyContext :
 sig
   type t
 
@@ -112,7 +116,10 @@ sig
   val is_empty : t -> bool
 
   val instance : t -> Instance.t
-  val constraints : t -> Constraints.t
+  val constraints : t -> PolyConstraints.t
+
+  val pr : (Quality.QVar.t -> Pp.t) -> (Level.t -> Pp.t)
+    -> ?variance:(Variance.t array) -> t -> Pp.t
 
   val union : t -> t -> t
   (** Keeps the order of the instances *)
@@ -129,7 +136,7 @@ sig
   val sort_levels : Level.t array -> Level.t array
   (** Arbitrary choice of linear order of the variables *)
 
-  val sort_qualities : Quality.t array -> Quality.t array
+  val sort_qualities : quality array -> quality array
   (** Arbitrary choice of linear order of the variables *)
 
   val of_context_set : (Instance.t -> bound_names) -> Quality.QVar.Set.t -> ContextSet.t -> t
@@ -138,9 +145,10 @@ sig
   val to_context_set : t -> Quality.QVar.Set.t * ContextSet.t
   (** Discard the names and order of the universes *)
 
+  val hcons : t Hashcons.f
 end
 (** A value in a universe context. *)
-type 'a in_universe_context = 'a * UContext.t
+type 'a in_poly_context = 'a * PolyContext.t
 
 module AbstractContext :
 sig
@@ -154,13 +162,13 @@ sig
                                                             use de Bruijn indices
   *)
 
-  val make : bound_names -> Constraints.t -> t
-  (** Build an abstract context. Constraints may be between universe
+  val make : bound_names -> PolyConstraints.t -> t
+  (** Build an abstract context. PolyConstraints may be between universe
      variables. *)
 
-  val repr : t -> UContext.t
+  val repr : t -> PolyContext.t
   (** [repr ctx] is [(Var(0), ... Var(n-1) |= cstr] where [n] is the length of
-      the context and [cstr] the abstracted Constraints.t. *)
+      the context and [cstr] the abstracted PolyConstraints.t. *)
 
   val empty : t
   val is_empty : t -> bool
@@ -173,12 +181,16 @@ sig
   val union : t -> t -> t
   (** The constraints are expected to be relative to the concatenated set of universes *)
 
-  val instantiate : Instance.t -> t -> Constraints.t
-  (** Generate the set of instantiated Constraints.t **)
+  val instantiate : Instance.t -> t -> PolyConstraints.t
+  (** Generate the set of instantiated PolyConstraints.t **)
 
   val names : t -> bound_names
   (** Return the names of the bound universe variables *)
 
+  val pr : (Quality.QVar.t -> Pp.t) -> (Level.t -> Pp.t)
+    -> ?variance:(Variance.t array) -> t -> Pp.t
+
+  val hcons : t Hashcons.f
 end
 
 type 'a univ_abstracted = {
@@ -191,9 +203,21 @@ val map_univ_abstracted : ('a -> 'b) -> 'a univ_abstracted -> 'b univ_abstracted
 
 (** {6 Substitution} *)
 
-val pr_quality_level_subst : (Quality.QVar.t -> Pp.t) -> Quality.t Quality.QVar.Map.t -> Pp.t
+type universe_level_subst = Level.t Level.Map.t
 
-type sort_level_subst = Quality.t Quality.QVar.Map.t * universe_level_subst
+val empty_level_subst : universe_level_subst
+val is_empty_level_subst : universe_level_subst -> bool
+
+(** Substitution of universes. *)
+val subst_univs_level_level : universe_level_subst -> Level.t -> Level.t
+val subst_univs_level_universe : universe_level_subst -> Universe.t -> Universe.t
+val subst_univs_level_constraints : universe_level_subst -> PolyConstraints.t -> PolyConstraints.t
+
+val pr_universe_level_subst : (Level.t -> Pp.t) -> universe_level_subst -> Pp.t
+
+val pr_quality_level_subst : (QVar.t -> Pp.t) -> quality QVar.Map.t -> Pp.t
+
+type sort_level_subst = quality QVar.Map.t * universe_level_subst
 
 val empty_sort_subst : sort_level_subst
 
@@ -223,19 +247,7 @@ val subst_instance_sort_level_subst : Instance.t -> sort_level_subst -> sort_lev
 val make_instance_subst : Instance.t -> sort_level_subst
 (** Creates [u(0) ↦ 0; ...; u(n-1) ↦ n - 1] out of [u(0); ...; u(n - 1)] *)
 
-val abstract_universes : UContext.t -> Instance.t * AbstractContext.t
+val abstract_universes : PolyContext.t -> Instance.t * AbstractContext.t
 (** TODO: move universe abstraction out of the kernel *)
 
 val make_abstract_instance : AbstractContext.t -> Instance.t
-
-(** {6 Pretty-printing of universes. } *)
-
-val pr_universe_context : (Quality.QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array ->
-  UContext.t -> Pp.t
-val pr_abstract_universe_context : (Quality.QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> ?variance:Variance.t array ->
-  AbstractContext.t -> Pp.t
-
-(** {6 Hash-consing } *)
-
-val hcons_universe_context : UContext.t Hashcons.f
-val hcons_abstract_universe_context : AbstractContext.t Hashcons.f

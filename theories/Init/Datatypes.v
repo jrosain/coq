@@ -454,8 +454,6 @@ Notation identity_refl := eq_refl (only parsing).
 #[deprecated(since="8.16",note="Use eq_ind instead")]
 Notation identity_ind := eq_ind (only parsing).
 #[deprecated(since="8.16",note="Use eq_rec instead")]
-Notation identity_rec := eq_rec (only parsing).
-#[deprecated(since="8.16",note="Use eq_rect instead")]
 Notation identity_rect := eq_rect (only parsing).
 #[deprecated(since="8.16",note="Use eq_sym instead")]
 Notation identity_sym := eq_sym (only parsing).

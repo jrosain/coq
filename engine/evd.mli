@@ -267,10 +267,9 @@ val is_defined : evar_map -> Evar.t-> bool
 val is_undefined : evar_map -> Evar.t-> bool
 (** Whether an evar is not defined in an evarmap. *)
 
-val add_constraints : evar_map -> Univ.Constraints.t -> evar_map
-(** Add universe constraints in an evar map. *)
+val add_level_constraints : evar_map -> PolyConstraints.t -> evar_map
 
-val add_quconstraints : evar_map -> Sorts.QUConstraints.t -> evar_map
+val add_constraints : evar_map -> PolyConstraints.t -> evar_map
 
 val undefined_map : evar_map -> undefined evar_info Evar.Map.t
 (** Access the undefined evar mapping directly. *)
@@ -573,29 +572,29 @@ val set_leq_level : evar_map -> Univ.Level.t -> Univ.Level.t -> evar_map
 val set_eq_instances : ?flex:bool ->
   evar_map -> UVars.Instance.t -> UVars.Instance.t -> evar_map
 
-val set_eq_qualities : evar_map -> Quality.t -> Quality.t -> evar_map
-val set_above_prop : evar_map -> Quality.t -> evar_map
+(* val set_eq_qualities : evar_map -> Quality.t -> Quality.t -> evar_map *)
+val set_elim_to_prop : evar_map -> Quality.t -> evar_map
 
 val check_eq : evar_map -> esorts -> esorts -> bool
 val check_leq : evar_map -> esorts -> esorts -> bool
 
-val check_constraints : evar_map -> Univ.Constraints.t -> bool
+val check_level_constraints : evar_map -> Univ.LvlConstraints.t -> bool
 val check_elim_constraints : evar_map -> Quality.ElimConstraints.t -> bool
-val check_quconstraints : evar_map -> Sorts.QUConstraints.t -> bool
+val check_constraints : evar_map -> PolyConstraints.t -> bool
 
 val ustate : evar_map -> UState.t
 val elim_graph : evar_map -> QGraph.t
 val evar_universe_context : evar_map -> UState.t [@@deprecated "(9.0) Use [Evd.ustate]"]
 
-val universe_context_set : evar_map -> Univ.ContextSet.t
+val universe_context_set : evar_map -> PolyConstraints.ContextSet.t
 val sort_context_set : evar_map -> UnivGen.sort_context_set
 val universe_subst : evar_map -> UnivFlex.t
 val universes : evar_map -> UGraph.t
 
-(** [to_universe_context evm] extracts the local universes and
+(** [to_poly_context evm] extracts the local universes and
     constraints of [evm] and orders the universes the same as
-    [Univ.ContextSet.to_context]. *)
-val to_universe_context : evar_map -> UVars.UContext.t
+    [PolyConstraints.ContextSet.to_context]. *)
+val to_poly_context : evar_map -> UVars.PolyContext.t
 
 val univ_entry : poly:bool -> evar_map -> UState.named_universes_entry
 
@@ -608,13 +607,13 @@ val check_univ_decl_early : poly:bool -> with_obls:bool -> evar_map -> UState.un
 val merge_universe_context : evar_map -> UState.t -> evar_map
 val set_universe_context : evar_map -> UState.t -> evar_map
 
-val merge_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> Univ.ContextSet.t -> evar_map
+val merge_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> PolyConstraints.ContextSet.t -> evar_map
 
 val merge_sort_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> UnivGen.sort_context_set -> evar_map
 
 val merge_sort_variables : ?loc:Loc.t -> ?sideff:bool -> evar_map -> Quality.QVar.Set.t -> evar_map
 
-val with_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a Univ.in_universe_context_set -> evar_map * 'a
+val with_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a PolyConstraints.in_poly_context_set -> evar_map * 'a
 
 val with_sort_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a UnivGen.in_sort_context_set -> evar_map * 'a
 

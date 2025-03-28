@@ -44,10 +44,6 @@ let check_constraints cst env =
   if Environ.check_constraints cst env then ()
   else error_unsatisfied_constraints env cst
 
-let check_elim_constraints qcst env =
-  if Quality.ElimConstraints.trivial qcst then ()
-  else error_unsatisfied_elim_constraints env qcst
-
 (* This should be a type (a priori without intention to be an assumption) *)
 let check_type env c t =
   match kind(Reduction.whd_all env t) with
@@ -512,12 +508,11 @@ let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
   in
   (* We use l2r:true for compat with old versions which used CONV with arguments
      flipped. It is relevant for performance eg in bedrock / Kami. *)
-  let qcst, ucst = match mib.mind_variance with
-  | None -> UVars.enforce_eq_instances u u' Sorts.QUConstraints.empty
-  | Some variance -> UVars.enforce_leq_variance_instances variance u' u Sorts.QUConstraints.empty
+  let csts = match mib.mind_variance with
+  | None -> UVars.enforce_eq_instances u u' PolyConstraints.empty
+  | Some variance -> UVars.enforce_leq_variance_instances variance u' u PolyConstraints.empty
   in
-  let () = check_elim_constraints qcst env in
-  let () = check_constraints ucst env in
+  let () = check_constraints csts env in
   let subst = Vars.subst_of_rel_context_instance_list pctx (realargs @ [c]) in
   Vars.substl subst p
 
@@ -857,15 +852,15 @@ let execute env c =
 
 (* Derived functions *)
 
-let check_declared_qualities env qualities =
+let check_declared_qualities env qvars =
   let module S = Quality.QVar.Set in
-  let unknown = S.diff qualities (Environ.qvars env) in
+  let unknown = S.diff qvars (Environ.qvars env) in
   if S.is_empty unknown then ()
   else error_undeclared_qualities env unknown
 
 let check_wellformed_universes env c =
-  let qualities, univs = sort_and_universes_of_constr c in
-  check_declared_qualities env qualities;
+  let qvars, univs = sort_and_universes_of_constr c in
+  check_declared_qualities env qvars;
   match UGraph.check_declared_universes (universes env) univs
   with
   | Ok () -> ()

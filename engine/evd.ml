@@ -854,7 +854,10 @@ let evar_handler sigma =
   | exception Not_found -> false (* Should be an anomaly *)
   in
   let evar_repack ev = mkLEvar sigma ev in
-  let elim_to = Inductive.eliminates_to (UState.elim_graph sigma.universes) in
+  let elim_to q1 q2 =
+    let q1 = UState.nf_quality sigma.universes q1 in
+    let q2 = UState.nf_quality sigma.universes q2 in
+    Inductive.eliminates_to (UState.elim_graph sigma.universes) q1 q2 in
   { CClosure.evar_expand; evar_irrelevant; evar_repack; qvar_irrelevant; elim_to }
 
 let existential_type_opt d (n, args) =
@@ -867,14 +870,15 @@ let existential_type d n = match existential_type_opt d n with
   | Some t -> t
   | None -> anomaly (str "Evar " ++ str (string_of_existential (fst n)) ++ str " was not declared.")
 
-let add_constraints d c =
-  { d with universes = UState.add_constraints d.universes c }
-
-let add_quconstraints d c =
-  { d with universes = UState.add_quconstraints d.universes c }
+let add_level_constraints d c =
+  { d with universes = UState.add_level_constraints d.universes @@
+			 PolyConstraints.levels c }
 
 let add_universe_constraints d c =
-  { d with universes = UState.add_universe_constraints d.universes c }
+  { d with universes = UState.add_universe_constraints d.universes c}
+
+let add_constraints d c =
+  { d with universes = UState.add_constraints d.universes c }
 
 (*** /Lifting... ***)
 
@@ -1039,7 +1043,7 @@ let universe_context_set d = UState.context_set d.universes
 
 let sort_context_set d = UState.sort_context_set d.universes
 
-let to_universe_context evd = UState.context evd.universes
+let to_poly_context evd = UState.context evd.universes
 
 let univ_entry ~poly evd = UState.univ_entry ~poly evd.universes
 
@@ -1049,7 +1053,7 @@ let check_univ_decl_early ~poly ~with_obls sigma udecl terms =
   let () =
     if with_obls && not poly &&
        (not udecl.UState.univdecl_extensible_instance
-        || not udecl.UState.univdecl_extensible_constraints)
+        || not udecl.UState.univdecl_extensible_lvl_constraints)
     then
       CErrors.user_err
         Pp.(str "Non extensible universe declaration not supported \
@@ -1140,7 +1144,7 @@ let is_eq_sort s1 s2 =
 let universe_rigidity evd l =
   let uctx = evd.universes in
   (* XXX why are we considering all locals to be flexible here? *)
-  if Univ.Level.Set.mem l (Univ.ContextSet.levels (UState.context_set uctx)) then
+  if Univ.Level.Set.mem l (PolyConstraints.ContextSet.levels (UState.context_set uctx)) then
     UnivFlexible (UState.is_algebraic l uctx)
   else UnivRigid
 
@@ -1157,16 +1161,18 @@ let set_eq_sort evd s1 s2 =
   | None -> evd
   | Some (u1, u2) ->
     if not (UGraph.type_in_type (UState.ugraph evd.universes)) then
-      add_universe_constraints evd
-        (UnivProblem.Set.singleton (UnivProblem.UEq (u1,u2)))
+      add_universe_constraints evd @@
+	UnivProblem.Set.singleton (UnivProblem.UEq (u1,u2))
     else
       evd
 
 let set_eq_level d u1 u2 =
-  add_constraints d (Univ.enforce_eq_level u1 u2 Univ.Constraints.empty)
+  add_level_constraints d @@
+    PolyConstraints.enforce_eq_level u1 u2 PolyConstraints.empty
 
 let set_leq_level d u1 u2 =
-  add_constraints d (Univ.enforce_leq_level u1 u2 Univ.Constraints.empty)
+  add_level_constraints d @@
+    PolyConstraints.enforce_leq_level u1 u2 PolyConstraints.empty
 
 let set_eq_instances ?(flex=false) d u1 u2 =
   add_universe_constraints d
@@ -1183,10 +1189,7 @@ let set_leq_sort evd s1 s2 =
 	 UnivProblem.Set.singleton (UnivProblem.ULe (u1,u2))
      else evd
 
-let set_eq_qualities evd q1 q2 =
-  add_universe_constraints evd @@ UnivProblem.Set.singleton (QEq (q1, q2))
-
-let set_above_prop evd q =
+let set_elim_to_prop evd q =
   add_universe_constraints evd @@
     UnivProblem.Set.singleton (QElimTo (q, Quality.qprop))
 
@@ -1202,14 +1205,14 @@ let check_leq evd s s' =
   let univs = UState.ugraph ustate in
   UGraph.check_leq_sort quals univs (UState.nf_sort ustate s) (UState.nf_sort ustate s')
 
-let check_constraints evd csts =
+let check_level_constraints evd csts =
   UGraph.check_constraints csts (UState.ugraph evd.universes)
 
 let check_elim_constraints evd csts =
   UState.check_elim_constraints evd.universes csts
 
-let check_quconstraints evd (qcsts,ucsts) =
-  check_elim_constraints evd qcsts && check_constraints evd ucsts
+let check_constraints evd (qcsts,ucsts) =
+  check_elim_constraints evd qcsts && check_level_constraints evd ucsts
 
 let fix_undefined_variables evd =
   { evd with universes = UState.fix_undefined_variables evd.universes }

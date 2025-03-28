@@ -340,6 +340,9 @@ let set_universes g env =
 let qualities env = env.env_qualities
 let qvars env = QGraph.qvar_domain @@ qualities env
 
+let set_qualities g env =
+  {env with env_qualities=g}
+
 let named_context env = env.env_named_context.env_named_ctx
 let named_context_val env = env.env_named_context
 let rel_context env = env.env_rel_context.env_rel_ctx
@@ -443,53 +446,64 @@ let fold_named_context_reverse f ~init env =
 (* Universe constraints *)
 
 let map_universes f env = set_universes (f env.env_universes) env
+let map_qualities f env = set_qualities (f env.env_qualities) env
 
 let add_constraints c env =
-  if Univ.Constraints.is_empty c then env
-  else map_universes (UGraph.merge_constraints c) env
+  if PolyConstraints.is_empty c then env
+  else
+    map_qualities (QGraph.merge_constraints @@ PolyConstraints.qualities c) @@
+      map_universes (UGraph.merge_constraints @@ PolyConstraints.levels c) env
 
 let check_constraints c env =
-  UGraph.check_constraints c env.env_universes
+  QGraph.check_constraints (PolyConstraints.qualities c) env.env_qualities &&
+    UGraph.check_constraints (PolyConstraints.levels c) env.env_universes
+
 
 let add_universes ~strict ctx g =
-  let _qs, us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
+  let _, us = UVars.Instance.to_array (UVars.PolyContext.instance ctx) in
   let g = Array.fold_left
       (fun g v -> UGraph.add_universe ~strict v g)
       g us
   in
-  UGraph.merge_constraints (UVars.UContext.constraints ctx) g
+  UGraph.merge_constraints
+    (PolyConstraints.levels @@ UVars.PolyContext.constraints ctx) g
 
 let set_qualities g env = {env with env_qualities = g}
 
 let map_qualities f env = set_qualities (f env.env_qualities) env
 
-let add_qualities qs g =
-  Array.fold_right QGraph.add_quality qs g
+let add_qualities ctx g =
+  let qs, _ = UVars.Instance.to_array (UVars.PolyContext.instance ctx) in
+  let g = Array.fold_right QGraph.add_quality qs g in
+  QGraph.merge_constraints
+    (PolyConstraints.qualities @@ UVars.PolyContext.constraints ctx) g
 
 let push_context ?(strict=false) ctx env =
-  let qs, _us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
-  let env = map_qualities (add_qualities qs) env in
-  map_universes (add_universes ~strict ctx) env
+  map_qualities (add_qualities ctx) @@
+    map_universes (add_universes ~strict ctx) env
 
 let add_universes_set ~strict ctx g =
+  let open PolyConstraints in
   let g = Univ.Level.Set.fold
             (* Be lenient, module typing reintroduces universes and constraints due to includes *)
             (fun v g -> try UGraph.add_universe ~strict v g with UGraph.AlreadyDeclared -> g)
-            (Univ.ContextSet.levels ctx) g
-  in UGraph.merge_constraints (Univ.ContextSet.constraints ctx) g
+            (ContextSet.levels ctx) g
+  in UGraph.merge_constraints
+       (PolyConstraints.levels @@ ContextSet.constraints ctx) g
 
 let push_context_set ?(strict=false) ctx env =
-  map_universes (add_universes_set ~strict ctx) env
+    map_universes (add_universes_set ~strict ctx) env
 
-let push_qualities qs env =
+let push_qualities qs csts env =
   let g = Quality.QVar.Set.fold (fun v -> QGraph.add_quality (Quality.QVar v)) qs env.env_qualities in
+  let g = QGraph.merge_constraints (PolyConstraints.qualities csts) g in
   set_qualities g env
 
 let push_subgraph (levels,csts) env =
   let add_subgraph g =
     let newg = Univ.Level.Set.fold (fun v g -> UGraph.add_universe ~strict:false v g) levels g in
-    let newg = UGraph.merge_constraints csts newg in
-    (if not (Univ.Constraints.is_empty csts) then
+    let newg = UGraph.merge_constraints (PolyConstraints.levels csts) newg in
+    (if not (PolyConstraints.is_empty csts) then
        let restricted = UGraph.constraints_for ~kept:(UGraph.domain g) newg in
        (if not (UGraph.check_constraints restricted g) then
           CErrors.anomaly Pp.(str "Local constraints imply new transitive constraints.")));
@@ -1030,7 +1044,7 @@ end
 module Internal = struct
   let push_template_context uctx env =
     let env = push_context ~strict:false uctx env in
-    let qvars, _ = UVars.UContext.to_context_set uctx in
+    let qvars, _ = UVars.PolyContext.to_context_set uctx in
     let env = map_qualities (QGraph.Internal.add_template_qvars qvars) env in
     env
 

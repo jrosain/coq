@@ -1017,7 +1017,7 @@ struct
         | None -> sigma, q
         | Some _ ->
           let sigma, q = Evd.new_quality_variable sigma in
-          let sigma = Evd.set_above_prop sigma (QVar q) in
+          let sigma = Evd.set_elim_to_prop sigma (QVar q) in
           sigma, q
       in
       let sigma, u = match Option.bind (Univ.Universe.level u) Univ.Level.var_index with
@@ -1144,23 +1144,23 @@ struct
       | c::rest ->
         let argloc = loc_of_glob_constr c in
         let sigma, body, na, c1, subs, c2, trace = match EConstr.kind sigma typ with
-        | Prod (na, c1, c2) ->
-          (* Fast path *)
-          let c1 = Vars.esubst Vars.lift_substituend subs c1 in
-          sigma, body, na, c1, subs, c2, Coercion.empty_coercion_trace
-        | _ ->
-          let typ = Vars.esubst Vars.lift_substituend subs typ in
-          let sigma, body, typ, trace = Coercion.inh_app_fun ~program_mode:flags.program_mode ~resolve_tc:flags.resolve_tc ~use_coercions:flags.use_coercions !!env sigma body typ in
-          let resty = whd_all !!env sigma typ in
-          let na, c1, c2 = match EConstr.kind sigma resty with
-          | Prod (na, c1, c2) -> (na, c1, c2)
+          | Prod (na, c1, c2) ->
+             (* Fast path *)
+             let c1 = Vars.esubst Vars.lift_substituend subs c1 in
+             sigma, body, na, c1, subs, c2, Coercion.empty_coercion_trace
           | _ ->
-            let sigma, hj = pretype empty_tycon env sigma c in
-            let resj = { uj_val = Coercion.force_app_body body; uj_type = typ } in
-            error_cant_apply_not_functional
-              ?loc:(Loc.merge_opt floc argloc) !!env sigma resj [|hj|]
-          in
-          sigma, body, na, c1, Esubst.subs_id 0, c2, trace
+             let typ = Vars.esubst Vars.lift_substituend subs typ in
+             let sigma, body, typ, trace = Coercion.inh_app_fun ~program_mode:flags.program_mode ~resolve_tc:flags.resolve_tc ~use_coercions:flags.use_coercions !!env sigma body typ in
+             let resty = whd_all !!env sigma typ in
+             let na, c1, c2 = match EConstr.kind sigma resty with
+               | Prod (na, c1, c2) -> (na, c1, c2)
+               | _ ->
+		  let sigma, hj = pretype empty_tycon env sigma c in
+		  let resj = { uj_val = Coercion.force_app_body body; uj_type = typ } in
+		  error_cant_apply_not_functional
+		    ?loc:(Loc.merge_opt floc argloc) !!env sigma resj [|hj|]
+             in
+             sigma, body, na, c1, Esubst.subs_id 0, c2, trace
         in
         let sigma, arg_state, body, arg =
           pretype_arg env sigma arg_state ~trace body c na.binder_name c1

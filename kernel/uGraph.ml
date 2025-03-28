@@ -113,7 +113,7 @@ let enforce_constraint cst g = match enforce_constraint0 cst g with
   else g
 | Some g -> g
 
-let merge_constraints csts g = Constraints.fold enforce_constraint csts g
+let merge_constraints csts g = LvlConstraints.fold enforce_constraint csts g
 
 let check_constraint { graph = g; type_in_type } (u,d,v) =
   type_in_type
@@ -122,7 +122,7 @@ let check_constraint { graph = g; type_in_type } (u,d,v) =
   | Lt -> G.check_lt g u v
   | Eq -> G.check_eq g u v
 
-let check_constraints csts g = Constraints.for_all (check_constraint g) csts
+let check_constraints csts g = LvlConstraints.for_all (check_constraint g) csts
 
 let check_eq_sort quals univs s1 s2 =
   (* if type_in_type, we only care about relevance *)
@@ -168,19 +168,19 @@ let enforce_leq_alg u v g =
       else
         (let c = leq_expr u v in
          match enforce_constraint0 c g with
-         | Some g -> Inl (Constraints.add c cstrs,g)
+         | Some g -> Inl (LvlConstraints.add c cstrs,g)
          | None -> Inr (c, g))
   in
   (* max(us) <= max(vs) <-> forall u in us, exists v in vs, u <= v *)
   let c = List.map (fun u -> List.map (fun v -> (u,v)) (Universe.repr v)) (Universe.repr u) in
-  let c = List.cartesians enforce_one (Inl (Constraints.empty,g)) c in
+  let c = List.cartesians enforce_one (Inl (LvlConstraints.empty,g)) c in
   (* We pick a best constraint: smallest number of constraints, not an error if possible. *)
   let order x y = match x, y with
     | Inr _, Inr _ -> 0
     | Inl _, Inr _ -> -1
     | Inr _, Inl _ -> 1
     | Inl (c,_), Inl (c',_) ->
-      Int.compare (Constraints.cardinal c) (Constraints.cardinal c')
+      Int.compare (LvlConstraints.cardinal c) (LvlConstraints.cardinal c')
   in
   match List.min order c with
   | Inl x -> x
@@ -200,25 +200,25 @@ let check_declared_universes g l =
   G.check_declared g.graph l
 
 let constraints_of_universes g =
-  let add cst accu = Constraints.add cst accu in
-  G.constraints_of g.graph add Constraints.empty
+  let add cst accu = LvlConstraints.add cst accu in
+  G.constraints_of g.graph add LvlConstraints.empty
 let constraints_for ~kept g =
-  let add cst accu = Constraints.add cst accu in
-  G.constraints_for ~kept g.graph add Constraints.empty
+  let add cst accu = LvlConstraints.add cst accu in
+  G.constraints_for ~kept g.graph add LvlConstraints.empty
 
 (** Subtyping of polymorphic contexts *)
 
 let check_subtype univs ctxT ctx =
   (* NB: size check is the only constraint on qualities *)
   if eq_sizes (AbstractContext.size ctxT) (AbstractContext.size ctx) then
-    let uctx = AbstractContext.repr ctx in
-    let inst = UContext.instance uctx in
-    let cst = UContext.constraints uctx in
-    let cstT = UContext.constraints (AbstractContext.repr ctxT) in
+    let pctx = AbstractContext.repr ctx in
+    let inst = PolyContext.instance pctx in
+    let cst = PolyContext.constraints pctx in
+    let cstT = PolyContext.constraints (AbstractContext.repr ctxT) in
     let push accu v = add_universe v ~strict:false accu in
     let univs = Array.fold_left push univs (snd (Instance.to_array inst)) in
-    let univs = merge_constraints cstT univs in
-    check_constraints cst univs
+    let univs = merge_constraints (PolyConstraints.levels cstT) univs in
+    check_constraints (PolyConstraints.levels cst) univs
   else false
 
 (** Instances *)

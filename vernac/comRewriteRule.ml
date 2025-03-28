@@ -121,7 +121,7 @@ let update_invtblu ~loc evd (qsubst, usubst) (state, stateq, stateu : state) u :
   let stateq, maskq = Array.fold_left_map (safe_quality_pattern_of_quality ~loc evd qsubst) stateq q
   in
   let stateu, masku = Array.fold_left_map (fun stateu lvlold ->
-      let lvlnew = Univ.Level.var_index @@ Univ.subst_univs_level_level usubst lvlold in
+      let lvlnew = Univ.Level.var_index @@ UVars.subst_univs_level_level usubst lvlold in
       Option.fold_right (update_invtblu1 ~loc evd lvlold) lvlnew stateu, lvlnew
     ) stateu u
   in
@@ -131,7 +131,7 @@ let universe_level_subst_var_index usubst u =
   match Univ.Universe.level u with
     | None -> None
     | Some lvlold ->
-        let lvl = Univ.subst_univs_level_level usubst lvlold in
+        let lvl = UVars.subst_univs_level_level usubst lvlold in
         Option.map (fun lvl -> lvlold, lvl) @@ Univ.Level.var_index lvl
 
 let safe_sort_pattern_of_sort ~loc evd (qsubst, usubst) (st, sq, su as state) s =
@@ -389,18 +389,25 @@ let interp_rule (udecl, lhs, rhs: Constrexpr.universe_decl_expr option * _ * _) 
         evd
         udecl.univdecl_instance
     in
-    let cstrs =
-      udecl.univdecl_constraints |> List.to_seq
-      |> Seq.map (Constrintern.interp_univ_constraint evd)
-      |> Univ.Constraints.of_seq
+    let elim_cstrs =
+      udecl.univdecl_elim_constraints |> List.to_seq
+      |> Seq.map (Constrintern.interp_elim_constraint evd)
+      |> Quality.ElimConstraints.of_seq
+    in
+    let lvl_cstrs =
+      udecl.univdecl_lvl_constraints |> List.to_seq
+      |> Seq.map (Constrintern.interp_level_constraint evd)
+      |> Univ.LvlConstraints.of_seq
     in
     let decl = {
       univdecl_qualities = qualities;
       univdecl_extensible_qualities = udecl.univdecl_extensible_qualities;
+      univdecl_elim_constraints = elim_cstrs;
+      univdecl_extensible_elim_constraints = udecl.univdecl_extensible_elim_constraints;
       univdecl_instance = instance;
       univdecl_extensible_instance = udecl.univdecl_extensible_instance;
-      univdecl_constraints = cstrs;
-      univdecl_extensible_constraints = udecl.univdecl_extensible_constraints;
+      univdecl_lvl_constraints = lvl_cstrs;
+      univdecl_extensible_lvl_constraints = udecl.univdecl_extensible_lvl_constraints;
     } in
     evd, decl
   in

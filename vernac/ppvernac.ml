@@ -58,9 +58,17 @@ let pr_red_expr =
     (pr_constr_expr, pr_lconstr_expr, pr_smart_global, pr_constr_expr, pr_or_var int)
     keyword
 
+let pr_elim_constraint (l, d, r) =
+  pr_quality_expr l ++ spc () ++ Quality.ElimConstraint.pr_kind d ++ spc () ++
+  pr_quality_expr r
+
 let pr_uconstraint (l, d, r) =
   pr_sort_name_expr l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
   pr_sort_name_expr r
+
+let pr_pconstraint = function
+  | LvlCst (l,d,r as c) -> pr_uconstraint c
+  | ElimCst (l,d,r as c) -> pr_elim_constraint c
 
 let pr_full_univ_name_list = function
   | None -> mt()
@@ -86,7 +94,12 @@ let pr_cumul_univdecl_instance l extensible =
   prlist_with_sep spc pr_variance_lident l ++
   (if extensible then str"+" else mt ())
 
-let pr_univdecl_constraints l extensible =
+let pr_univdecl_elim_constraints l extensible =
+  if List.is_empty l && extensible then mt ()
+  else pr_spcbar () ++ prlist_with_sep pr_comma pr_elim_constraint l ++
+       (if extensible then str"+" else mt())
+
+let pr_univdecl_lvl_constraints l extensible =
   if List.is_empty l && extensible then mt ()
   else pr_spcbar () ++ prlist_with_sep pr_comma pr_uconstraint l ++
        (if extensible then str"+" else mt())
@@ -99,7 +112,8 @@ let pr_universe_decl l =
     str"@{" ++
     pr_univdecl_qualities l.univdecl_qualities l.univdecl_extensible_qualities ++
     pr_univdecl_instance l.univdecl_instance l.univdecl_extensible_instance ++
-    pr_univdecl_constraints l.univdecl_constraints l.univdecl_extensible_constraints ++
+    pr_univdecl_elim_constraints l.univdecl_elim_constraints l.univdecl_extensible_elim_constraints ++
+    pr_univdecl_lvl_constraints l.univdecl_lvl_constraints l.univdecl_extensible_lvl_constraints ++
     str "}"
 
 let pr_cumul_univ_decl l =
@@ -110,7 +124,8 @@ let pr_cumul_univ_decl l =
     str"@{" ++
     pr_univdecl_qualities l.univdecl_qualities l.univdecl_extensible_qualities ++
     pr_cumul_univdecl_instance l.univdecl_instance l.univdecl_extensible_instance ++
-    pr_univdecl_constraints l.univdecl_constraints l.univdecl_extensible_constraints ++
+    pr_univdecl_elim_constraints l.univdecl_elim_constraints l.univdecl_extensible_elim_constraints ++
+    pr_univdecl_lvl_constraints l.univdecl_lvl_constraints l.univdecl_extensible_lvl_constraints ++
     str "}"
 
 let pr_ident_decl (lid, l) =
@@ -982,7 +997,7 @@ let pr_synpure_vernac_expr v =
   | VernacConstraint v ->
     return (
       hov 2 (keyword "Constraint" ++ spc () ++
-             prlist_with_sep (fun _ -> str",") pr_uconstraint v)
+             prlist_with_sep (fun _ -> str",") pr_pconstraint v)
     )
 
   (* Gallina extensions *)

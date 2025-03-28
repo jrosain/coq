@@ -213,22 +213,3 @@ let pattern_match ps s qusubst =
   | PSType uio, Type u -> Some (Partial_subst.maybe_add_univ uio (extract_level u) qusubst)
   | PSQSort (qio, uio), s -> Some (qusubst |> Partial_subst.maybe_add_quality qio (quality s) |> Partial_subst.maybe_add_univ uio (extract_sort_level s))
   | (PSProp | PSSProp | PSSet | PSType _), _ -> None
-
-let enforce_eq_quality a b csts =
-  if Quality.equal a b then csts
-  else ElimConstraints.add (a,ElimConstraint.Equal,b) csts
-
-let enforce_elim_to_quality a b csts =
-  if Quality.equal a b then csts
-  else match a, b with
-    | Quality.(QConstant QProp), Quality.(QConstant QType) -> csts
-    | _ -> ElimConstraints.add (a,ElimConstraint.ElimTo,b) csts
-
-module QUConstraints = struct
-  type t = ElimConstraints.t * Univ.Constraints.t
-
-  let empty = ElimConstraints.empty, Univ.Constraints.empty
-
-  let union (qcsts,ucsts) (qcsts',ucsts') =
-    ElimConstraints.union qcsts qcsts', Constraints.union ucsts ucsts'
-end

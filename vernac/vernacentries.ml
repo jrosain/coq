@@ -172,7 +172,7 @@ let show_universes ~proof =
   let ctx = Evd.universe_context_set (Evd.minimize_universes sigma) in
   UState.pr (Evd.ustate sigma) ++ fnl () ++
   v 1 (str "Normalized constraints:" ++ cut() ++
-       Univ.ContextSet.pr (Termops.pr_evd_level sigma) ctx)
+       PolyConstraints.ContextSet.pr (Termops.pr_evd_qvar sigma) (Termops.pr_evd_level sigma) ctx)
 
 (* Simulate the Intro(s) tactic *)
 let show_intro ~proof all =
@@ -555,14 +555,14 @@ let mk_sources () =
     let libs = Library.loaded_libraries () in
     List.fold_left (fun edges dp ->
         let _, csts = Safe_typing.univs_of_library @@ Library.library_compiled dp in
-        Constraints.fold (fun cst edges -> add_edge cst (Library dp) edges)
-          csts edges)
+        LvlConstraints.fold (fun cst edges -> add_edge cst (Library dp) edges)
+          (PolyConstraints.levels csts) edges)
       edges libs
   in
   let edges =
     List.fold_left (fun edges (ref,csts) ->
-        Constraints.fold (fun cst edges -> add_edge cst (GlobRef ref) edges)
-          csts edges)
+        LvlConstraints.fold (fun cst edges -> add_edge cst (GlobRef ref) edges)
+          (PolyConstraints.levels csts) edges)
       edges srcs
   in
   {
@@ -2080,7 +2080,7 @@ let check_may_eval env sigma redexp rc =
       Evarutil.j_nf_evar sigma (Retyping.get_judgment_of env sigma c)
     else
       let env = Evarutil.nf_env_evar sigma env in
-      let env = Environ.push_qualities qs env in
+      let env = Environ.push_qualities qs csts env in
       let env = Environ.push_context_set (us,csts) env in
       let c = EConstr.to_constr sigma c in
       (* OK to call kernel which does not support evars *)

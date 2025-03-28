@@ -209,7 +209,7 @@ module RecordEntry = struct
     }
 
   type t = {
-    global_univs : Univ.ContextSet.t;
+    global_univs : PolyConstraints.ContextSet.t;
     ubinders : UState.named_universes_entry;
     mie : Entries.mutual_inductive_entry;
     ind_infos : one_ind_info list;
@@ -634,7 +634,7 @@ let declare_projections indsp ~kind ~inhabitant_id flags ?fieldlocs fieldimpls =
     Declareops.inductive_polymorphic_context mib
   in
   let univs = match mib.mind_universes with
-    | Monomorphic -> UState.Monomorphic_entry Univ.ContextSet.empty
+    | Monomorphic -> UState.Monomorphic_entry PolyConstraints.ContextSet.empty
     | Polymorphic auctx -> UState.Polymorphic_entry (UVars.AbstractContext.repr auctx)
   in
   let univs = univs, UnivNames.empty_binders in
@@ -918,9 +918,9 @@ let declare_class_constant entry (data:Data.t) =
   in
   let inst, univs = match univs with
     | UState.Monomorphic_entry _, ubinders ->
-      UVars.Instance.empty, (UState.Monomorphic_entry Univ.ContextSet.empty, ubinders)
+      UVars.Instance.empty, (UState.Monomorphic_entry PolyConstraints.ContextSet.empty, ubinders)
     | UState.Polymorphic_entry uctx, _ ->
-      UVars.UContext.instance uctx, univs
+      UVars.PolyContext.instance uctx, univs
   in
   let cstu = (cst, inst) in
   let binder =

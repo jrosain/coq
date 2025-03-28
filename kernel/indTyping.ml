@@ -259,7 +259,7 @@ let check_record data =
    to problems when instantiated with algebraic universes
    (template_u < v can become w+1 < v which we cannot yet handle). *)
 let check_unbounded_from_below (univs,csts) =
-  Univ.Constraints.iter (fun (l,d,r) ->
+  LvlConstraints.iter (fun (l,d,r) ->
       let bad = match d with
         | Eq | Lt ->
           if Level.Set.mem l univs then Some l
@@ -315,13 +315,14 @@ let check_no_increment ~template_univs u =
 
 let make_template_univ_names (u:UVars.Instance.t) : UVars.bound_names =
   let qlen, ulen = UVars.Instance.length u in
-  Array.make qlen Anonymous, Array.make ulen Anonymous
+  { qualities = Array.make qlen Anonymous
+  ; levels = Array.make ulen Anonymous }
 
 let get_template (mie:mutual_inductive_entry) = match mie.mind_entry_universes with
 | Monomorphic_ind_entry | Polymorphic_ind_entry _ -> mie, None, None
 | Template_ind_entry {uctx; default_univs} ->
-  let template_qvars, (template_univs, _ as template_context) =
-    UVars.UContext.to_context_set uctx
+  let template_qvars, (template_univs, template_constraints as template_context) =
+    UVars.PolyContext.to_context_set uctx
   in
   let params = mie.mind_entry_params in
   let ind =
@@ -329,10 +330,11 @@ let get_template (mie:mutual_inductive_entry) = match mie.mind_entry_universes w
     | [ind] -> ind
     | _ -> CErrors.user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
   in
-  let () = check_unbounded_from_below template_context in
+  let () = check_unbounded_from_below
+	     (template_univs, PolyConstraints.levels template_constraints) in
 
   let template_context =
-    UVars.UContext.of_context_set make_template_univ_names
+    UVars.PolyContext.of_context_set make_template_univ_names
       template_qvars
       template_context
   in
@@ -451,7 +453,7 @@ let get_template (mie:mutual_inductive_entry) = match mie.mind_entry_universes w
      XXX can this be simplified by composing template_abstract and default_univs?
      don't forget to check the default_univs qualities are all QType if so *)
   let template_usubst : UVars.sort_level_subst =
-    let bind_instance = UVars.UContext.instance uctx in
+    let bind_instance = UVars.PolyContext.instance uctx in
     let () = if not UVars.(eq_sizes (Instance.length bind_instance) (Instance.length default_univs))
       then CErrors.anomaly Pp.(str "Inorrect default template universes declaration.")
     in
@@ -462,7 +464,7 @@ let get_template (mie:mutual_inductive_entry) = match mie.mind_entry_universes w
         match bind_q, default_q with
         | QConstant _, _ -> assert false
         | QVar bind_q, QConstant QType ->
-          Quality.QVar.Map.add bind_q default_q qsubst
+          QVar.Map.add bind_q default_q qsubst
         | QVar _, _ -> CErrors.anomaly Pp.(str "Default template quality must be QType."))
         Quality.QVar.Map.empty
         bind_qs default_qs
@@ -579,7 +581,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
         CErrors.user_err Pp.(str "Inductive cannot be both monomorphic and universe cumulative.")
       | Polymorphic_ind_entry uctx ->
         (* no variance for qualities *)
-        let _qualities, univs = Instance.to_array @@ UContext.instance uctx in
+        let _qualities, univs = Instance.to_array @@ PolyContext.instance uctx in
         let univs = Array.map2 (fun a b -> a,b) univs variances in
         let univs = match sec_univs with
           | None -> univs

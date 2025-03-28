@@ -13,6 +13,8 @@ open Names
 open Constr
 open Univ
 open UVars
+open PolyConstraints
+open Quality
 
 module QualityOrSet = struct
   type t = Qual of Quality.t | Set
@@ -67,21 +69,20 @@ module QualityOrSet = struct
   let all = Set :: List.map (fun q -> Qual q) Quality.all
 end
 
-
-type sort_context_set = (Quality.QVar.Set.t * Univ.Level.Set.t) * Univ.Constraints.t
+type sort_context_set = (Quality.QVar.Set.t * Univ.Level.Set.t) * PolyConstraints.t
 
 type 'a in_sort_context_set = 'a * sort_context_set
 
-let empty_sort_context = (Quality.QVar.Set.empty, Level.Set.empty), Constraints.empty
+let empty_sort_context = (QVar.Set.empty, Level.Set.empty), PolyConstraints.empty
 
 let is_empty_sort_context ((qs,us),csts) =
-  Quality.QVar.Set.is_empty qs && Level.Set.is_empty us && Constraints.is_empty csts
+  QVar.Set.is_empty qs && Level.Set.is_empty us && PolyConstraints.is_empty csts
 
 let sort_context_union ((qs,us),csts) ((qs',us'),csts') =
-  ((Quality.QVar.Set.union qs qs', Level.Set.union us us'),Constraints.union csts csts')
+  ((QVar.Set.union qs qs', Level.Set.union us us'), PolyConstraints.union csts csts')
 
 let diff_sort_context ((qs,us),csts) ((qs',us'),csts') =
-  (Quality.QVar.Set.diff qs qs', Level.Set.diff us us'), Constraints.diff csts csts'
+  (QVar.Set.diff qs qs', Level.Set.diff us us'), PolyConstraints.diff csts csts'
 
 type univ_length_mismatch = {
   gref : GlobRef.t;
@@ -196,11 +197,11 @@ let fresh_sort_quality =
   | Set -> Sorts.set, empty_sort_context
   | Qual (QConstant QType | QVar _ (* Treat as Type *)) ->
      let u = fresh_level () in
-     sort_of_univ (Univ.Universe.make u), ((Quality.QVar.Set.empty,Level.Set.singleton u), Constraints.empty)
+     sort_of_univ (Univ.Universe.make u), ((QVar.Set.empty,Level.Set.singleton u), PolyConstraints.empty)
 
 let new_global_univ () =
   let u = fresh_level () in
-  (Univ.Universe.make u, ContextSet.singleton u)
+  (Univ.Universe.make u, ContextSet.singleton_lvl u)
 
 let fresh_universe_context_set_instance ctx =
   if ContextSet.is_empty ctx then Level.Map.empty, ctx
