@@ -247,23 +247,23 @@ let unify_relevance sigma r1 r2 =
   | Irrelevant, RelevanceVar q | RelevanceVar q, Irrelevant ->
     let sigma =
       Evd.add_quconstraints sigma
-        (Sorts.ElimConstraints.singleton (Sorts.Quality.qsprop, Equal, QVar q),
+        (Quality.ElimConstraints.singleton (Quality.qsprop, Equal, Quality.QVar q),
          Univ.Constraints.empty)
     in
     Some sigma
   | Relevant, RelevanceVar q | RelevanceVar q, Relevant ->
     let sigma =
       Evd.add_quconstraints sigma
-        (Sorts.ElimConstraints.singleton (QVar q, ElimTo, Sorts.Quality.qprop),
+        (Quality.ElimConstraints.singleton (QVar q, ElimTo, Quality.qprop),
          Univ.Constraints.empty)
     in
     Some sigma
   | RelevanceVar q1, RelevanceVar q2 ->
-    if Sorts.QVar.equal q1 q2 then Some sigma
+    if Quality.QVar.equal q1 q2 then Some sigma
     else
       let sigma =
         Evd.add_quconstraints sigma
-          (Sorts.ElimConstraints.singleton (QVar q1, Equal, QVar q2),
+          (Quality.ElimConstraints.singleton (QVar q1, Equal, Quality.QVar q2),
            Univ.Constraints.empty)
       in
       Some sigma

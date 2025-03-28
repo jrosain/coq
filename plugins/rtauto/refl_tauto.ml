@@ -16,7 +16,6 @@ open Constr
 open Context
 open Proof_search
 open Context.Named.Declaration
-open Sorts
 
 module Search = struct
 

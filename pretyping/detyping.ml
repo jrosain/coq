@@ -376,10 +376,10 @@ let detype_qvar sigma q =
   | None -> GQVar q
 
 let detype_quality sigma q =
-  let open Sorts.Quality in
+  let open Quality in
   match q with
   | QConstant q -> GQConstant q
-  | QVar q -> GQualVar (detype_qvar sigma q)
+  | Quality.QVar q -> GQualVar (detype_qvar sigma q)
 
 let detype_universe sigma u =
   UNamed (List.map (on_fst (detype_level_name sigma)) (Univ.Universe.repr u))
@@ -1079,14 +1079,14 @@ and detype_binder d flags bk avoid env sigma decl c =
       let c = detype d { flg_isgoal = false } avoid env sigma (Option.get body) in
       (* Heuristic: we display the type if in Prop *)
       let s =
-        if !Flags.in_debugger then Sorts.Quality.qtype
+        if !Flags.in_debugger then Quality.qtype
         else
           (* It can fail if ty is an evar, or if run inside ocamldebug or the
              OCaml toplevel since their printers don't have access to the proper sigma/env *)
           try Retyping.get_sort_quality_of (snd env) sigma ty
-          with Retyping.RetypeError _ -> Sorts.Quality.qtype
+          with Retyping.RetypeError _ -> Quality.qtype
       in
-      let t = if not (Sorts.Quality.is_qprop s) && not !Flags.raw_print
+      let t = if not (Quality.is_qprop s) && not !Flags.raw_print
               then None
               else Some (detype d (nongoal flags) avoid env sigma ty) in
       GLetIn (na', rinfo, c, t, r)

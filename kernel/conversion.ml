@@ -971,7 +971,7 @@ let check_convert_instances ~flex:_ u u' univs =
 (* general conversion and inference functions *)
 let check_inductive_instances cv_pb variance u1 u2 univs =
   let qcsts, ucsts = get_cumulativity_constraints cv_pb variance u1 u2 in
-  if Sorts.ElimConstraints.trivial qcsts && (UGraph.check_constraints ucsts univs) then Result.Ok univs
+  if Quality.ElimConstraints.trivial qcsts && (UGraph.check_constraints ucsts univs) then Result.Ok univs
   else Result.Error None
 
 let checked_universes =

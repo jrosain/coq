@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Sorts
-
 (** {6 Graphs of quality elimination constraints. } *)
 
 (* *********************************************** *)
@@ -31,7 +29,7 @@ type explanation =
   | Other of Pp.t
 
 type quality_inconsistency =
-  ((QVar.t -> Pp.t) option) * (ElimConstraint.kind * Quality.t * Quality.t * explanation option)
+  ((Quality.QVar.t -> Pp.t) option) * (Quality.ElimConstraint.kind * Quality.t * Quality.t * explanation option)
 
 exception QualityInconsistency of quality_inconsistency
 
@@ -41,10 +39,10 @@ val add_quality : Quality.t -> t -> t
     a constraint or calling [eliminates_to].
     Forces [Type] to eliminate to this quality. *)
 
-val merge_constraints : ElimConstraints.t -> t -> t
+val merge_constraints : Quality.ElimConstraints.t -> t -> t
 
-val check_constraint : t -> ElimConstraint.t -> bool
-val check_constraints : ElimConstraints.t -> t -> bool
+val check_constraint : t -> Quality.ElimConstraint.t -> bool
+val check_constraints : Quality.ElimConstraints.t -> t -> bool
 
 val enforce_eliminates_to : Quality.t -> Quality.t -> t -> t
 (** Set the first quality to eliminate to the second one in the graph.
@@ -66,14 +64,14 @@ val check_eq : t -> Quality.t -> Quality.t -> bool
 val check_eq_sort : t -> Sorts.t -> Sorts.t -> bool
 
 val domain : t -> Quality.Set.t
-val qvar_domain : t -> QVar.Set.t
+val qvar_domain : t -> Quality.QVar.Set.t
 
 val is_empty : t -> bool
 
-val explain_quality_inconsistency : (QVar.t -> Pp.t) -> quality_inconsistency -> Pp.t
+val explain_quality_inconsistency : (Quality.QVar.t -> Pp.t) -> quality_inconsistency -> Pp.t
 
 module Internal : sig
-  val add_template_qvars : QVar.Set.t -> t -> t
+  val add_template_qvars : Quality.QVar.Set.t -> t -> t
   (** Set all the qvars in the set to eliminate to Prop.
       Do not use outside kernel inductive typechecking. *)
 end

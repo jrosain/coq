@@ -127,8 +127,8 @@ type evar_handler = {
   evar_expand : constr pexistential -> constr evar_expansion;
   evar_repack : Evar.t * constr list -> constr;
   evar_irrelevant : constr pexistential -> bool;
-  qvar_irrelevant : Sorts.QVar.t -> bool;
-  elim_to : Sorts.Quality.t -> Sorts.Quality.t -> bool;
+  qvar_irrelevant : Quality.QVar.t -> bool;
+  elim_to : Quality.t -> Quality.t -> bool;
 }
 
 let default_evar_handler env = {
@@ -136,7 +136,7 @@ let default_evar_handler env = {
   evar_repack = (fun _ -> assert false);
   evar_irrelevant = (fun _ -> assert false);
   qvar_irrelevant = (fun q ->
-      assert (Sorts.QVar.Set.mem q (Environ.qvars env));
+      assert (Quality.QVar.Set.mem q (Environ.qvars env));
       false);
   elim_to = (fun _ _ -> assert false);
 }
@@ -1450,7 +1450,7 @@ end =
 struct
 
 type 'constr partial_subst = {
-  subst: ('constr, Sorts.Quality.t, Univ.Level.t) Partial_subst.t;
+  subst: ('constr, Quality.t, Univ.Level.t) Partial_subst.t;
   rhs: constr;
 }
 

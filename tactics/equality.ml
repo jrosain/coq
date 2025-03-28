@@ -321,18 +321,18 @@ let jmeq_same_dom env sigma (rels, eq, args) =
     | _ -> false
 
 let eq_elimination_ref l2r sort =
-  let open Sorts.Quality in
+  let open Quality in
   let name =
     if l2r then
       match sort with
       | QConstant QProp -> "core.eq.ind_r"
       | QConstant QSProp -> "core.eq.sind_r"
-      | QConstant QType | QVar _ -> "core.eq.rect_r"
+      | QConstant QType | Quality.QVar _ -> "core.eq.rect_r"
     else
       match sort with
       | QConstant QProp -> "core.eq.ind"
       | QConstant QSProp -> "core.eq.sind"
-      | QConstant QType | QVar _ -> "core.eq.rect"
+      | QConstant QType | Quality.QVar _ -> "core.eq.rect"
   in
   Rocqlib.lib_ref_opt name
 

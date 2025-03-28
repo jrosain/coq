@@ -482,7 +482,7 @@ let push_context_set ?(strict=false) ctx env =
   map_universes (add_universes_set ~strict ctx) env
 
 let push_qualities qs env =
-  let g = Sorts.QVar.Set.fold (fun v -> QGraph.add_quality (Sorts.Quality.QVar v)) qs env.env_qualities in
+  let g = Quality.QVar.Set.fold (fun v -> QGraph.add_quality (Quality.QVar v)) qs env.env_qualities in
   set_qualities g env
 
 let push_subgraph (levels,csts) env =
@@ -1035,7 +1035,7 @@ module Internal = struct
     env
 
   let eliminates_to_prop env q =
-    QGraph.eliminates_to_prop env.env_qualities (Sorts.Quality.QVar q)
+    QGraph.eliminates_to_prop env.env_qualities (Quality.QVar q)
 
   module View =
   struct
@@ -1047,7 +1047,7 @@ module Internal = struct
       env_named_context : named_context_val;
       env_rel_context   : rel_context_val;
       env_universes : UGraph.t;
-      env_qualities : Sorts.QVar.Set.t;
+      env_qualities : Quality.QVar.Set.t;
       env_symb_pats : rewrite_rule list Cmap_env.t;
       env_typing_flags  : typing_flags;
     }

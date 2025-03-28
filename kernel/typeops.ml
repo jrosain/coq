@@ -45,7 +45,7 @@ let check_constraints cst env =
   else error_unsatisfied_constraints env cst
 
 let check_elim_constraints qcst env =
-  if Sorts.ElimConstraints.trivial qcst then ()
+  if Quality.ElimConstraints.trivial qcst then ()
   else error_unsatisfied_elim_constraints env qcst
 
 (* This should be a type (a priori without intention to be an assumption) *)
@@ -858,7 +858,7 @@ let execute env c =
 (* Derived functions *)
 
 let check_declared_qualities env qualities =
-  let module S = Sorts.QVar.Set in
+  let module S = Quality.QVar.Set in
   let unknown = S.diff qualities (Environ.qvars env) in
   if S.is_empty unknown then ()
   else error_undeclared_qualities env unknown
