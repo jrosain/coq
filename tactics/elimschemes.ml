@@ -143,10 +143,10 @@ let elim_scheme ~dep ~to_kind =
        match q with
        | QConstant QSProp when dep -> sind_dep
        | QConstant QProp when dep -> ind_dep
-       | (QConstant QType | QVar _) when dep -> rect_dep
+       | (QConstant QType | Quality.QVar _) when dep -> rect_dep
        | QConstant QSProp -> sind_nodep
        | QConstant QProp -> ind_nodep
-       | QConstant QType | QVar _ -> rect_nodep
+       | QConstant QType | Quality.QVar _ -> rect_nodep
      end
   | Set -> if dep then rec_dep else rec_nodep
 

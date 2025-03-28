@@ -248,8 +248,8 @@ let check_sort_poly sigma gr u =
   let u = EConstr.EInstance.kind sigma u in
   let qs, _ = UVars.Instance.to_array u in
   if Array.exists (function
-      | Sorts.Quality.QConstant (QSProp|QProp) -> true
-      | QConstant QType | QVar _ -> false)
+      | Quality.QConstant (QSProp|QProp) -> true
+      | QConstant QType | Quality.QVar _ -> false)
       qs
   then CErrors.user_err
       Pp.(str "Cannot extract nontrivial sort polymorphism" ++ spc()

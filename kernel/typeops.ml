@@ -858,7 +858,7 @@ let execute env c =
 (* Derived functions *)
 
 let check_declared_qualities env qualities =
-  let module S = Sorts.QVar.Set in
+  let module S = Quality.QVar.Set in
   let unknown = S.diff qualities (Environ.qvars env) in
   if S.is_empty unknown then ()
   else error_undeclared_qualities env unknown
