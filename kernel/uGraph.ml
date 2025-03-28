@@ -41,7 +41,7 @@ type explanation =
   | Path of path_explanation
   | Other of Pp.t
 
-type univ_variable_printers = (Sorts.QVar.t -> Pp.t) * (Level.t -> Pp.t)
+type univ_variable_printers = (Quality.QVar.t -> Pp.t) * (Level.t -> Pp.t)
 type univ_inconsistency = univ_variable_printers option * (constraint_type * Sorts.t * Sorts.t * explanation option)
 
 exception UniverseInconsistency of univ_inconsistency
@@ -124,7 +124,7 @@ let check_constraint { graph = g; type_in_type } (u,d,v) =
 let check_constraints csts g = Constraints.for_all (check_constraint g) csts
 
 let check_qualities_compatible quals cmp q1 q2 =
-  let open Sorts.Quality in
+  let open Quality in
   match q1, q2 with
   | QConstant (QProp | QType), QConstant (QProp | QType) -> true
   | QConstant (QProp | QType), QVar _
@@ -133,7 +133,7 @@ let check_qualities_compatible quals cmp q1 q2 =
 
 let check_eq_sort quals univs s1 s2 =
   if type_in_type univs then
-    check_qualities_compatible quals Sorts.Quality.equal
+    check_qualities_compatible quals Quality.equal
       (Sorts.quality s1) (Sorts.quality s2)
   else
     let u1 = Sorts.univ_of_sort s1 in
@@ -232,7 +232,7 @@ let check_subtype univs ctxT ctx =
 let check_eq_instances g t1 t2 =
   let qt1, ut1 = Instance.to_array t1 in
   let qt2, ut2 = Instance.to_array t2 in
-  CArray.equal Sorts.Quality.equal qt1 qt2
+  CArray.equal Quality.equal qt1 qt2
   && CArray.equal (check_eq_level g) ut1 ut2
 
 let domain g = G.domain g.graph

@@ -91,7 +91,7 @@ val push_dir : visibility -> full_path -> GlobDirRef.t -> unit
 val push_abbreviation : ?user_warns:Globnames.extended_global_reference UserWarn.with_qf -> visibility -> full_path -> Globnames.abbreviation -> unit
 
 val push_universe : visibility -> full_path -> Univ.UGlobal.t -> unit
-val push_sort : visibility -> full_path -> Sorts.QGlobal.t -> unit
+val push_sort : visibility -> full_path -> Quality.QGlobal.t -> unit
 
 (** Deprecation and user warn info *)
 
@@ -113,7 +113,7 @@ val locate_dir : qualid -> GlobDirRef.t
 val locate_module : qualid -> ModPath.t
 val locate_section : qualid -> full_path
 val locate_universe : qualid -> Univ.UGlobal.t
-val locate_quality : qualid -> Sorts.QGlobal.t
+val locate_quality : qualid -> Quality.QGlobal.t
 
 val locate_extended_nowarn : qualid -> Globnames.extended_global_reference
 
@@ -210,7 +210,7 @@ val shortest_qualid_of_universe : ?loc:Loc.t -> 'u Id.Map.t -> Univ.UGlobal.t ->
 
 val pr_depr_xref : Globnames.extended_global_reference -> Pp.t
 
-val shortest_qualid_of_quality : ?loc:Loc.t -> 'u Id.Map.t -> Sorts.QGlobal.t -> qualid
+val shortest_qualid_of_quality : ?loc:Loc.t -> 'u Id.Map.t -> Quality.QGlobal.t -> qualid
 
 (** {5 Generic name handling} *)
 

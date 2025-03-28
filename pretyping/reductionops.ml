@@ -1217,7 +1217,7 @@ let checked_sort_cmp_universes _env pb s0 s1 univs =
   | CONV -> check_eq univs s0 s1
 
 let check_convert_instances ~flex:_ u u' univs =
-  let csts = UVars.enforce_eq_instances u u' (Sorts.ElimConstraints.empty,Constraints.empty) in
+  let csts = UVars.enforce_eq_instances u u' (Quality.ElimConstraints.empty,Constraints.empty) in
   if Evd.check_quconstraints univs csts then Result.Ok univs else Result.Error None
 
 (* general conversion and inference functions *)
