@@ -19,7 +19,6 @@ open Locus
 open Printer
 open Termops
 open Tacinterp
-open Sorts
 
 open Ssrmatching_plugin
 open Ssrmatching

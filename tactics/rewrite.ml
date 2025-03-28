@@ -941,8 +941,8 @@ let fold_match ?(force=false) env sigma c =
     in
     let sk =
       (* not sure how correct this is *)
-      if Sorts.Quality.is_qprop sortp then
-        if Sorts.Quality.is_qprop sortc then
+      if Quality.is_qprop sortp then
+        if Quality.is_qprop sortc then
           if dep then case_dep
           else case_nodep
         else (
@@ -1370,7 +1370,7 @@ module Strategies =
     let inj_open hint = (); fun sigma ->
       let (ctx, lemma) = Autorewrite.RewRule.rew_lemma hint in
       let subst, ctx = UnivGen.fresh_universe_context_set_instance ctx in
-      let subst = Sorts.QVar.Map.empty, subst in
+      let subst = Quality.QVar.Map.empty, subst in
       let lemma = Vars.subst_univs_level_constr subst (EConstr.of_constr lemma) in
       let sigma = Evd.merge_context_set UnivRigid sigma ctx in
       (sigma, (lemma, NoBindings))

@@ -10,13 +10,12 @@
 
 open Names
 open Univ
-open Sorts
 
 (** Local universe name <-> level mapping *)
 
-type universe_binders = QVar.t Id.Map.t * Level.t Id.Map.t
+type universe_binders = Quality.QVar.t Id.Map.t * Level.t Id.Map.t
 
-type rev_binders = Id.t QVar.Map.t * Id.t Level.Map.t
+type rev_binders = Id.t Quality.QVar.Map.t * Id.t Level.Map.t
 
 val empty_binders : universe_binders
 

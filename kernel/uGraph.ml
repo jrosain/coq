@@ -42,7 +42,7 @@ type explanation =
   | Path of path_explanation
   | Other of Pp.t
 
-type univ_variable_printers = (Sorts.QVar.t -> Pp.t) * (Level.t -> Pp.t)
+type univ_variable_printers = (Quality.QVar.t -> Pp.t) * (Level.t -> Pp.t)
 type univ_inconsistency = univ_variable_printers option * (constraint_type * Sorts.t * Sorts.t * explanation option)
 
 exception UniverseInconsistency of univ_inconsistency
@@ -226,7 +226,7 @@ let check_subtype univs ctxT ctx =
 let check_eq_instances g t1 t2 =
   let qt1, ut1 = Instance.to_array t1 in
   let qt2, ut2 = Instance.to_array t2 in
-  CArray.equal Sorts.Quality.equal qt1 qt2
+  CArray.equal Quality.equal qt1 qt2
   && CArray.equal (check_eq_level g) ut1 ut2
 
 let domain g = G.domain g.graph
