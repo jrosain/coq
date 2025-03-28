@@ -68,7 +68,7 @@ val eq_named_context_val : named_context_val -> named_context_val -> bool
 val empty_env : env
 
 val universes     : env -> UGraph.t
-val qualities     : env -> Sorts.QVar.Set.t
+val qualities     : env -> Quality.QVar.Set.t
 val rel_context   : env -> Constr.rel_context
 val rel_context_val : env -> rel_context_val
 val named_context : env -> Constr.named_context
@@ -341,7 +341,7 @@ val push_context_set : ?strict:bool -> ContextSet.t -> env -> env
     context set to the environment. It does not fail even if one of the
     universes is already declared. *)
 
-val push_qualities : Sorts.QVar.Set.t -> env -> env
+val push_qualities : Quality.QVar.Set.t -> env -> env
 (** Add the qualities to the environment. Only used in higher layers. *)
 
 val push_subgraph : ContextSet.t -> env -> env
@@ -439,7 +439,7 @@ module Internal : sig
       Do not use outside kernel inductive typechecking. *)
   val push_template_context : UContext.t -> env -> env
 
-  val is_above_prop : env -> Sorts.QVar.t -> bool
+  val is_above_prop : env -> Quality.QVar.t -> bool
 
   module View :
   sig
@@ -451,7 +451,7 @@ module Internal : sig
       env_named_context : named_context_val;
       env_rel_context   : rel_context_val;
       env_universes : UGraph.t;
-      env_qualities : Sorts.QVar.Set.t;
+      env_qualities : Quality.QVar.Set.t;
       env_symb_pats : rewrite_rule list Cmap_env.t;
       env_typing_flags  : typing_flags;
     }

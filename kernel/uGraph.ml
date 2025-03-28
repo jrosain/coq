@@ -32,7 +32,7 @@ type t = {
   graph: G.t;
   type_in_type : bool;
   (* above_prop only for checking template poly! *)
-  above_prop_qvars : Sorts.QVar.Set.t;
+  above_prop_qvars : Quality.QVar.Set.t;
 }
 
 (* Universe inconsistency: error raised when trying to enforce a relation
@@ -44,7 +44,7 @@ type explanation =
   | Path of path_explanation
   | Other of Pp.t
 
-type univ_variable_printers = (Sorts.QVar.t -> Pp.t) * (Level.t -> Pp.t)
+type univ_variable_printers = (Quality.QVar.t -> Pp.t) * (Level.t -> Pp.t)
 type univ_inconsistency = univ_variable_printers option * (constraint_type * Sorts.t * Sorts.t * explanation option)
 
 exception UniverseInconsistency of univ_inconsistency
@@ -83,7 +83,7 @@ let check_eq_level g u v =
 let empty_universes = {
   graph=G.empty;
   type_in_type=false;
-  above_prop_qvars=Sorts.QVar.Set.empty;
+  above_prop_qvars=Quality.QVar.Set.empty;
 }
 
 let initial_universes =
@@ -201,7 +201,7 @@ let check_subtype univs ctxT ctx =
 let check_eq_instances g t1 t2 =
   let qt1, ut1 = Instance.to_array t1 in
   let qt2, ut2 = Instance.to_array t2 in
-  CArray.equal Sorts.Quality.equal qt1 qt2
+  CArray.equal Quality.equal qt1 qt2
   && CArray.equal (check_eq_level g) ut1 ut2
 
 let domain g = G.domain g.graph
@@ -229,11 +229,11 @@ let check_eq_sort ugraph s1 s2 = match s1, s2 with
 | (Type _ | Set), (Type _ | Set) ->
   check_eq ugraph (get_algebraic s1) (get_algebraic s2)
 | QSort (q1, u1), QSort (q2, u2) ->
-  QVar.equal q1 q2 && check_eq ugraph u1 u2
+  Quality.QVar.equal q1 q2 && check_eq ugraph u1 u2
 | (QSort _, (Type _ | Set)) | ((Type _ | Set), QSort _) -> false
 
 let is_above_prop ugraph q =
-  Sorts.QVar.Set.mem q ugraph.above_prop_qvars
+  Quality.QVar.Set.mem q ugraph.above_prop_qvars
 
 let check_leq_sort ugraph s1 s2 = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
@@ -245,7 +245,7 @@ let check_leq_sort ugraph s1 s2 = match s1, s2 with
 | (Type _ | Set), (Type _ | Set) ->
   check_leq ugraph (get_algebraic s1) (get_algebraic s2)
 | QSort (q1, u1), QSort (q2, u2) ->
-  QVar.equal q1 q2 && check_leq ugraph u1 u2
+  Quality.QVar.equal q1 q2 && check_leq ugraph u1 u2
 | QSort (q, _), Set -> is_above_prop ugraph q
 | QSort (q, u1), Type u2 -> is_above_prop ugraph q && check_leq ugraph u1 u2
 | ((Type _ | Set), QSort _) -> false
@@ -311,7 +311,7 @@ let explain_universe_inconsistency default_prq default_prl (printers, (o,u,v,p) 
 module Internal = struct
 
   let add_template_qvars qvars g =
-    assert (Sorts.QVar.Set.is_empty g.above_prop_qvars);
+    assert (Quality.QVar.Set.is_empty g.above_prop_qvars);
     {g with above_prop_qvars=qvars}
 
   let is_above_prop = is_above_prop

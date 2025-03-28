@@ -41,6 +41,7 @@ let choose_dest_or_ind scheme_info args =
 
 let functional_induction with_clean c princl pat =
   let open Proofview.Notations in
+  let open Quality in
   Proofview.Goal.enter_one (fun gl ->
       let sigma = project gl in
       let f, args = decompose_app_list sigma c in
@@ -62,7 +63,7 @@ let functional_induction with_clean c princl pat =
             match elimination_sort_of_goal gl with
             | QConstant QSProp -> finfo.sprop_lemma
             | QConstant QProp -> finfo.prop_lemma
-            | QConstant QType | QVar _ -> finfo.rect_lemma
+            | QConstant QType | Quality.QVar _ -> finfo.rect_lemma
           in
           let sigma, princ =
             (* then we get the principle *)

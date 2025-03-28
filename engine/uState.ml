@@ -748,7 +748,7 @@ let add_quconstraints uctx (qcstrs,ucstrs) =
   add_universe_constraints uctx cstrs
 
 let check_elim_constraints uctx csts =
-  Sorts.ElimConstraints.for_all (fun (l,k,r) ->
+  Quality.ElimConstraints.for_all (fun (l,k,r) ->
       let l = nf_quality uctx l in
       let r = nf_quality uctx r in
       if Quality.equal l r then true

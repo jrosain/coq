@@ -348,7 +348,7 @@ let get_sort_quality_of ?(polyprop=true) env sigma t =
   let rec sort_quality_of env t =
     match EConstr.kind sigma t with
     | Cast (c,_, s) when isSort sigma s -> ESorts.quality sigma (destSort sigma s)
-    | Sort _ -> Sorts.Quality.qtype
+    | Sort _ -> Quality.qtype
     | Prod (name,t,c2) -> sort_quality_of (push_rel (LocalAssum (name,t)) env) c2
     | App(f,args) when Termops.is_template_polymorphic_ind env sigma f ->
         let t = type_of_global_reference_knowing_parameters env f args in

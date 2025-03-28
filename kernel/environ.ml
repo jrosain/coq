@@ -69,7 +69,7 @@ type env = {
   env_named_context : named_context_val; (* section variables *)
   env_rel_context   : rel_context_val;
   env_universes : UGraph.t;
-  env_qualities : Sorts.QVar.Set.t;
+  env_qualities : Quality.QVar.Set.t;
   symb_pats : rewrite_rule list Cmap_env.t;
   env_typing_flags  : typing_flags;
   vm_library : Vmlibrary.t;
@@ -109,7 +109,7 @@ let empty_env = {
   env_rel_context = empty_rel_context_val;
   env_nb_rel = 0;
   env_universes = UGraph.initial_universes;
-  env_qualities = Sorts.QVar.Set.empty;
+  env_qualities = Quality.QVar.Set.empty;
   irr_constants = Cmap_env.empty;
   irr_inds = Indmap_env.empty;
   symb_pats = Cmap_env.empty;
@@ -459,11 +459,11 @@ let add_universes ~strict ctx g =
   UGraph.merge_constraints (UVars.UContext.constraints ctx) g
 
 let add_qualities qs known =
-  let open Sorts.Quality in
+  let open Quality in
   Array.fold_left (fun known q ->
       match q with
-      | QVar q ->
-        let known' = Sorts.QVar.Set.add q known in
+      | Quality.QVar q ->
+        let known' = Quality.QVar.Set.add q known in
         let () = if known == known' then CErrors.anomaly Pp.(str"multiply bound sort quality") in
         known'
       | QConstant _ -> CErrors.anomaly Pp.(str "constant quality in ucontext"))
@@ -486,7 +486,7 @@ let push_context_set ?(strict=false) ctx env =
   map_universes (add_universes_set ~strict ctx) env
 
 let push_qualities ctx env =
-  { env with env_qualities = Sorts.QVar.Set.union env.env_qualities ctx }
+  { env with env_qualities = Quality.QVar.Set.union env.env_qualities ctx }
 
 let push_subgraph (levels,csts) env =
   let add_subgraph g =
@@ -1049,7 +1049,7 @@ module Internal = struct
       env_named_context : named_context_val;
       env_rel_context   : rel_context_val;
       env_universes : UGraph.t;
-      env_qualities : Sorts.QVar.Set.t;
+      env_qualities : Quality.QVar.Set.t;
       env_symb_pats : rewrite_rule list Cmap_env.t;
       env_typing_flags  : typing_flags;
     }

@@ -10,7 +10,7 @@
 
 open Names
 open Univ
-open Sorts
+open Quality
 
 type universe_binders = QVar.t Id.Map.t * Level.t Id.Map.t
 

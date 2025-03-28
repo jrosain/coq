@@ -1186,7 +1186,7 @@ let set_eq_qualities evd q1 q2 =
 
 let set_above_prop evd q =
   add_universe_constraints evd @@
-    UnivProblem.Set.singleton (QElimTo (q, Sorts.Quality.qprop))
+    UnivProblem.Set.singleton (QElimTo (q, Quality.qprop))
 
 let check_eq evd s s' =
   let ustate = evd.universes in
