@@ -159,7 +159,7 @@ val add_constraints :
 (** Adding global sort qualities *)
 
 val push_quality_set :
-    Sorts.QVar.Set.t -> safe_transformer0
+    Quality.QVar.Set.t -> safe_transformer0
 
 (* (\** Generator of universes *\) *)
 (* val next_universe : int safe_transformer *)

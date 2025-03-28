@@ -652,7 +652,7 @@ let is_prop_but_default_dependent_elim i = Indset_env.mem i !prop_but_default_de
 let pseudo_sort_quality_for_elim ind mip =
   let s = mip.mind_sort in
   if Sorts.is_prop s && is_prop_but_default_dependent_elim ind
-  then Sorts.Quality.qtype
+  then Quality.qtype
   else Sorts.quality s
 
 let is_in_prop mip =
@@ -721,7 +721,7 @@ let build_induction_scheme env sigma pind dep kind =
 
 let elimination_suffix =
   let open UnivGen.QualityOrSet in
-  let open Sorts.Quality in
+  let open Quality in
   function
   | Qual (QConstant QSProp) -> "_sind"
   | Qual (QConstant QProp) -> "_ind"
@@ -756,5 +756,5 @@ let lookup_eliminator env ind_sp s =
         (strbrk "Cannot find the elimination combinator " ++
          Id.print id ++ strbrk ", the elimination of the inductive definition " ++
          Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef ind_sp) ++
-         strbrk " on sort " ++ UnivGen.QualityOrSet.pr Sorts.QVar.raw_pr s ++
+         strbrk " on sort " ++ UnivGen.QualityOrSet.pr Quality.QVar.raw_pr s ++
          strbrk " is probably not allowed.")

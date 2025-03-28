@@ -77,8 +77,8 @@ val set_universes : UGraph.t -> env -> env
 val set_qualities : QGraph.t -> env -> env
 
 val qualities : env -> QGraph.t
-val qvars : env -> Sorts.QVar.Set.t
-val set_quality_set : Sorts.QVar.Set.t -> env -> env
+val qvars : env -> Quality.QVar.Set.t
+val set_quality_set : Quality.QVar.Set.t -> env -> env
 
 val typing_flags    : env -> typing_flags
 val is_impredicative_set : env -> bool
@@ -345,7 +345,7 @@ val push_context_set : ?strict:bool -> ContextSet.t -> env -> env
     context set to the environment. It does not fail even if one of the
     universes is already declared. *)
 
-val push_quality_set : Sorts.QVar.Set.t -> env -> env
+val push_quality_set : Quality.QVar.Set.t -> env -> env
 (** [push_quality_set qs env] pushes the set of quality variables in
     the environment. It does not fail even if a quality variable is
     already declared. *)
@@ -445,7 +445,7 @@ module Internal : sig
       Do not use outside kernel inductive typechecking. *)
   val push_template_context : UContext.t -> env -> env
 
-  val eliminates_to_prop : env -> Sorts.QVar.t -> bool
+  val eliminates_to_prop : env -> Quality.QVar.t -> bool
 
   module View :
   sig
@@ -457,7 +457,7 @@ module Internal : sig
       env_named_context : named_context_val;
       env_rel_context   : rel_context_val;
       env_universes : UGraph.t;
-      env_qualities : Sorts.QVar.Set.t;
+      env_qualities : Quality.QVar.Set.t;
       env_symb_pats : rewrite_rule list Cmap_env.t;
       env_typing_flags  : typing_flags;
     }

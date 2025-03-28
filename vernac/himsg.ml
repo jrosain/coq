@@ -862,7 +862,7 @@ let explain_unsatisfied_constraints env sigma cst =
 
 let explain_unsatisfied_elim_constraints env sigma cst =
   strbrk "Unsatisfied elimination constraints: " ++
-  Sorts.ElimConstraints.pr (Termops.pr_evd_qvar sigma) cst ++
+  Quality.ElimConstraints.pr (Termops.pr_evd_qvar sigma) cst ++
   spc() ++ str "(maybe a bugged tactic)."
 
 let explain_undeclared_universes env sigma l =
@@ -872,9 +872,9 @@ let explain_undeclared_universes env sigma l =
   spc () ++ str "(maybe a bugged tactic)."
 
 let explain_undeclared_qualities env sigma l =
-  let n = Sorts.QVar.Set.cardinal l in
+  let n = Quality.QVar.Set.cardinal l in
   strbrk "Undeclared " ++ str (if n = 1 then "quality" else "qualities") ++ strbrk": " ++
-    prlist_with_sep spc (Termops.pr_evd_qvar sigma) (Sorts.QVar.Set.elements l) ++
+    prlist_with_sep spc (Termops.pr_evd_qvar sigma) (Quality.QVar.Set.elements l) ++
     spc () ++ str "(maybe a bugged tactic)."
 
 let explain_disallowed_sprop () =
@@ -887,7 +887,7 @@ let pr_relevance sigma r =
   match r with
   | Sorts.Relevant -> str "relevant"
   | Sorts.Irrelevant -> str "irrelevant"
-  | Sorts.RelevanceVar q -> str "a variable " ++ (* TODO names *) Sorts.QVar.raw_pr q
+  | Sorts.RelevanceVar q -> str "a variable " ++ (* TODO names *) Quality.QVar.raw_pr q
 
 let pr_binder env sigma = function
 | LocalAssum (na, t) ->
@@ -1192,11 +1192,11 @@ let explain_not_match_error = function
   | IncompatibleUniverses incon ->
     str"the universe constraints are inconsistent: " ++
     UGraph.explain_universe_inconsistency
-      Sorts.QVar.raw_pr
+      Quality.QVar.raw_pr
       UnivNames.pr_level_with_global_universes
       incon
   | IncompatibleQualities incon ->
-     QGraph.explain_elimination_error Sorts.QVar.raw_pr incon
+     QGraph.explain_elimination_error Quality.QVar.raw_pr incon
   | IncompatiblePolymorphism (env, t1, t2) ->
     let t1, t2 = pr_explicit env (Evd.from_env env) (EConstr.of_constr t1) (EConstr.of_constr t2) in
     str "conversion of polymorphic values generates additional constraints: " ++

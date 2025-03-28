@@ -176,7 +176,7 @@ type compiled_library = {
   comp_name : DirPath.t;
   comp_mod : module_body;
   comp_univs : Univ.ContextSet.t;
-  comp_qualities : Sorts.QVar.Set.t;
+  comp_qualities : Quality.QVar.Set.t;
   comp_deps : library_info array;
   comp_flags : permanent_flags;
 }
@@ -227,7 +227,7 @@ type safe_environment =
     modlabels : Label.Set.t;
     objlabels : Label.Set.t;
     univ : Univ.ContextSet.t;
-    qualities : Sorts.QVar.Set.t ;
+    qualities : Quality.QVar.Set.t ;
     future_cst : (Constant_typing.typing_context * safe_environment * Nonce.t) HandleMap.t;
     required : required_lib DPmap.t;
     loads : (ModPath.t * module_body) list;
@@ -259,7 +259,7 @@ let empty_environment =
     sections = None;
     future_cst = HandleMap.empty;
     univ = Univ.ContextSet.empty;
-    qualities = Sorts.QVar.Set.empty ;
+    qualities = Quality.QVar.Set.empty ;
     required = DPmap.empty;
     loads = [];
     local_retroknowledge = [];
@@ -523,7 +523,7 @@ let add_constraints cst senv =
   push_context_set ~strict:true cst senv
 
 let push_quality_set qs senv =
-  if Sorts.QVar.Set.is_empty qs then senv
+  if Quality.QVar.Set.is_empty qs then senv
   else
     let () = if is_modtype senv
       then CErrors.user_err (Pp.str "Cannot declare global sort qualities inside module types.")  ;
@@ -532,7 +532,7 @@ let push_quality_set qs senv =
     in
     { senv with
       env = Environ.push_quality_set qs senv.env ;
-      qualities = Sorts.QVar.Set.union qs senv.qualities ;
+      qualities = Quality.QVar.Set.union qs senv.qualities ;
       sections
     }
 
@@ -652,12 +652,12 @@ let push_section_context uctx senv =
   let sections = Section.push_local_universe_context uctx sections in
   let senv = { senv with sections=Some sections } in
   let qualities, ctx = UVars.UContext.to_context_set uctx in
-  assert Sorts.QVar.Set.(is_empty (inter qualities senv.qualities));
+  assert Quality.QVar.Set.(is_empty (inter qualities senv.qualities));
   (* push_context checks freshness *)
   { senv with
     env = Environ.push_context ~strict:false uctx senv.env;
     univ = Univ.ContextSet.union ctx senv.univ ;
-    qualities = Sorts.QVar.Set.union qualities senv.qualities }
+    qualities = Quality.QVar.Set.union qualities senv.qualities }
 
 (** {6 Insertion of new declarations to current environment } *)
 
@@ -1189,7 +1189,7 @@ let add_mind l mie senv =
   | None -> senv
   | Some { template_context = ctx; template_defaults = u; _ } ->
     let qs, levels = UVars.Instance.levels u in
-    assert (Sorts.Quality.Set.for_all (fun q -> Sorts.Quality.equal Sorts.Quality.qtype q) qs);
+    assert (Quality.Set.for_all (fun q -> Quality.is_qtype q) qs);
     let csts = UVars.AbstractContext.instantiate u ctx in
     push_context_set ~strict:true (levels,csts) senv
   in
@@ -1487,7 +1487,7 @@ let start_library dir senv =
     sections = None;
     future_cst = HandleMap.empty;
     univ = Univ.ContextSet.empty;
-    qualities = Sorts.QVar.Set.empty;
+    qualities = Quality.QVar.Set.empty;
     loads = [];
     local_retroknowledge = [];
     opaquetab = Opaqueproof.empty_opaquetab;
