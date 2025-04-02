@@ -49,8 +49,8 @@ let choose_canonical ctx flexible algebraic s =
               let canon = Level.Set.choose algs in
                 canon, (global, rigid, Level.Set.remove canon flexible)
 
-(* Eq < Le < Lt *)
 let compare_constraint_type d d' =
+  let open UnivConstraint in
   match d, d' with
   | Eq, Eq -> 0
   | Eq, _ -> -1
@@ -60,7 +60,7 @@ let compare_constraint_type d d' =
   | _, Le -> 1
   | Lt, Lt -> 0
 
-type lowermap = constraint_type Level.Map.t
+type lowermap = UnivConstraint.kind Level.Map.t
 
 let lower_union =
   let merge k a b =
@@ -122,7 +122,7 @@ let compute_lbound left =
     | Some l' -> Some (Universe.sup l l')
   in
     List.fold_left (fun lbound (d, l) ->
-      if d == Le (* l <= ?u *) then sup l lbound
+      if d == UnivConstraint.Le (* l <= ?u *) then sup l lbound
       else (* l < ?u *)
         (assert (d == Lt);
          if not (Universe.level l == None) then
@@ -142,13 +142,13 @@ let instantiate_with_lbound u lbound lower ~alg ~enforce (ctx, us, insts, cstrs)
      LBMap.add u {enforce;alg;lbound;lower} insts, cstrs),
     {enforce; alg; lbound; lower}
 
-type constraints_map = (constraint_type * Level.Map.key) list Level.Map.t
+type constraints_map = (UnivConstraint.kind * Level.Map.key) list Level.Map.t
 
 let _pr_constraints_map (cmap:constraints_map) =
   let open Pp in
   Level.Map.fold (fun l cstrs acc ->
     Level.raw_pr l ++ str " => " ++
-      prlist_with_sep spc (fun (d,r) -> pr_constraint_type d ++ Level.raw_pr r) cstrs ++
+      prlist_with_sep spc (fun (d,r) -> UnivConstraint.pr_kind d ++ Level.raw_pr r) cstrs ++
       fnl () ++ acc)
     cmap (mt ())
 
@@ -166,7 +166,7 @@ let not_lower lower (d,l) =
        let d =
          if i == 0 then d
          else match d with
-           | Le -> Lt
+           | UnivConstraint.Le -> UnivConstraint.Lt
            | d -> d
        in
        try let d' = Level.Map.find l lower in
@@ -185,7 +185,7 @@ exception UpperBoundedAlg
    [lbound] algebraic. *)
 let enforce_uppers upper lbound cstrs =
   List.fold_left (fun cstrs (d, r) ->
-      if d == Le then
+      if d == UnivConstraint.Le then
         enforce_leq lbound (Universe.make r) cstrs
       else
         match Universe.level lbound with
@@ -400,7 +400,7 @@ let normalize_context_set g ctx (us:UnivFlex.t) {weak_constraints=weak;above_pro
     let norm = level_subst_of (UnivFlex.normalize_univ_variable us) in
     let fold (u,d,v) noneqs =
       let u = norm u and v = norm v in
-      if d != Lt && Level.equal u v then noneqs
+      if d != UnivConstraint.Lt && Level.equal u v then noneqs
       else Constraints.add (u,d,v) noneqs
     in
     Constraints.fold fold noneqs Constraints.empty

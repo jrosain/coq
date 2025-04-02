@@ -261,16 +261,16 @@ let check_record data =
 let check_unbounded_from_below (univs,csts) =
   Univ.Constraints.iter (fun (l,d,r) ->
       let bad = match d with
-        | Eq | Lt ->
+        | UnivConstraint.Eq | UnivConstraint.Lt ->
           if Level.Set.mem l univs then Some l
           else if Level.Set.mem r univs then Some r
           else None
-        | Le -> if Level.Set.mem r univs then Some r else None
+        | UnivConstraint.Le -> if Level.Set.mem r univs then Some r else None
       in
       bad |> Option.iter (fun bad ->
           CErrors.user_err Pp.(str "Universe level " ++ Level.raw_pr bad ++
                                str " cannot be template because it appears in constraint " ++
-                               Level.raw_pr l ++ pr_constraint_type d ++ Level.raw_pr r)))
+                               Level.raw_pr l ++ UnivConstraint.pr_kind d ++ Level.raw_pr r)))
     csts
 
 let check_not_appearing_univs ~template_univs univs =
