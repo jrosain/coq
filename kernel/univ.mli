@@ -176,11 +176,15 @@ val univ_level_rem : Level.t -> Universe.t -> Universe.t -> Universe.t
 
 (** {6 Constraints. } *)
 
-type constraint_type = AcyclicGraph.constraint_type = Lt | Le | Eq
-type univ_constraint = Level.t * constraint_type * Level.t
+module UnivConstraint : sig
+  type kind = AcyclicGraph.constraint_type = Lt | Le | Eq
+  val compare_kind : kind -> kind -> int
+  val pr_kind : kind -> Pp.t
+  type t = Level.t * kind * Level.t
+end
 
 module Constraints : sig
-  include CSet.ExtS with type elt = univ_constraint
+  include CSet.ExtS with type elt = UnivConstraint.t
 
   val pr : (Level.t -> Pp.t) -> t -> Pp.t
 
@@ -256,7 +260,5 @@ val subst_univs_level_universe : universe_level_subst -> Universe.t -> Universe.
 val subst_univs_level_constraints : universe_level_subst -> Constraints.t -> Constraints.t
 
 (** {6 Pretty-printing of universes. } *)
-
-val pr_constraint_type : constraint_type -> Pp.t
 
 val pr_universe_level_subst : (Level.t -> Pp.t) -> universe_level_subst -> Pp.t
