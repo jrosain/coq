@@ -172,7 +172,7 @@ let show_universes ~proof =
   let ctx = Evd.universe_context_set (Evd.minimize_universes sigma) in
   UState.pr (Evd.ustate sigma) ++ fnl () ++
   v 1 (str "Normalized constraints:" ++ cut() ++
-       Univ.ContextSet.pr (Termops.pr_evd_level sigma) ctx)
+       PolyConstraints.ContextSet.pr (Termops.pr_evd_qvar sigma) (Termops.pr_evd_level sigma) ctx)
 
 (* Simulate the Intro(s) tactic *)
 let show_intro ~proof all =
@@ -555,13 +555,13 @@ let mk_sources () =
   let edges =
     let libs = Library.loaded_libraries () in
     List.fold_left (fun edges dp ->
-        let _, csts = Safe_typing.univs_of_library @@ Library.library_compiled dp in
+        let _, (_,univ_csts) = Safe_typing.univs_of_library @@ Library.library_compiled dp in
         UnivConstraints.fold (fun cst edges -> add_edge cst (Library dp) edges)
-          csts edges)
+          univ_csts edges)
       edges libs
   in
   let edges =
-    List.fold_left (fun edges (ref,csts) ->
+    List.fold_left (fun edges (ref,(_,csts)) ->
         UnivConstraints.fold (fun cst edges -> add_edge cst (GlobRef ref) edges)
           csts edges)
       edges srcs

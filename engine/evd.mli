@@ -587,34 +587,34 @@ val ustate : evar_map -> UState.t
 val elim_graph : evar_map -> QGraph.t
 val evar_universe_context : evar_map -> UState.t [@@deprecated "(9.0) Use [Evd.ustate]"]
 
-val universe_context_set : evar_map -> Univ.ContextSet.t
+val universe_context_set : evar_map -> PolyConstraints.ContextSet.t
 val sort_context_set : evar_map -> UnivGen.sort_context_set
 val universe_subst : evar_map -> UnivFlex.t
 val universes : evar_map -> UGraph.t
 
 (** [to_universe_context evm] extracts the local universes and
     constraints of [evm] and orders the universes the same as
-    [Univ.ContextSet.to_context]. *)
+    [PolyConstraints.ContextSet.to_context]. *)
 val to_universe_context : evar_map -> UVars.UContext.t
 
 val univ_entry : poly:bool -> evar_map -> UState.named_universes_entry
 
-val check_univ_decl : poly:bool -> evar_map -> UState.universe_decl -> UState.named_universes_entry
+val check_poly_decl : poly:bool -> evar_map -> UState.poly_decl -> UState.named_universes_entry
 
 (** An early check of compatibility of the universe declaration before
     starting to build a declaration interactively *)
-val check_univ_decl_early : poly:bool -> with_obls:bool -> evar_map -> UState.universe_decl -> Constr.t list -> unit
+val check_poly_decl_early : poly:bool -> with_obls:bool -> evar_map -> UState.poly_decl -> Constr.t list -> unit
 
 val merge_universe_context : evar_map -> UState.t -> evar_map
 val set_universe_context : evar_map -> UState.t -> evar_map
 
-val merge_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> Univ.ContextSet.t -> evar_map
+val merge_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> PolyConstraints.ContextSet.t -> evar_map
 
 val merge_sort_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> UnivGen.sort_context_set -> evar_map
 
 val merge_sort_variables : ?loc:Loc.t -> ?sideff:bool -> evar_map -> Quality.QVar.Set.t -> evar_map
 
-val with_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a Univ.in_universe_context_set -> evar_map * 'a
+val with_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a PolyConstraints.in_poly_context_set -> evar_map * 'a
 
 val with_sort_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a UnivGen.in_sort_context_set -> evar_map * 'a
 
