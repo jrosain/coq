@@ -271,7 +271,17 @@ let template_subst_ctx subst ctx params = template_subst_ctx [] subst ctx params
 
 let instantiate_template_constraints subst templ =
   let cstrs = UVars.UContext.constraints (UVars.AbstractContext.repr templ.template_context) in
-  let fold (u, cst, v) accu =
+  let foldq (q, cst, q') accq =
+    let substq q = match q with
+      | Quality.QConstant _ -> q
+      | Quality.QVar q' ->
+	 begin
+	   match Quality.QVar.var_index q' with
+	   | None -> q
+	   | Some q' -> Int.Map.get q' (fst subst)
+	 end in
+    Quality.ElimConstraints.add (substq q, cst, substq q') accq in
+  let foldu (u, cst, v) accu =
     (* v is not a local universe by the unbounded from below property *)
     let u = match Level.var_index u with
       | None -> Universe.make u
@@ -286,7 +296,7 @@ let instantiate_template_constraints subst templ =
     in
     List.fold_left fold accu (Univ.Universe.repr u)
   in
-  UnivConstraints.fold fold cstrs UnivConstraints.empty
+  PolyConstraints.fold (foldq, foldu) cstrs PolyConstraints.empty
 
 let instantiate_template_universes mib args =
   let templ = match mib.mind_template with

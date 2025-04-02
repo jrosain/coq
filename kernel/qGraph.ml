@@ -199,8 +199,8 @@ let explain_quality_inconsistency defprv (prv, (k, q1, q2, r)) =
   let prv = match prv with None -> defprv | Some prv -> prv in
   let pr_cst = function
     | AcyclicGraph.Eq -> str"="
-    | AcyclicGraph.Le -> str"->"
-    | AcyclicGraph.Lt -> str"->" (* Yes, it's the same as above. *)
+    | AcyclicGraph.Le -> str"~>"
+    | AcyclicGraph.Lt -> str"~>" (* Yes, it's the same as above. *)
   in
   let reason = match r with
     | None -> mt()
