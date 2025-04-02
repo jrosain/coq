@@ -131,9 +131,9 @@ let enforce_leq_alg_sort s1 s2 g = match s1, s2 with
 
 let enforce_univ_constraint (u,d,v) =
   match d with
-  | Eq -> enforce_eq u v
-  | Le -> enforce_leq u v
-  | Lt -> enforce_leq (Universe.super u) v
+  | UnivConstraint.Eq -> enforce_eq u v
+  | UnivConstraint.Le -> enforce_leq u v
+  | UnivConstraint.Lt -> enforce_leq (Universe.super u) v
 
 let subst_univs_constraint fn (u,d,v as c) cstrs =
   let u' = fn u in
