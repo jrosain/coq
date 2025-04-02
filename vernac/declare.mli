@@ -104,7 +104,7 @@ module Info : sig
     -> ?inline : bool
     -> ?kind : Decls.logical_kind
     (** Theorem, etc... *)
-    -> ?udecl : UState.universe_decl
+    -> ?udecl : UState.poly_decl
     -> ?scope : Locality.definition_scope
     (** locality  *)
     -> ?clearbody:bool
@@ -426,7 +426,7 @@ type constant_entry =
 
 val prepare_parameter
   : poly:bool
-  -> udecl:UState.universe_decl
+  -> udecl:UState.poly_decl
   -> types:EConstr.types
   -> Evd.evar_map
   -> Evd.evar_map * parameter_entry

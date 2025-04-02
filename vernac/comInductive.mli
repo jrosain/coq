@@ -81,7 +81,7 @@ type syntax_allows_template_poly = SyntaxAllowsTemplatePoly | SyntaxNoTemplatePo
 val interp_mutual_inductive_constr
   :  sigma:Evd.evar_map
   -> flags:flags
-  -> udecl:UState.universe_decl
+  -> udecl:UState.poly_decl
   -> variances:Entries.variance_entry
   -> ctx_params:EConstr.rel_context
   -> indnames:Names.Id.t list

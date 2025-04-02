@@ -187,7 +187,7 @@ type recursion_order_expr =
 
 type recursive_expr_gen =
   { fname : lident
-  ; univs : universe_decl_expr option
+  ; univs : poly_decl_expr option
   ; binders : local_binder_expr list
   ; rtype : constr_expr
   ; body_def : constr_expr option
@@ -433,8 +433,8 @@ type nonrec synpure_vernac_expr =
   | VernacSchemeEquality of equality_scheme_type * Libnames.qualid Constrexpr.or_by_notation
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list
-  | VernacConstraint of univ_constraint_expr list
-  | VernacAddRewRule of lident * (universe_decl_expr option * constr_expr * constr_expr) list
+  | VernacConstraint of poly_constraint_expr list
+  | VernacAddRewRule of lident * (poly_decl_expr option * constr_expr * constr_expr) list
 
   (* Gallina extensions *)
   | VernacCanonical of qualid or_by_notation

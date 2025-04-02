@@ -150,7 +150,7 @@ module Prim :
     val ident : Id.t Entry.t
     val name : lname Entry.t
     val identref : lident Entry.t
-    val univ_decl : universe_decl_expr Entry.t
+    val poly_decl : poly_decl_expr Entry.t
     val ident_decl : ident_decl Entry.t
     val pattern_ident : lident Entry.t
     val base_ident : Id.t Entry.t
@@ -187,6 +187,7 @@ module Constr :
     val universe_name : sort_name_expr Entry.t
     val sort : sort_expr Entry.t
     val sort_quality_or_set : UnivGen.QualityOrSet.t Entry.t
+    val sort_quality_var : quality_expr Entry.t
     val pattern : cases_pattern_expr Entry.t
     val constr_pattern : constr_expr Entry.t
     val cpattern : constr_expr Entry.t

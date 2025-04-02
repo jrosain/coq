@@ -161,8 +161,12 @@ let do_constraint ~poly l =
   let open Univ in
   let evd = Evd.from_env (Global.env ()) in
   let constraints = List.fold_left (fun acc cst ->
-      let cst = Constrintern.interp_univ_constraint evd cst in
-      UnivConstraints.add cst acc)
+      match cst with
+      | Constrexpr.UnivCst (l,d,r as cst) ->
+         let cst = Constrintern.interp_univ_constraint evd cst in
+         UnivConstraints.add cst acc
+      (* FIXME: once [ContextSet] is updated with [PolyConstraints] *)
+      | Constrexpr.ElimCst (l,d,r) -> acc)
       UnivConstraints.empty l
   in
   match poly with

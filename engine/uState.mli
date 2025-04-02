@@ -235,20 +235,22 @@ val collapse_elim_to_prop_sort_variables : to_prop:bool -> t -> t
 
 val collapse_sort_variables : ?except:Quality.QVar.Set.t -> t -> t
 
-type ('a, 'b, 'c) gen_universe_decl = {
-  univdecl_qualities : 'a;
-  univdecl_extensible_qualities : bool;
-  univdecl_instance : 'b; (* Declared universes *)
-  univdecl_extensible_instance : bool; (* Can new universes be added *)
-  univdecl_constraints : 'c; (* Declared constraints *)
-  univdecl_extensible_constraints : bool (* Can new constraints be added *) }
+type ('a, 'b, 'c, 'd) gen_poly_decl = {
+  polydecl_qualities : 'a;
+  polydecl_extensible_qualities : bool;
+  polydecl_elim_constraints : 'b;
+  polydecl_extensible_elim_constraints : bool;
+  polydecl_instance : 'c; (* Declared universes *)
+  polydecl_extensible_instance : bool; (* Can new universes be added *)
+  polydecl_univ_constraints : 'd; (* Declared univ constraints *)
+  polydecl_extensible_univ_constraints : bool (* Can new constraints be added *) }
 
-type universe_decl =
-  (Quality.QVar.t list, Level.t list, Univ.UnivConstraints.t) gen_universe_decl
+type poly_decl =
+  (Quality.QVar.t list, Quality.ElimConstraints.t, Level.t list, Univ.UnivConstraints.t) gen_poly_decl
 
-val default_univ_decl : universe_decl
+val default_poly_decl : poly_decl
 
-(** [check_univ_decl ctx decl]
+(** [check_poly_decl ctx decl]
 
    If non extensible in [decl], check that the local universes (resp.
    universe constraints) in [ctx] are implied by [decl].
@@ -259,13 +261,13 @@ val default_univ_decl : universe_decl
    When polymorphic, the universes corresponding to
    [decl.univdecl_instance] come first in the order defined by that
    list. *)
-val check_univ_decl : poly:bool -> t -> universe_decl -> named_universes_entry
-val check_univ_decl_rev : t -> universe_decl -> t * UVars.UContext.t
+val check_poly_decl : poly:bool -> t -> poly_decl -> named_universes_entry
+val check_poly_decl_rev : t -> poly_decl -> t * UVars.UContext.t
 val check_uctx_impl : fail:(Pp.t -> unit) -> t -> t -> unit
 
-val check_mono_univ_decl : t -> universe_decl -> Univ.ContextSet.t
+val check_mono_poly_decl : t -> poly_decl -> Univ.ContextSet.t
 
-val check_template_univ_decl : t -> template_qvars:Quality.QVar.Set.t -> universe_decl -> Univ.ContextSet.t
+val check_template_poly_decl : t -> template_qvars:Quality.QVar.Set.t -> poly_decl -> Univ.ContextSet.t
 
 (** {5 TODO: Document me} *)
 
