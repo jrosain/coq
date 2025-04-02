@@ -262,9 +262,9 @@ let subst_instance_constraint s (u,d,v as c) =
     else (u',d,v')
 
 let subst_instance_constraints s csts =
-  Constraints.fold
-    (fun c csts -> Constraints.add (subst_instance_constraint s c) csts)
-    csts Constraints.empty
+  UnivConstraints.fold
+    (fun c csts -> UnivConstraints.add (subst_instance_constraint s c) csts)
+    csts UnivConstraints.empty
 
 type 'a puniverses = 'a * Instance.t
 let out_punivs (x, _y) = x
@@ -287,18 +287,18 @@ struct
     (names, x)
 
   (** Universe contexts (variables as a list) *)
-  let empty = (([||], [||]), (Instance.empty, Constraints.empty))
-  let is_empty (_, (univs, csts)) = Instance.is_empty univs && Constraints.is_empty csts
+  let empty = (([||], [||]), (Instance.empty, UnivConstraints.empty))
+  let is_empty (_, (univs, csts)) = Instance.is_empty univs && UnivConstraints.is_empty csts
 
   let pr prq prl ?variance (_, (univs, csts) as uctx) =
     if is_empty uctx then mt() else
-      h (Instance.pr prq prl ?variance univs ++ str " |= ") ++ h (v 0 (Constraints.pr prl csts))
+      h (Instance.pr prq prl ?variance univs ++ str " |= ") ++ h (v 0 (UnivConstraints.pr prl csts))
 
   let hcons ((qnames, unames), (univs, csts)) =
     let hqnames, qnames = Hashcons.hashcons_array Names.Name.hcons qnames in
     let hunames, unames = Hashcons.hashcons_array Names.Name.hcons unames in
     let hunivs, univs = Instance.hcons univs in
-    let hcsts, csts = Constraints.hcons csts in
+    let hcsts, csts = UnivConstraints.hcons csts in
     Hashset.Combine.combine4 hqnames hunames hunivs hcsts, ((qnames, unames), (univs, csts))
 
   let names ((names, _) : t) = names
@@ -306,7 +306,7 @@ struct
   let constraints (_, (_univs, csts)) = csts
 
   let union ((qna, una), (univs, csts)) ((qna', una'), (univs', csts')) =
-    (Array.append qna qna', Array.append una una'), (Instance.append univs univs', Constraints.union csts csts')
+    (Array.append qna qna', Array.append una una'), (Instance.append univs univs', UnivConstraints.union csts csts')
 
   let size (_,(x,_)) = Instance.length x
 
@@ -363,19 +363,19 @@ struct
   let hcons ((qnames,unames), cst) =
     let hqnames, qnames = Hashcons.hashcons_array Names.Name.hcons qnames in
     let hunames, unames = Hashcons.hashcons_array Names.Name.hcons unames in
-    let hcst, cst = Constraints.hcons cst in
+    let hcst, cst = UnivConstraints.hcons cst in
     Hashset.Combine.combine3 hqnames hunames hcst, ((qnames, unames), cst)
 
-  let empty = (([||],[||]), Constraints.empty)
+  let empty = (([||],[||]), UnivConstraints.empty)
 
   let is_constant ((qnas,unas),_) =
     Array.is_empty qnas && Array.is_empty unas
 
   let is_empty (_, cst as ctx) =
-    is_constant ctx && Constraints.is_empty cst
+    is_constant ctx && UnivConstraints.is_empty cst
 
   let union ((qnas,unas), cst) ((qnas',unas'), cst') =
-    ((Array.append qnas qnas', Array.append unas unas'), Constraints.union cst cst')
+    ((Array.append qnas qnas', Array.append unas unas'), UnivConstraints.union cst cst')
 
   let size ((qnas,unas), _) = Array.length qnas, Array.length unas
 

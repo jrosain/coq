@@ -71,7 +71,7 @@ val enforce_eq_quality : Quality.t -> Quality.t -> Quality.ElimConstraints.t -> 
 val enforce_elim_to_quality : Quality.t -> Quality.t -> Quality.ElimConstraints.t -> Quality.ElimConstraints.t
 
 module QUConstraints : sig
-  type t = Quality.ElimConstraints.t * Univ.Constraints.t
+  type t = Quality.ElimConstraints.t * Univ.UnivConstraints.t
 
   val empty : t
 

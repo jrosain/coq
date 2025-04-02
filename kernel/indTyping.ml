@@ -259,7 +259,7 @@ let check_record data =
    to problems when instantiated with algebraic universes
    (template_u < v can become w+1 < v which we cannot yet handle). *)
 let check_unbounded_from_below (univs,csts) =
-  Univ.Constraints.iter (fun (l,d,r) ->
+  Univ.UnivConstraints.iter (fun (l,d,r) ->
       let bad = match d with
         | UnivConstraint.Eq | UnivConstraint.Lt ->
           if Level.Set.mem l univs then Some l
@@ -485,7 +485,7 @@ let get_template (mie:mutual_inductive_entry) = match mie.mind_entry_universes w
 
 let abstract_packets env usubst ((arity,lc),(indices,splayed_lc),univ_info) =
   if not (List.is_empty univ_info.missing)
-  then raise (InductiveError (env, MissingConstraints (univ_info.missing,univ_info.ind_univ)));
+  then raise (InductiveError (env, MissingUnivConstraints (univ_info.missing,univ_info.ind_univ)));
   let arity = Vars.subst_univs_level_constr usubst arity in
   let lc = Array.map (Vars.subst_univs_level_constr usubst) lc in
   let indices = Vars.subst_univs_level_context usubst indices in
