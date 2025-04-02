@@ -10,6 +10,7 @@
 
 open Univ
 open UVars
+open UnivConstraint
 
 module G = AcyclicGraph.Make(struct
     type t = Level.t
@@ -42,7 +43,7 @@ type explanation =
   | Other of Pp.t
 
 type univ_variable_printers = (Quality.QVar.t -> Pp.t) * (Level.t -> Pp.t)
-type univ_inconsistency = univ_variable_printers option * (constraint_type * Sorts.t * Sorts.t * explanation option)
+type univ_inconsistency = univ_variable_printers option * (UnivConstraint.kind * Sorts.t * Sorts.t * explanation option)
 
 exception UniverseInconsistency of univ_inconsistency
 

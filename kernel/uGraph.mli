@@ -51,15 +51,15 @@ type explanation =
   | Other of Pp.t
 
 type univ_variable_printers = (Quality.QVar.t -> Pp.t) * (Level.t -> Pp.t)
-type univ_inconsistency = univ_variable_printers option * (constraint_type * Sorts.t * Sorts.t * explanation option)
+type univ_inconsistency = univ_variable_printers option * (UnivConstraint.kind * Sorts.t * Sorts.t * explanation option)
 
 exception UniverseInconsistency of univ_inconsistency
 
-val enforce_constraint : univ_constraint -> t -> t
+val enforce_constraint : UnivConstraint.t -> t -> t
 
 val merge_constraints : Constraints.t -> t -> t
 
-val check_constraint  : t -> univ_constraint -> bool
+val check_constraint  : t -> UnivConstraint.t -> bool
 val check_constraints : Constraints.t -> t -> bool
 
 val check_eq_sort : QGraph.t -> t -> Sorts.t -> Sorts.t -> bool

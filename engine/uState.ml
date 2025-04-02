@@ -561,8 +561,8 @@ let enforce_leq_up u v local =
   { local with local_cst = UnivSubst.enforce_leq u (Universe.make v) local.local_cst }
 
 let get_constraint = function
-| Conversion.CONV -> Eq
-| Conversion.CUMUL -> Le
+| Conversion.CONV -> UnivConstraint.Eq
+| Conversion.CUMUL -> UnivConstraint.Le
 
 let unify_quality univs c s1 s2 l =
   let fail () = if UGraph.type_in_type univs then l.local_sorts
