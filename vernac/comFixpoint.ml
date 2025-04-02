@@ -244,7 +244,7 @@ let build_wellfounded env sigma poly udecl {CAst.v=recname; loc} ctx body ccl im
         let tuple_value = update tuple_value in
         let ccl = update ccl in
         let ctx = Context.Rel.map_het (ERelevance.kind sigma) update ctx in
-        let univs = UState.check_univ_decl ~poly uctx udecl in
+        let univs = UState.check_poly_decl ~poly uctx udecl in
         let h_body =
           let inst = UState.(match fst univs with
               | Polymorphic_entry uctx -> UVars.UContext.instance uctx
@@ -421,7 +421,7 @@ let interp_mutual_definition env ~program_mode ~function_mode rec_order fixl =
   let fixnames = List.map (fun na -> na.CAst.v) fixlnames in
 
   (* Interp arities allowing for unresolved types *)
-  let sigma, decl = interp_mutual_univ_decl_opt env (List.map (fun Vernacexpr.{univs} -> univs) fixl) in
+  let sigma, decl = interp_mutual_poly_decl_opt env (List.map (fun Vernacexpr.{univs} -> univs) fixl) in
   let sigma, (fixenv, fixctxs, fixctximpenvs, fixctximps) =
     on_snd List.split4 @@
       List.fold_left_map (fun sigma -> interp_fix_context ~program_mode env sigma) sigma fixl in
@@ -573,7 +573,7 @@ let do_mutually_recursive ?pm ~refine ~program_mode ?(use_inference_hook=false) 
   | Some pm ->
     (* Program Fixpoint struct *)
     let bodies = List.map Option.get bodies in
-    Evd.check_univ_decl_early ~poly ~with_obls:true sigma udecl (bodies @ fixtypes);
+    Evd.check_poly_decl_early ~poly ~with_obls:true sigma udecl (bodies @ fixtypes);
     let sigma = if poly then sigma else Evd.fix_undefined_variables sigma in
     let uctx = Evd.ustate sigma in
     (match fixwfs, bodies, cinfo, obls with
@@ -596,7 +596,7 @@ let do_mutually_recursive ?pm ~refine ~program_mode ?(use_inference_hook=false) 
       None, None
     with Option.IsNone ->
       (* At least one undefined body *)
-      Evd.check_univ_decl_early ~poly ~with_obls:false sigma udecl (Option.List.flatten bodies @ fixtypes);
+      Evd.check_poly_decl_early ~poly ~with_obls:false sigma udecl (Option.List.flatten bodies @ fixtypes);
       let possible_guard = (possible_guard, fixrs) in
       let lemma = Declare.Proof.start_mutual_definitions ~info ~cinfo ~bodies ~possible_guard ?using sigma in
       None, Some lemma

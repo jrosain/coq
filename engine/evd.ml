@@ -1044,13 +1044,13 @@ let to_universe_context evd = UState.context evd.universes
 
 let univ_entry ~poly evd = UState.univ_entry ~poly evd.universes
 
-let check_univ_decl ~poly evd decl = UState.check_univ_decl ~poly evd.universes decl
+let check_poly_decl ~poly evd decl = UState.check_poly_decl ~poly evd.universes decl
 
-let check_univ_decl_early ~poly ~with_obls sigma udecl terms =
+let check_poly_decl_early ~poly ~with_obls sigma udecl terms =
   let () =
     if with_obls && not poly &&
-       (not udecl.UState.univdecl_extensible_instance
-        || not udecl.UState.univdecl_extensible_constraints)
+       (not udecl.UState.polydecl_extensible_instance
+        || not udecl.UState.polydecl_extensible_constraints)
     then
       CErrors.user_err
         Pp.(str "Non extensible universe declaration not supported \
@@ -1060,7 +1060,7 @@ let check_univ_decl_early ~poly ~with_obls sigma udecl terms =
   let uctx = ustate sigma in
   let uctx = UState.collapse_sort_variables uctx in
   let uctx = UState.restrict uctx vars in
-  ignore (UState.check_univ_decl ~poly uctx udecl)
+  ignore (UState.check_poly_decl ~poly uctx udecl)
 
 let restrict_universe_context evd vars =
   { evd with universes = UState.restrict evd.universes vars }
@@ -1141,7 +1141,7 @@ let is_eq_sort s1 s2 =
 let universe_rigidity evd l =
   let uctx = evd.universes in
   (* XXX why are we considering all locals to be flexible here? *)
-  if Univ.Level.Set.mem l (Univ.ContextSet.levels (UState.context_set uctx)) then
+  if Univ.Level.Set.mem l (PolyConstraints.ContextSet.levels (UState.context_set uctx)) then
     UnivFlexible (UState.is_algebraic l uctx)
   else UnivRigid
 

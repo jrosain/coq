@@ -20,7 +20,7 @@ open Constr
 open Declarations
 open Environ
 open Entries
-open Univ
+open PolyConstraints
 open UVars
 
 module NamedDecl = Context.Named.Declaration
@@ -125,7 +125,7 @@ let adjust_primitive_univ_entry p auctx = function
        the instance so comparing the sizes works. No polymorphic
        primitive uses constraints currently. *)
     if not (AbstractContext.size auctx = UContext.size uctx
-            && UnivConstraints.is_empty (UContext.constraints uctx))
+            && PolyConstraints.is_empty (UContext.constraints uctx))
     then CErrors.user_err Pp.(str "Incorrect universes for primitive " ++
                                 str (CPrimitives.op_or_type_to_string p));
     Polymorphic_entry (UContext.refine_names (AbstractContext.names auctx) uctx)

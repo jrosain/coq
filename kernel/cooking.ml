@@ -388,7 +388,7 @@ let lift_private_mono_univs info a =
   a
 
 let lift_private_poly_univs info (inst, cstrs) =
-  let cstrs = Univ.subst_univs_level_constraints (snd (make_instance_subst info.abstr_info.abstr_ausubst)) cstrs in
+  let cstrs = UVars.subst_univs_level_constraints (snd (make_instance_subst info.abstr_info.abstr_ausubst)) cstrs in
   (inst, cstrs)
 
 let lift_relevance info relevance =

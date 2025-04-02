@@ -215,7 +215,7 @@ module RecordEntry = struct
     }
 
   type t = {
-    global_univs : Univ.ContextSet.t;
+    global_univs : PolyConstraints.ContextSet.t;
     ubinders : UState.named_universes_entry;
     mie : Entries.mutual_inductive_entry;
     ind_infos : one_ind_info list;
@@ -334,7 +334,7 @@ let typecheck_params_and_fields ~kind ~(flags:ComInductive.flags) ~primitive_pro
   let is_template =
     List.exists (fun { DataI.arity; _} -> Option.cata check_anonymous_type true arity) records in
   let unconstrained_sorts = not flags.poly && not def && is_template in
-  let sigma, udecl, variances = Constrintern.interp_cumul_univ_decl_opt env0 udecl in
+  let sigma, udecl, variances = Constrintern.interp_cumul_poly_decl_opt env0 udecl in
   let () = List.iter check_parameters_must_be_named params in
   let sigma, (impls_env, ((_env1,params), impls, _paramlocs)) =
     Constrintern.interp_context_evars ~program_mode:false ~unconstrained_sorts env0 sigma params in
@@ -375,7 +375,7 @@ let typecheck_params_and_fields ~kind ~(flags:ComInductive.flags) ~primitive_pro
       | _ -> assert false
     in
     let projname = CAst.map Nameops.Name.get_id projname in
-    let univs = Evd.check_univ_decl ~poly:flags.poly sigma udecl in
+    let univs = Evd.check_poly_decl ~poly:flags.poly sigma udecl in
     (* definitional classes are encoded as 1 constructor with 1
        field whose type is the projection type *)
     let projimpls = match field_impls with
@@ -641,7 +641,7 @@ let declare_projections indsp ~kind ~inhabitant_id flags ?fieldlocs fieldimpls =
     Declareops.inductive_polymorphic_context mib
   in
   let univs = match mib.mind_universes with
-    | Monomorphic -> UState.Monomorphic_entry Univ.ContextSet.empty
+    | Monomorphic -> UState.Monomorphic_entry PolyConstraints.ContextSet.empty
     | Polymorphic auctx -> UState.Polymorphic_entry (UVars.AbstractContext.repr auctx)
   in
   let univs = univs, UnivNames.empty_binders in
@@ -887,7 +887,7 @@ let declare_class_constant entry (data:Data.t) =
   in
   let inst, univs = match univs with
     | UState.Monomorphic_entry _, ubinders ->
-      UVars.Instance.empty, (UState.Monomorphic_entry Univ.ContextSet.empty, ubinders)
+      UVars.Instance.empty, (UState.Monomorphic_entry PolyConstraints.ContextSet.empty, ubinders)
     | UState.Polymorphic_entry uctx, _ ->
       UVars.UContext.instance uctx, univs
   in
