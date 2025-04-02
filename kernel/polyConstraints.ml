@@ -104,3 +104,68 @@ let enforce_eq_quality q1 q2 csts =
 let enforce_elim_to q1 q2 csts =
   if QGraph.ElimTable.eliminates_to q1 q2 then csts
   else add_quality (q1, ElimConstraint.ElimTo, q2) csts
+
+module ContextSet = struct
+  type t = Level.Set.t constrained
+
+  let of_lvl_set s : t = (s, empty)
+  let singleton_lvl l = of_lvl_set (Level.Set.singleton l)
+
+  let empty = (Level.Set.empty, empty)
+  let is_empty (univs, cst) = Level.Set.is_empty univs && is_empty cst
+
+  let equal (univs, cst as x) (univs', cst' as y) =
+    x == y || (Level.Set.equal univs univs' && equal cst cst')
+
+  let union (univs, cst as x) (univs', cst' as y) =
+    if x == y then x
+    else Level.Set.union univs univs', union cst cst'
+
+  let append (univs, cst) (univs', cst') =
+    let univs = Level.Set.fold Level.Set.add univs univs' in
+    let cst = fold (ElimConstraints.add, UnivConstraints.add) cst cst' in
+    (univs, cst)
+
+  let diff (univs, cst) (univs', cst') =
+    Level.Set.diff univs univs', diff cst cst'
+
+  let add_level u (univs, cst) =
+    Level.Set.add u univs, cst
+
+  let add_constraints cst' (univs, cst) =
+    union (univs, cst) (Level.Set.empty, cst')
+
+  let add_univ_constraints cst' (univs, cst) =
+    union (univs, cst) (Level.Set.empty, of_univs cst')
+
+  let add_elim_constraints cst' (univs, cst) =
+    union (univs, cst) (Level.Set.empty, of_qualities cst')
+
+  let pr prv prl (univs, cst as ctx) =
+    let open Pp in
+    if is_empty ctx then mt() else
+      hov 0 (h (Level.Set.pr prl univs ++ str " |=") ++ brk(1,2) ++ h (pr prv prl cst))
+
+  let constraints (_univs, cst) = cst
+  let elim_constraints (_, (csts,_)) = csts
+  let univ_constraints (_, (_,csts)) = csts
+  let levels (univs, _cst) = univs
+
+  let size (univs,_) = Level.Set.cardinal univs
+
+  module HContextSet =
+  Hashcons.Make(
+    struct
+      type nonrec t = t
+      let hashcons (lvls, csts) =
+        let hlvls, lvls = Univ.Level.Set.hcons lvls in
+        let hcsts, csts = hcons csts in
+        Hashset.Combine.combine hlvls hcsts, (lvls, csts)
+      let eq (qc, uc) (qc', uc') =
+        qc == qc' && uc == uc'
+    end)
+
+  let hcons = Hashcons.simple_hcons HContextSet.generate HContextSet.hcons ()
+end
+
+type 'a in_poly_context_set = 'a * ContextSet.t
