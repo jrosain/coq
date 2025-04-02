@@ -300,7 +300,7 @@ let explain_exn = function
       | IllFormedRecBody _ -> str"IllFormedRecBody"
       | IllTypedRecBody _ -> str"IllTypedRecBody"
       | UnsatisfiedElimConstraints _ -> str"UnsatisfiedElimConstraints"
-      | UnsatisfiedConstraints _ -> str"UnsatisfiedConstraints"
+      | UnsatisfiedUnivConstraints _ -> str"UnsatisfiedUnivConstraints"
       | DisallowedSProp -> str"DisallowedSProp"
       | BadBinderRelevance _ -> str"BadBinderRelevance"
       | BadCaseRelevance _ -> str"BadCaseRelevance"
