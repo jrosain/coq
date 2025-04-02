@@ -189,7 +189,7 @@ let enforce_uppers upper lbound cstrs =
         enforce_leq lbound (Universe.make r) cstrs
       else
         match Universe.level lbound with
-        | Some lev -> Constraints.add (lev, d, r) cstrs
+        | Some lev -> UnivConstraints.add (lev, d, r) cstrs
         | None -> raise UpperBoundedAlg)
     cstrs upper
 
@@ -310,7 +310,7 @@ let normalize_context_set g ctx (us:UnivFlex.t) {weak_constraints=weak;above_pro
   let (ctx, csts) = ContextSet.levels ctx, ContextSet.constraints ctx in
   (* Keep the Set <= i constraints separate *)
   let smallles, csts =
-    Constraints.partition (fun (l,d,r) -> d == Le && Level.is_set l) csts
+    UnivConstraints.partition (fun (l,d,r) -> d == Le && Level.is_set l) csts
   in
   (* Process weak constraints: when one side is flexible and the 2
      universes are unrelated unify them. *)
@@ -319,13 +319,13 @@ let normalize_context_set g ctx (us:UnivFlex.t) {weak_constraints=weak;above_pro
       let u = norm u and v = norm v in
       if (Level.is_set u || Level.is_set v) then begin
         if get_set_minimization() then begin
-          if Level.is_set u then (Constraints.add (u,Le,v) smallles,csts,g)
-          else (Constraints.add (v,Le,u) smallles,csts,g)
+          if Level.is_set u then (UnivConstraints.add (u,Le,v) smallles,csts,g)
+          else (UnivConstraints.add (v,Le,u) smallles,csts,g)
         end else acc
       end else
         let set_to a b =
           (smallles,
-           Constraints.add (a,Eq,b) csts,
+           UnivConstraints.add (a,Eq,b) csts,
            UGraph.enforce_constraint (a,Eq,b) g)
         in
         let check_le a b = UGraph.check_constraint g (a,Le,b) in
@@ -339,11 +339,11 @@ let normalize_context_set g ctx (us:UnivFlex.t) {weak_constraints=weak;above_pro
       weak (smallles, csts, g)
   in
   let smallles = if get_set_minimization () then
-      Constraints.filter (fun (l,d,r) -> UnivFlex.mem r us) smallles
-    else  Constraints.empty (* constraints Set <= u may be dropped *)
+      UnivConstraints.filter (fun (l,d,r) -> UnivFlex.mem r us) smallles
+    else  UnivConstraints.empty (* constraints Set <= u may be dropped *)
   in
   let smallles = if get_set_minimization() then
-      let fold u accu = if UnivFlex.mem u us then Constraints.add (Level.set, Le, u) accu else accu in
+      let fold u accu = if UnivFlex.mem u us then UnivConstraints.add (Level.set, Le, u) accu else accu in
       Level.Set.fold fold above_prop smallles
     else smallles
   in
@@ -360,7 +360,7 @@ let normalize_context_set g ctx (us:UnivFlex.t) {weak_constraints=weak;above_pro
       then try UGraph.add_universe ~strict:false u g with UGraph.AlreadyDeclared -> g
       else g
     in
-    let g = Constraints.fold
+    let g = UnivConstraints.fold
         (fun (l, d, r) g -> add_soft r (add_soft l g))
         csts g
     in
@@ -369,30 +369,30 @@ let normalize_context_set g ctx (us:UnivFlex.t) {weak_constraints=weak;above_pro
   in
   (* Ignore constraints from lbound:Set *)
   let noneqs =
-    Constraints.filter
+    UnivConstraints.filter
       (fun (l,d,r) -> not (d == Le && Level.is_set l))
       csts
   in
   (* Put back constraints [Set <= u] from type inference *)
-  let noneqs = Constraints.union noneqs smallles in
+  let noneqs = UnivConstraints.union noneqs smallles in
   let flex x = UnivFlex.mem x us in
   let algebraic x = UnivFlex.is_algebraic x us in
   let ctx, us, eqs = List.fold_left (fun (ctx, us, cstrs) s ->
       let canon, (global, rigid, flexible) = choose_canonical ctx flex algebraic s in
       (* Add equalities for globals which can't be merged anymore. *)
       let cstrs = Level.Set.fold (fun g cst ->
-          Constraints.add (canon, Eq, g) cst) global
+          UnivConstraints.add (canon, Eq, g) cst) global
           cstrs
       in
       (* Also add equalities for rigid variables *)
       let cstrs = Level.Set.fold (fun g cst ->
-          Constraints.add (canon, Eq, g) cst) rigid
+          UnivConstraints.add (canon, Eq, g) cst) rigid
           cstrs
       in
       let canonu = Universe.make canon in
       let us = Level.Set.fold (fun f -> UnivFlex.define f canonu) flexible us in
       (Level.Set.diff ctx flexible, us, cstrs))
-      (ctx, us, Constraints.empty) partition
+      (ctx, us, UnivConstraints.empty) partition
   in
   (* Noneqs is now in canonical form w.r.t. equality constraints,
      and contains only inequality constraints. *)
@@ -401,14 +401,14 @@ let normalize_context_set g ctx (us:UnivFlex.t) {weak_constraints=weak;above_pro
     let fold (u,d,v) noneqs =
       let u = norm u and v = norm v in
       if d != UnivConstraint.Lt && Level.equal u v then noneqs
-      else Constraints.add (u,d,v) noneqs
+      else UnivConstraints.add (u,d,v) noneqs
     in
-    Constraints.fold fold noneqs Constraints.empty
+    UnivConstraints.fold fold noneqs UnivConstraints.empty
   in
   (* Compute the left and right set of flexible variables, constraints
      mentioning other variables remain in noneqs. *)
   let noneqs, ucstrsl, ucstrsr =
-    Constraints.fold (fun (l,d,r as cstr) (noneq, ucstrsl, ucstrsr) ->
+    UnivConstraints.fold (fun (l,d,r as cstr) (noneq, ucstrsl, ucstrsr) ->
       let lus = UnivFlex.mem l us and rus = UnivFlex.mem r us in
       let ucstrsl' =
         if lus then add_list_map l (d, r) ucstrsl
@@ -418,13 +418,13 @@ let normalize_context_set g ctx (us:UnivFlex.t) {weak_constraints=weak;above_pro
       in
       let noneqs =
         if lus || rus then noneq
-        else Constraints.add cstr noneq
+        else UnivConstraints.add cstr noneq
       in (noneqs, ucstrsl', ucstrsr'))
-    noneqs (Constraints.empty, Level.Map.empty, Level.Map.empty)
+    noneqs (UnivConstraints.empty, Level.Map.empty, Level.Map.empty)
   in
   (* Now we construct the instantiation of each variable. *)
   let ctx', us, inst, noneqs =
     minimize_univ_variables ctx us ucstrsr ucstrsl noneqs
   in
   let us = UnivFlex.normalize us in
-  us, (ctx', Constraints.union noneqs eqs)
+  us, (ctx', UnivConstraints.union noneqs eqs)

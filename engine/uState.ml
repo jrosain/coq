@@ -547,14 +547,14 @@ let classify s = match s with
   else UAlgebraic u
 
 type local = {
-  local_cst : Constraints.t;
+  local_cst : UnivConstraints.t;
   local_above_prop : Level.Set.t;
   local_weak : UPairSet.t;
   local_sorts : QState.t;
 }
 
 let add_local cst local =
-  { local with local_cst = Constraints.add cst local.local_cst }
+  { local with local_cst = UnivConstraints.add cst local.local_cst }
 
 (* Constraint with algebraic on the left and a single level on the right *)
 let enforce_leq_up u v local =
@@ -751,7 +751,7 @@ let process_universe_constraints uctx cstrs =
     else try unify_universes cst local with UGraph.UniverseInconsistency _ -> local
   in
   let local = {
-    local_cst = Constraints.empty;
+    local_cst = UnivConstraints.empty;
     local_weak = uctx.minim_extra.UnivMinim.weak_constraints;
     local_above_prop = uctx.minim_extra.UnivMinim.above_prop;
     local_sorts = uctx.sort_variables;
@@ -764,14 +764,14 @@ let add_universe_constraints uctx cstrs =
   let univs, local = uctx.local in
   let vars, extra, local', sorts = process_universe_constraints uctx cstrs in
   { uctx with
-    local = (univs, Constraints.union local local');
+    local = (univs, UnivConstraints.union local local');
     univ_variables = vars;
     universes = merge_constraints uctx local' uctx.universes;
     sort_variables = sorts;
     minim_extra = extra; }
 
 let problem_of_constraints cstrs =
-  Constraints.fold (fun (l,d,r) acc ->
+  UnivConstraints.fold (fun (l,d,r) acc ->
       let l = Universe.make l and r = sort_of_univ @@ Universe.make r in
       let cstr' = let open UnivProblem in
         match d with
@@ -837,7 +837,7 @@ type ('a, 'b, 'c) gen_universe_decl = {
   univdecl_extensible_constraints : bool (* Can new constraints be added *) }
 
 type universe_decl =
-  (QVar.t list, Level.t list, Constraints.t) gen_universe_decl
+  (QVar.t list, Level.t list, UnivConstraints.t) gen_universe_decl
 
 let default_univ_decl =
   { univdecl_qualities = [];
@@ -847,7 +847,7 @@ let default_univ_decl =
     univdecl_extensible_qualities = true;
     univdecl_instance = [];
     univdecl_extensible_instance = true;
-    univdecl_constraints = Constraints.empty;
+    univdecl_constraints = UnivConstraints.empty;
     univdecl_extensible_constraints = true }
 
 let pr_error_unbound_universes quals univs names =
@@ -946,11 +946,11 @@ let check_universe_context_set ~prefix levels names =
 let check_implication uctx cstrs cstrs' =
   let gr = uctx.initial_universes in
   let grext = merge_constraints uctx cstrs gr in
-  let cstrs' = Constraints.filter (fun c -> not (UGraph.check_constraint grext c)) cstrs' in
-  if Constraints.is_empty cstrs' then ()
+  let cstrs' = UnivConstraints.filter (fun c -> not (UGraph.check_constraint grext c)) cstrs' in
+  if UnivConstraints.is_empty cstrs' then ()
   else CErrors.user_err
       Pp.(str "Universe constraints are not implied by the ones declared: " ++
-          Constraints.pr (pr_uctx_level uctx) cstrs')
+          UnivConstraints.pr (pr_uctx_level uctx) cstrs')
 
 let check_template_univ_decl uctx ~template_qvars decl =
   let () =
@@ -1026,7 +1026,7 @@ let restrict_universe_context (univs, csts) keep =
   let removed = Level.Set.diff univs keep in
   if Level.Set.is_empty removed then univs, csts
   else
-  let allunivs = Constraints.fold (fun (u,_,v) all -> Level.Set.add u (Level.Set.add v all)) csts univs in
+  let allunivs = UnivConstraints.fold (fun (u,_,v) all -> Level.Set.add u (Level.Set.add v all)) csts univs in
   let g = UGraph.initial_universes in
   let g = Level.Set.fold (fun v g ->
       if Level.is_set v then g else
@@ -1034,7 +1034,7 @@ let restrict_universe_context (univs, csts) keep =
   let g = UGraph.merge_constraints csts g in
   let allkept = Level.Set.union (UGraph.domain UGraph.initial_universes) (Level.Set.diff allunivs removed) in
   let csts = UGraph.constraints_for ~kept:allkept g in
-  let csts = Constraints.filter (fun (l,d,r) -> not (Level.is_set l && d == Le)) csts in
+  let csts = UnivConstraints.filter (fun (l,d,r) -> not (Level.is_set l && d == Le)) csts in
   (Level.Set.inter univs keep, csts)
 
 let restrict uctx vars =
@@ -1334,9 +1334,9 @@ let check_uctx_impl ~fail uctx uctx' =
   in
   let () =
     let grext = ugraph uctx in
-    let cstrs' = Constraints.filter (fun c -> not (UGraph.check_constraint grext c)) csts in
-    if Constraints.is_empty cstrs' then ()
-    else fail (Constraints.pr (pr_uctx_level uctx) cstrs')
+    let cstrs' = UnivConstraints.filter (fun c -> not (UGraph.check_constraint grext c)) csts in
+    if UnivConstraints.is_empty cstrs' then ()
+    else fail (UnivConstraints.pr (pr_uctx_level uctx) cstrs')
   in
   ()
 

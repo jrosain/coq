@@ -113,7 +113,7 @@ let enforce_constraint cst g = match enforce_constraint0 cst g with
   else g
 | Some g -> g
 
-let merge_constraints csts g = Constraints.fold enforce_constraint csts g
+let merge_constraints csts g = UnivConstraints.fold enforce_constraint csts g
 
 let check_constraint { graph = g; type_in_type } (u,d,v) =
   type_in_type
@@ -122,7 +122,7 @@ let check_constraint { graph = g; type_in_type } (u,d,v) =
   | Lt -> G.check_lt g u v
   | Eq -> G.check_eq g u v
 
-let check_constraints csts g = Constraints.for_all (check_constraint g) csts
+let check_constraints csts g = UnivConstraints.for_all (check_constraint g) csts
 
 let check_qualities_compatible quals cmp q1 q2 =
   let open Quality in
@@ -175,19 +175,19 @@ let enforce_leq_alg u v g =
       else
         (let c = leq_expr u v in
          match enforce_constraint0 c g with
-         | Some g -> Inl (Constraints.add c cstrs,g)
+         | Some g -> Inl (UnivConstraints.add c cstrs,g)
          | None -> Inr (c, g))
   in
   (* max(us) <= max(vs) <-> forall u in us, exists v in vs, u <= v *)
   let c = List.map (fun u -> List.map (fun v -> (u,v)) (Universe.repr v)) (Universe.repr u) in
-  let c = List.cartesians enforce_one (Inl (Constraints.empty,g)) c in
+  let c = List.cartesians enforce_one (Inl (UnivConstraints.empty,g)) c in
   (* We pick a best constraint: smallest number of constraints, not an error if possible. *)
   let order x y = match x, y with
     | Inr _, Inr _ -> 0
     | Inl _, Inr _ -> -1
     | Inr _, Inl _ -> 1
     | Inl (c,_), Inl (c',_) ->
-      Int.compare (Constraints.cardinal c) (Constraints.cardinal c')
+      Int.compare (UnivConstraints.cardinal c) (UnivConstraints.cardinal c')
   in
   match List.min order c with
   | Inl x -> x
@@ -207,11 +207,11 @@ let check_declared_universes g l =
   G.check_declared g.graph l
 
 let constraints_of_universes g =
-  let add cst accu = Constraints.add cst accu in
-  G.constraints_of g.graph add Constraints.empty
+  let add cst accu = UnivConstraints.add cst accu in
+  G.constraints_of g.graph add UnivConstraints.empty
 let constraints_for ~kept g =
-  let add cst accu = Constraints.add cst accu in
-  G.constraints_for ~kept g.graph add Constraints.empty
+  let add cst accu = UnivConstraints.add cst accu in
+  G.constraints_for ~kept g.graph add UnivConstraints.empty
 
 (** Subtyping of polymorphic contexts *)
 

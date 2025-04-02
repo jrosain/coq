@@ -174,7 +174,7 @@ val univ_level_mem : Level.t -> Universe.t -> bool
 
 val univ_level_rem : Level.t -> Universe.t -> Universe.t -> Universe.t
 
-(** {6 Constraints. } *)
+(** {6 UnivConstraints. } *)
 
 module UnivConstraint : sig
   type kind = AcyclicGraph.constraint_type = Lt | Le | Eq
@@ -183,7 +183,7 @@ module UnivConstraint : sig
   type t = Level.t * kind * Level.t
 end
 
-module Constraints : sig
+module UnivConstraints : sig
   include CSet.ExtS with type elt = UnivConstraint.t
 
   val pr : (Level.t -> Pp.t) -> t -> Pp.t
@@ -191,21 +191,21 @@ module Constraints : sig
   val hcons : t Hashcons.f
 end
 
-(** A value with universe Constraints.t. *)
-type 'a constrained = 'a * Constraints.t
+(** A value with universe UnivConstraints.t. *)
+type 'a constrained = 'a * UnivConstraints.t
 
 (** Constrained *)
-val constraints_of : 'a constrained -> Constraints.t
+val constraints_of : 'a constrained -> UnivConstraints.t
 
-(** Enforcing Constraints.t. *)
-type 'a constraint_function = 'a -> 'a -> Constraints.t -> Constraints.t
+(** Enforcing UnivConstraints.t. *)
+type 'a constraint_function = 'a -> 'a -> UnivConstraints.t -> UnivConstraints.t
 
 val enforce_eq_level : Level.t constraint_function
 val enforce_leq_level : Level.t constraint_function
 
 (** Universe contexts (as sets) *)
 
-(** A set of universes with universe Constraints.t.
+(** A set of universes with universe UnivConstraints.t.
     We linearize the set to a list after typechecking.
     Beware, representation could change.
 *)
@@ -229,9 +229,9 @@ sig
 
   val diff : t -> t -> t
   val add_universe : Level.t -> t -> t
-  val add_constraints : Constraints.t -> t -> t
+  val add_constraints : UnivConstraints.t -> t -> t
 
-  val constraints : t -> Constraints.t
+  val constraints : t -> UnivConstraints.t
   val levels : t -> Level.Set.t
 
   val size : t -> int
@@ -257,7 +257,7 @@ val is_empty_level_subst : universe_level_subst -> bool
 (** Substitution of universes. *)
 val subst_univs_level_level : universe_level_subst -> Level.t -> Level.t
 val subst_univs_level_universe : universe_level_subst -> Universe.t -> Universe.t
-val subst_univs_level_constraints : universe_level_subst -> Constraints.t -> Constraints.t
+val subst_univs_level_constraints : universe_level_subst -> UnivConstraints.t -> UnivConstraints.t
 
 (** {6 Pretty-printing of universes. } *)
 
