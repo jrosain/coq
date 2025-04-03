@@ -441,10 +441,25 @@ let subst_univs_level_constraint subst (u,d,v) =
     if d != UnivConstraint.Lt && Level.equal u' v' then None
     else Some (u',d,v')
 
-let subst_univs_level_constraints subst csts =
+let subst_sort_level_qvar subst qv =
+  match Quality.QVar.Map.find_opt qv subst with
+  | None -> Quality.QVar qv
+  | Some q -> q
+
+let subst_sort_level_quality subst = function
+  | Quality.QConstant _ as q -> q
+  | Quality.QVar q ->
+    subst_sort_level_qvar subst q
+
+let subst_univs_elim_constraint subst (q1,k,q2) =
+  let q1 = subst_sort_level_quality subst q1 in
+  let q2 = subst_sort_level_quality subst q2 in
+  (q1,k,q2)
+
+let subst_univs_constraints (qsubst,usubst) csts =
   PolyConstraints.fold
-    ( (fun _ qc -> qc)
-    , (fun c -> Option.fold_right UnivConstraints.add (subst_univs_level_constraint subst c)))
+    ( (fun c -> Quality.ElimConstraints.add (subst_univs_elim_constraint qsubst c))
+    , (fun c -> Option.fold_right UnivConstraints.add (subst_univs_level_constraint usubst c)))
     csts PolyConstraints.empty
 
 (** Pretty-printing *)
@@ -475,7 +490,7 @@ let subst_instance_sort_level_subst s (i : sort_level_subst) =
   if qs' == qs && us' == us then i else (qs', us')
 
 let subst_univs_level_abstract_universe_context subst (inst, csts) =
-  inst, subst_univs_level_constraints subst csts
+  inst, subst_univs_constraints subst csts
 
 let subst_sort_level_qvar (qsubst,_) qv =
   match Quality.QVar.Map.find_opt qv qsubst with
@@ -517,8 +532,7 @@ let abstract_universes uctx =
   let nas = UContext.names uctx in
   let instance = UContext.instance uctx in
   let subst = make_instance_subst instance in
-  let cstrs = subst_univs_level_constraints (snd subst)
-      (UContext.constraints uctx)
+  let cstrs = subst_univs_constraints subst (UContext.constraints uctx)
   in
   let ctx = (nas, cstrs) in
   instance, ctx

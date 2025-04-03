@@ -530,7 +530,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
     | Template_ind_entry {uctx; default_univs=_} ->
       Environ.Internal.push_template_context uctx env
     | Monomorphic_ind_entry -> env
-    | Polymorphic_ind_entry ctx -> push_context ctx env
+    | Polymorphic_ind_entry ctx -> push_context QGraph.Internal ctx env
   in
 
   let has_template_poly = match mie.mind_entry_universes with

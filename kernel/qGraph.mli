@@ -49,6 +49,8 @@ type constraint_source =
   | Rigid
   | Static
 
+val merge : t -> t -> t
+
 val merge_constraints : constraint_source -> Quality.ElimConstraints.t -> t -> t
 
 val check_constraint : t -> Quality.ElimConstraint.t -> bool
