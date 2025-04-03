@@ -192,6 +192,16 @@ let qvar_domain g =
     (fun q acc -> match q with Quality.QVar q -> Quality.QVar.Set.add q acc | _ -> acc)
     (domain g) Quality.QVar.Set.empty
 
+let merge g g' =
+  let qs = domain g' in
+  let g = Quality.Set.fold
+             (fun q acc -> try add_quality q acc with _ -> acc) qs g in
+  Quality.Set.fold
+    (fun q -> Quality.Set.fold
+             (fun q' acc -> if eliminates_to g' q q'
+                         then enforce_eliminates_to Static q q' acc
+                         else acc) qs) qs g
+
 let is_empty g = QVar.Set.is_empty (qvar_domain g)
 
 let explain_quality_inconsistency defprv (prv, (k, q1, q2, r)) =
