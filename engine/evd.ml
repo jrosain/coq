@@ -867,14 +867,14 @@ let existential_type d n = match existential_type_opt d n with
   | Some t -> t
   | None -> anomaly (str "Evar " ++ str (string_of_existential (fst n)) ++ str " was not declared.")
 
+let add_univ_constraints d c =
+  { d with universes = UState.add_univ_constraints d.universes c }
+
+let add_poly_constraints d c =
+  { d with universes = UState.add_poly_constraints d.universes c }
+
 let add_constraints d c =
   { d with universes = UState.add_constraints d.universes c }
-
-let add_quconstraints d c =
-  { d with universes = UState.add_quconstraints d.universes c }
-
-let add_universe_constraints d c =
-  { d with universes = UState.add_universe_constraints d.universes c }
 
 (*** /Lifting... ***)
 
@@ -1049,7 +1049,8 @@ let check_poly_decl_early ~poly ~with_obls sigma udecl terms =
   let () =
     if with_obls && not poly &&
        (not udecl.UState.polydecl_extensible_instance
-        || not udecl.UState.polydecl_extensible_univ_constraints)
+        || not udecl.UState.polydecl_extensible_univ_constraints
+        || not udecl.UState.polydecl_extensible_elim_constraints)
     then
       CErrors.user_err
         Pp.(str "Non extensible universe declaration not supported \
@@ -1074,7 +1075,7 @@ let merge_sort_context_set ?loc ?(sideff=false) rigid evd ctx' =
   {evd with universes = UState.merge_sort_context ?loc ~sideff rigid evd.universes ctx'}
 
 let merge_sort_variables ?loc ?(sideff=false) evd qs =
-  { evd with universes = UState.merge_sort_variables ?loc ~sideff evd.universes qs }
+  { evd with universes = UState.merge_sort_variables ?loc ~sideff evd.universes qs Quality.ElimConstraints.empty }
 
 let with_context_set ?loc rigid evd (a, uctx) =
   (merge_context_set ?loc rigid evd uctx, a)
@@ -1157,19 +1158,19 @@ let set_eq_sort evd s1 s2 =
   | None -> evd
   | Some (u1, u2) ->
     if not (UGraph.type_in_type (UState.ugraph evd.universes)) then
-      add_universe_constraints evd
+      add_constraints evd
         (UnivProblem.Set.singleton (UnivProblem.UEq (u1,u2)))
     else
       evd
 
 let set_eq_level d u1 u2 =
-  add_constraints d (Univ.enforce_eq_level u1 u2 Univ.UnivConstraints.empty)
+  add_univ_constraints d (Univ.enforce_eq_level u1 u2 Univ.UnivConstraints.empty)
 
 let set_leq_level d u1 u2 =
-  add_constraints d (Univ.enforce_leq_level u1 u2 Univ.UnivConstraints.empty)
+  add_univ_constraints d (Univ.enforce_leq_level u1 u2 Univ.UnivConstraints.empty)
 
 let set_eq_instances ?(flex=false) d u1 u2 =
-  add_universe_constraints d
+  add_constraints d
     (UnivProblem.enforce_eq_instances_univs flex u1 u2 UnivProblem.Set.empty)
 
 let set_leq_sort evd s1 s2 =
@@ -1179,15 +1180,15 @@ let set_leq_sort evd s1 s2 =
   | None -> evd
   | Some (u1, u2) ->
      if not (UGraph.type_in_type (UState.ugraph evd.universes)) then
-       add_universe_constraints evd @@
+       add_constraints evd @@
          UnivProblem.Set.singleton (UnivProblem.ULe (u1,u2))
      else evd
 
 let set_eq_qualities evd q1 q2 =
-  add_universe_constraints evd @@ UnivProblem.Set.singleton (QEq (q1, q2))
+  add_constraints evd @@ UnivProblem.Set.singleton (QEq (q1, q2))
 
 let set_elim_to_prop evd q =
-  add_universe_constraints evd @@
+  add_constraints evd @@
     UnivProblem.Set.singleton (QElimTo (q, Quality.qprop))
 
 let check_eq evd s s' =

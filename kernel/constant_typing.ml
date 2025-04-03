@@ -271,7 +271,7 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
     | Polymorphic _ ->
        assert (Int.equal valid_signatures 0);
        push_subgraph uctx env,
-       let private_univs = on_snd (subst_univs_level_constraints (snd usubst)) uctx in
+       let private_univs = on_snd (subst_univs_constraints usubst) uctx in
        Opaqueproof.PrivatePolymorphic private_univs
   in
   (* Note: non-trivial trusted side-effects only in monomorphic case *)

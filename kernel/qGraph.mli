@@ -39,6 +39,8 @@ val add_quality : Quality.t -> t -> t
     a constraint or calling [eliminates_to].
     Forces [Type] to eliminate to this quality. *)
 
+val merge : t -> t -> t
+
 val merge_constraints : Quality.ElimConstraints.t -> t -> t
 
 val check_constraint : t -> Quality.ElimConstraint.t -> bool

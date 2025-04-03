@@ -267,10 +267,10 @@ val is_defined : evar_map -> Evar.t-> bool
 val is_undefined : evar_map -> Evar.t-> bool
 (** Whether an evar is not defined in an evarmap. *)
 
-val add_constraints : evar_map -> Univ.UnivConstraints.t -> evar_map
+val add_univ_constraints : evar_map -> Univ.UnivConstraints.t -> evar_map
 (** Add universe constraints in an evar map. *)
 
-val add_quconstraints : evar_map -> Sorts.QUConstraints.t -> evar_map
+val add_poly_constraints : evar_map -> PolyConstraints.t -> evar_map
 
 val undefined_map : evar_map -> undefined evar_info Evar.Map.t
 (** Access the undefined evar mapping directly. *)
@@ -455,7 +455,7 @@ val pr_shelf : evar_map -> Pp.t
 
 exception UniversesDiffer
 
-val add_universe_constraints : evar_map -> UnivProblem.Set.t -> evar_map
+val add_constraints : evar_map -> UnivProblem.Set.t -> evar_map
 (** Add the given universe unification constraints to the evar map.
     @raise UniversesDiffer in case a first-order unification fails.
     @raise UniverseInconsistency .

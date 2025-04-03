@@ -464,7 +464,7 @@ let check_constraints (elim_csts,univ_csts) env =
     QGraph.check_constraints elim_csts env.env_qualities
 
 let add_universes ~strict ctx g =
-  let _qs, us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
+  let _, us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
   let g = Array.fold_left
       (fun g v -> UGraph.add_universe ~strict v g)
       g us
@@ -475,12 +475,13 @@ let set_qualities g env = {env with env_qualities = g}
 
 let map_qualities f env = set_qualities (f env.env_qualities) env
 
-let add_qualities qs g =
-  Array.fold_right QGraph.add_quality qs g
+let add_qualities ctx g =
+  let qs, _ = UVars.Instance.to_array (UVars.UContext.instance ctx) in
+  let g = Array.fold_right QGraph.add_quality qs g in
+  QGraph.merge_constraints (UVars.UContext.elim_constraints ctx) g
 
 let push_context ?(strict=false) ctx env =
-  let qs, _us = UVars.Instance.to_array (UVars.UContext.instance ctx) in
-  let env = map_qualities (add_qualities qs) env in
+  let env = map_qualities (add_qualities ctx) env in
   map_universes (add_universes ~strict ctx) env
 
 let add_universes_set ~strict ctx g =
