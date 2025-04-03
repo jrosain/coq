@@ -655,7 +655,7 @@ let push_section_context uctx senv =
   assert Quality.QVar.Set.(is_empty (inter qualities senv.qualities));
   (* push_context checks freshness *)
   { senv with
-    env = Environ.push_context ~strict:false uctx senv.env;
+    env = Environ.push_context ~strict:false QGraph.Internal uctx senv.env;
     univ = PolyConstraints.ContextSet.union ctx senv.univ ;
     qualities = Quality.QVar.Set.union qualities senv.qualities }
 

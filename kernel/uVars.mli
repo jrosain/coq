@@ -206,6 +206,7 @@ val map_univ_abstracted : ('a -> 'b) -> 'a univ_abstracted -> 'b univ_abstracted
 (** {6 Substitution} *)
 
 type universe_level_subst = Level.t Level.Map.t
+type sort_level_subst = Quality.t Quality.QVar.Map.t * universe_level_subst
 
 val empty_level_subst : universe_level_subst
 val is_empty_level_subst : universe_level_subst -> bool
@@ -213,20 +214,18 @@ val is_empty_level_subst : universe_level_subst -> bool
 (** Substitution of universes. *)
 val subst_univs_level_level : universe_level_subst -> Level.t -> Level.t
 val subst_univs_level_universe : universe_level_subst -> Universe.t -> Universe.t
-val subst_univs_level_constraints : universe_level_subst -> PolyConstraints.t -> PolyConstraints.t
+val subst_univs_constraints : sort_level_subst -> PolyConstraints.t -> PolyConstraints.t
 
 val pr_universe_level_subst : (Level.t -> Pp.t) -> universe_level_subst -> Pp.t
 
 val pr_quality_level_subst : (Quality.QVar.t -> Pp.t) -> Quality.t Quality.QVar.Map.t -> Pp.t
-
-type sort_level_subst = Quality.t Quality.QVar.Map.t * universe_level_subst
 
 val empty_sort_subst : sort_level_subst
 
 val is_empty_sort_subst : sort_level_subst -> bool
 
 val subst_univs_level_abstract_universe_context :
-  universe_level_subst -> AbstractContext.t -> AbstractContext.t
+  sort_level_subst -> AbstractContext.t -> AbstractContext.t
 
 (** There are no constraints on qualities, so this only needs a subst for univs *)
 
