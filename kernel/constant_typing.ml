@@ -103,7 +103,7 @@ let process_universes env = function
   | Entries.Polymorphic_entry uctx ->
     (** [ctx] must contain local universes, such that it has no impact
         on the rest of the graph (up to transitivity). *)
-    let env = Environ.push_context ~strict:false uctx env in
+    let env = Environ.push_context ~strict:false QGraph.Rigid uctx env in
     let inst, auctx = UVars.abstract_universes uctx in
     let usubst = UVars.make_instance_subst inst in
     env, usubst, inst, Polymorphic auctx
@@ -271,7 +271,7 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
     | Polymorphic _ ->
        assert (Int.equal valid_signatures 0);
        push_subgraph uctx env,
-       let private_univs = on_snd (subst_univs_level_constraints (snd usubst)) uctx in
+       let private_univs = on_snd (subst_univs_constraints usubst) uctx in
        Opaqueproof.PrivatePolymorphic private_univs
   in
   (* Note: non-trivial trusted side-effects only in monomorphic case *)

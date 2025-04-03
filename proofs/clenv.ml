@@ -133,14 +133,14 @@ let refresh_template_constraints ~metas env sigma ind c =
     let allargs = Array.map map allargs in
     let sigma, univs = Typing.get_template_parameters env sigma ind allargs in
     let cstrs, _, _ = Inductive.instantiate_template_universes mib univs in
-    Evd.add_constraints sigma (PolyConstraints.univs cstrs)
+    Evd.add_univ_constraints sigma (PolyConstraints.univs cstrs)
 
 let clenv_refresh env sigma ctx clenv =
   match ctx with
   | Some ctx ->
     let (subst, ctx) = UnivGen.fresh_sort_context_instance ctx in
     let emap c = Vars.subst_univs_level_constr subst c in
-    let sigma = Evd.merge_sort_context_set Evd.univ_flexible sigma ctx in
+    let sigma = Evd.merge_sort_context_set Evd.univ_flexible QGraph.Internal sigma ctx in
     (* Only metas are mentioning the old universes. *)
     mk_clausenv env sigma (Unification.Meta.map_metas emap clenv.metam) clenv.metas
       (emap clenv.templval)

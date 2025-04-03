@@ -267,10 +267,10 @@ val is_defined : evar_map -> Evar.t-> bool
 val is_undefined : evar_map -> Evar.t-> bool
 (** Whether an evar is not defined in an evarmap. *)
 
-val add_constraints : evar_map -> Univ.UnivConstraints.t -> evar_map
+val add_univ_constraints : evar_map -> Univ.UnivConstraints.t -> evar_map
 (** Add universe constraints in an evar map. *)
 
-val add_quconstraints : evar_map -> Sorts.QUConstraints.t -> evar_map
+val add_poly_constraints : QGraph.constraint_source -> evar_map -> PolyConstraints.t -> evar_map
 
 val undefined_map : evar_map -> undefined evar_info Evar.Map.t
 (** Access the undefined evar mapping directly. *)
@@ -455,7 +455,7 @@ val pr_shelf : evar_map -> Pp.t
 
 exception UniversesDiffer
 
-val add_universe_constraints : evar_map -> UnivProblem.Set.t -> evar_map
+val add_constraints : evar_map -> UnivProblem.Set.t -> evar_map
 (** Add the given universe unification constraints to the evar map.
     @raise UniversesDiffer in case a first-order unification fails.
     @raise UniverseInconsistency .
@@ -610,13 +610,13 @@ val set_universe_context : evar_map -> UState.t -> evar_map
 
 val merge_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> PolyConstraints.ContextSet.t -> evar_map
 
-val merge_sort_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> evar_map -> UnivGen.sort_context_set -> evar_map
+val merge_sort_context_set : ?loc:Loc.t -> ?sideff:bool -> rigid -> QGraph.constraint_source -> evar_map -> UnivGen.sort_context_set -> evar_map
 
 val merge_sort_variables : ?loc:Loc.t -> ?sideff:bool -> evar_map -> Quality.QVar.Set.t -> evar_map
 
 val with_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a PolyConstraints.in_poly_context_set -> evar_map * 'a
 
-val with_sort_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a UnivGen.in_sort_context_set -> evar_map * 'a
+val with_sort_context_set : ?loc:Loc.t -> rigid -> QGraph.constraint_source -> evar_map -> 'a UnivGen.in_sort_context_set -> evar_map * 'a
 
 val nf_univ_variables : evar_map -> evar_map
 

@@ -222,7 +222,7 @@ let fresh_universe_context_set_instance ctx =
           (Level.Set.add u' univs', Level.Map.add u u' subst))
       univs (Level.Set.empty, Level.Map.empty)
     in
-    let cst' = subst_univs_level_constraints subst cst in
+    let cst' = subst_univs_constraints (Quality.QVar.Map.empty,subst) cst in
       subst, (univs', cst')
 
 let fresh_sort_context_instance ((qs,us),csts) =

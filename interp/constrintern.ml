@@ -2959,7 +2959,7 @@ let interp_univ_constraints env evd cstrs =
   let interp (evd,cstrs) cstr =
     let cstr = interp_univ_constraint evd cstr in
     try
-      let evd = Evd.add_constraints evd (Univ.UnivConstraints.singleton cstr) in
+      let evd = Evd.add_univ_constraints evd (Univ.UnivConstraints.singleton cstr) in
       evd, Univ.UnivConstraints.add cstr cstrs
     with UGraph.UniverseInconsistency e as exn ->
       let _, info = Exninfo.capture exn in
@@ -2987,8 +2987,13 @@ let interp_elim_constraint evd (q1,k,q2) =
 let interp_elim_constraints env evd cstrs =
   let interp (evd,cstrs) cstr =
     let cstr = interp_elim_constraint evd cstr in
-    (* FIXME: update evd's QGraph with constraints *)
-    evd, Quality.ElimConstraints.add cstr cstrs
+    try let evd = Evd.add_poly_constraints QGraph.Rigid evd @@
+                    PolyConstraints.of_qualities (Quality.ElimConstraints.singleton cstr) in
+        evd, Quality.ElimConstraints.add cstr cstrs
+    with QGraph.EliminationError e as exn ->
+      let _, info = Exninfo.capture exn in
+      CErrors.user_err ~info @@
+        QGraph.explain_elimination_error (Termops.pr_evd_qvar evd) e
   in
   List.fold_left interp (evd, Quality.ElimConstraints.empty) cstrs
 

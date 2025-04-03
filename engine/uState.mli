@@ -120,21 +120,24 @@ val nf_relevance : t -> relevance -> relevance
 
 (** {5 UnivConstraints handling} *)
 
-val add_constraints : t -> Univ.UnivConstraints.t -> t
+val add_univ_constraints : t -> Univ.UnivConstraints.t -> t
 (**
   @raise UniversesDiffer when universes differ
 *)
 
-val add_universe_constraints : t -> UnivProblem.Set.t -> t
+val add_poly_constraints : QGraph.constraint_source -> t -> PolyConstraints.t -> t
+(**
+  @raise UniversesDiffer when universes differ
+*)
+
+val add_constraints : QGraph.constraint_source -> t -> UnivProblem.Set.t -> t
 (**
   @raise UniversesDiffer when universes differ
 *)
 
 val check_elim_constraints : t -> Quality.ElimConstraints.t -> bool
 
-val check_universe_constraints : t -> UnivProblem.Set.t -> bool
-
-val add_quconstraints : t -> QUConstraints.t -> t
+val check_constraints : t -> UnivProblem.Set.t -> bool
 
 (** {5 Names} *)
 
@@ -178,8 +181,8 @@ val univ_flexible : rigid
 val univ_flexible_alg : rigid
 
 val merge : ?loc:Loc.t -> sideff:bool -> rigid -> t -> PolyConstraints.ContextSet.t -> t
-val merge_sort_variables : ?loc:Loc.t -> sideff:bool -> t -> Quality.QVar.Set.t -> t
-val merge_sort_context : ?loc:Loc.t -> sideff:bool -> rigid -> t -> UnivGen.sort_context_set -> t
+val merge_sort_variables : ?loc:Loc.t -> sideff:bool -> t -> QGraph.constraint_source -> Quality.QVar.Set.t -> Quality.ElimConstraints.t -> t
+val merge_sort_context : ?loc:Loc.t -> sideff:bool -> rigid -> QGraph.constraint_source -> t -> UnivGen.sort_context_set -> t
 
 val demote_global_univs : PolyConstraints.ContextSet.t -> t -> t
 (** After declaring global universes, call this if you want to keep using the UState.
@@ -248,6 +251,8 @@ type poly_decl =
   (Quality.QVar.t list, Quality.ElimConstraints.t, Level.t list, Univ.UnivConstraints.t) gen_poly_decl
 
 val default_poly_decl : poly_decl
+
+val poly_decl_csts : poly_decl -> PolyConstraints.t
 
 (** [check_poly_decl ctx decl]
 
