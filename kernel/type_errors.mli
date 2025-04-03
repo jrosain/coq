@@ -74,6 +74,7 @@ type ('constr, 'types, 'r) ptype_error =
       int * (Name.t,'r) Context.pbinder_annot array * ('constr, 'types) punsafe_judgment array * 'types array
   | UnsatisfiedElimConstraints of Quality.ElimConstraints.t
   | UnsatisfiedUnivConstraints of UnivConstraints.t
+  | UnsatisfiedConstraints of PolyConstraints.t
   | UndeclaredQualities of Quality.QVar.Set.t
   | UndeclaredUniverses of Level.Set.t
   | DisallowedSProp
@@ -149,7 +150,9 @@ val error_ill_typed_rec_body  :
 
 val error_unsatisfied_elim_constraints : env -> Quality.ElimConstraints.t -> 'a
 
-val error_unsatisfied_constraints : env -> UnivConstraints.t -> 'a
+val error_unsatisfied_univ_constraints : env -> Univ.UnivConstraints.t -> 'a
+
+val error_unsatisfied_constraints : env -> PolyConstraints.t -> 'a
 
 val error_undeclared_qualities : env -> Quality.QVar.Set.t -> 'a
 

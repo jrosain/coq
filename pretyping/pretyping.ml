@@ -954,7 +954,7 @@ struct
     let sigma = !sigma in
     let bound = qbound, ubound in
     let csts = Inductive.instantiate_template_constraints bound csts in
-    let sigma = Evd.add_constraints sigma csts in
+    let sigma = Evd.add_constraints sigma (PolyConstraints.univs csts) in
     sigma, bound
 
   let template_sort boundus (s:Sorts.t) =

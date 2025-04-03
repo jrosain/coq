@@ -286,7 +286,9 @@ let instantiate_template_constraints subst templ =
     in
     List.fold_left fold accu (Univ.Universe.repr u)
   in
-  UnivConstraints.fold fold cstrs UnivConstraints.empty
+  let elim_csts = PolyConstraints.qualities cstrs in
+  PolyConstraints.make elim_csts @@
+    UnivConstraints.fold fold (PolyConstraints.univs cstrs) UnivConstraints.empty
 
 let instantiate_template_universes mib args =
   let templ = match mib.mind_template with

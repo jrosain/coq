@@ -258,7 +258,7 @@ let check_record data =
    We also forbid strict bounds from above because they lead
    to problems when instantiated with algebraic universes
    (template_u < v can become w+1 < v which we cannot yet handle). *)
-let check_unbounded_from_below (univs,csts) =
+let check_unbounded_from_below (univs,(_,csts)) =
   Univ.UnivConstraints.iter (fun (l,d,r) ->
       let bad = match d with
         | UnivConstraint.Eq | UnivConstraint.Lt ->

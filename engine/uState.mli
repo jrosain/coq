@@ -17,7 +17,7 @@ open Univ
 open Sorts
 
 type universes_entry =
-| Monomorphic_entry of Univ.ContextSet.t
+| Monomorphic_entry of PolyConstraints.ContextSet.t
 | Polymorphic_entry of UVars.UContext.t
 
 exception UniversesDiffer
@@ -57,7 +57,7 @@ val union : t -> t -> t
 
 (** {5 Projections and other destructors} *)
 
-val context_set : t -> Univ.ContextSet.t
+val context_set : t -> PolyConstraints.ContextSet.t
 (** The local context of the state, i.e. a set of bound variables together
     with their associated constraints. *)
 
@@ -84,7 +84,7 @@ val is_algebraic : Level.t -> t -> bool
 (** Can this universe be instantiated with an algebraic
     universe (ie it appears in inferred types only). *)
 
-val constraints : t -> Univ.UnivConstraints.t
+val constraints : t -> PolyConstraints.t
 (** Shorthand for {!context_set} composed with {!ContextSet.constraints}. *)
 
 val context : t -> UVars.UContext.t
@@ -154,7 +154,7 @@ val name_level : Univ.Level.t -> Id.t -> t -> t
    the universes in [keep]. The constraints [csts] are adjusted so
    that transitive constraints between remaining universes (those in
    [keep] and those not in [univs]) are preserved. *)
-val restrict_universe_context : ContextSet.t -> Level.Set.t -> ContextSet.t
+val restrict_universe_context : PolyConstraints.ContextSet.t -> Level.Set.t -> PolyConstraints.ContextSet.t
 
 (** [restrict uctx ctx] restricts the local universes of [uctx] to
    [ctx] extended by local named universes and side effect universes
@@ -177,11 +177,11 @@ val univ_rigid : rigid
 val univ_flexible : rigid
 val univ_flexible_alg : rigid
 
-val merge : ?loc:Loc.t -> sideff:bool -> rigid -> t -> Univ.ContextSet.t -> t
+val merge : ?loc:Loc.t -> sideff:bool -> rigid -> t -> PolyConstraints.ContextSet.t -> t
 val merge_sort_variables : ?loc:Loc.t -> sideff:bool -> t -> Quality.QVar.Set.t -> t
 val merge_sort_context : ?loc:Loc.t -> sideff:bool -> rigid -> t -> UnivGen.sort_context_set -> t
 
-val demote_global_univs : Univ.ContextSet.t -> t -> t
+val demote_global_univs : PolyConstraints.ContextSet.t -> t -> t
 (** After declaring global universes, call this if you want to keep using the UState.
 
     Removes from the uctx_local part of the UState the universes
@@ -265,9 +265,9 @@ val check_poly_decl : poly:bool -> t -> poly_decl -> named_universes_entry
 val check_poly_decl_rev : t -> poly_decl -> t * UVars.UContext.t
 val check_uctx_impl : fail:(Pp.t -> unit) -> t -> t -> unit
 
-val check_mono_poly_decl : t -> poly_decl -> Univ.ContextSet.t
+val check_mono_poly_decl : t -> poly_decl -> PolyConstraints.ContextSet.t
 
-val check_template_poly_decl : t -> template_qvars:Quality.QVar.Set.t -> poly_decl -> Univ.ContextSet.t
+val check_template_poly_decl : t -> template_qvars:Quality.QVar.Set.t -> poly_decl -> PolyConstraints.ContextSet.t
 
 (** {5 TODO: Document me} *)
 

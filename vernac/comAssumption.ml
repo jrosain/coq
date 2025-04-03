@@ -101,7 +101,7 @@ let interp_assumption ~program_mode env sigma impl_env bl c =
   sigma, ty, impls1@impls2
 
 let empty_poly_univ_entry = UState.Polymorphic_entry UVars.UContext.empty, UnivNames.empty_binders
-let empty_mono_univ_entry = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders
+let empty_mono_univ_entry = UState.Monomorphic_entry PolyConstraints.ContextSet.empty, UnivNames.empty_binders
 let empty_univ_entry poly = if poly then empty_poly_univ_entry else empty_mono_univ_entry
 
 let clear_univs scope univ =

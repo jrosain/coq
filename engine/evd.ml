@@ -1140,7 +1140,7 @@ let is_eq_sort s1 s2 =
 let universe_rigidity evd l =
   let uctx = evd.universes in
   (* XXX why are we considering all locals to be flexible here? *)
-  if Univ.Level.Set.mem l (Univ.ContextSet.levels (UState.context_set uctx)) then
+  if Univ.Level.Set.mem l (PolyConstraints.ContextSet.levels (UState.context_set uctx)) then
     UnivFlexible (UState.is_algebraic l uctx)
   else UnivRigid
 

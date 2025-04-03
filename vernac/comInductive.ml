@@ -480,8 +480,8 @@ let template_polymorphic_univs sigma ~params ~arity ~constructors =
         | NonLinear -> false
         | Linear _ ->
           assert (not @@ Univ.Level.is_set u);
-          Univ.Level.Set.mem u (Univ.ContextSet.levels uctx) &&
-          unbounded_from_below u (Univ.ContextSet.constraints uctx) &&
+          Univ.Level.Set.mem u (PolyConstraints.ContextSet.levels uctx) &&
+          unbounded_from_below u (PolyConstraints.ContextSet.univ_constraints uctx) &&
           not (Univ.Level.Set.mem u non_template_levels))
       paramslevels
   in
@@ -496,14 +496,14 @@ let template_polymorphic_univs sigma ~params ~arity ~constructors =
   let template_univs = Univ.Level.Map.domain template_univs in
   pseudo_sort_poly, template_univs
 
-let split_universe_context subset (univs, csts) =
+let split_universe_context subset (univs, (elim_csts,univ_csts)) =
   let rem = Univ.Level.Set.diff univs subset in
   let subfilter (l, _, r) =
     let () = assert (not @@ Univ.Level.Set.mem r subset) in
     Univ.Level.Set.mem l subset
   in
-  let subcst, remcst = Univ.UnivConstraints.partition subfilter csts in
-  (subset, subcst), (rem, remcst)
+  let subcst, remcst = Univ.UnivConstraints.partition subfilter univ_csts in
+  (subset, PolyConstraints.of_univs subcst), (rem, (elim_csts,remcst))
 
 let warn_no_template_universe =
   CWarnings.create ~name:"no-template-universe"
@@ -517,7 +517,7 @@ let nontemplate_univ_entry ~poly sigma udecl =
   let sigma = Evd.collapse_sort_variables sigma in
   let uentry, _ as ubinders = Evd.check_poly_decl ~poly sigma udecl in
   let uentry, global = match uentry with
-    | UState.Polymorphic_entry uctx -> Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+    | UState.Polymorphic_entry uctx -> Polymorphic_ind_entry uctx, PolyConstraints.ContextSet.empty
     | UState.Monomorphic_entry uctx -> Monomorphic_ind_entry, uctx
   in
   sigma, uentry, ubinders, global
@@ -891,7 +891,7 @@ type t = {
   nuparams : int option;
   univ_binders : UState.named_universes_entry;
   implicits : DeclareInd.one_inductive_impls list;
-  uctx : Univ.ContextSet.t;
+  uctx : PolyConstraints.ContextSet.t;
   where_notations : Metasyntax.notation_interpretation_decl list;
   coercions : Libnames.qualid list;
   indlocs : DeclareInd.indlocs;
