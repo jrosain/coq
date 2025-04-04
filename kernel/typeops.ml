@@ -509,8 +509,8 @@ let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
   (* We use l2r:true for compat with old versions which used CONV with arguments
      flipped. It is relevant for performance eg in bedrock / Kami. *)
   let qcst, ucst = match mib.mind_variance with
-  | None -> UVars.enforce_eq_instances u u' Sorts.QUConstraints.empty
-  | Some variance -> UVars.enforce_leq_variance_instances variance u' u Sorts.QUConstraints.empty
+  | None -> UVars.enforce_eq_instances u u' PolyConstraints.empty
+  | Some variance -> UVars.enforce_leq_variance_instances variance u' u PolyConstraints.empty
   in
   let () = check_constraints (qcst,ucst) env in
   let subst = Vars.subst_of_rel_context_instance_list pctx (realargs @ [c]) in

@@ -1218,12 +1218,12 @@ let checked_sort_cmp_universes _env pb s0 s1 univs =
 
 let check_convert_instances ~flex:_ u u' univs =
   let csts = UVars.enforce_eq_instances u u' (Quality.ElimConstraints.empty,UnivConstraints.empty) in
-  if Evd.check_quconstraints univs csts then Result.Ok univs else Result.Error None
+  if Evd.check_constraints univs csts then Result.Ok univs else Result.Error None
 
 (* general conversion and inference functions *)
 let check_inductive_instances cv_pb variance u1 u2 univs =
   let csts = get_cumulativity_constraints cv_pb variance u1 u2 in
-  if (Evd.check_quconstraints univs csts) then Result.Ok univs
+  if (Evd.check_constraints univs csts) then Result.Ok univs
   else Result.Error None
 
 let checked_universes =
@@ -1708,7 +1708,7 @@ let infer_convert_instances ~flex u u' (univs,elims,cstrs as cuniv) =
     if UGraph.check_eq_instances univs u u' then Result.Ok cuniv
     else Result.Error None
   else
-    let qcstrs, cstrs' = UVars.enforce_eq_instances u u' Sorts.QUConstraints.empty in
+    let qcstrs, cstrs' = UVars.enforce_eq_instances u u' PolyConstraints.empty in
     if QGraph.check_constraints qcstrs elims then
       Result.Ok (univs, elims, UnivConstraints.union cstrs cstrs')
     else
