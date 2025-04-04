@@ -223,12 +223,3 @@ let enforce_elim_to_quality a b csts =
   else match a, b with
     | Quality.(QConstant QProp), Quality.(QConstant QType) -> csts
     | _ -> ElimConstraints.add (a,ElimConstraint.ElimTo,b) csts
-
-module QUConstraints = struct
-  type t = ElimConstraints.t * Univ.UnivConstraints.t
-
-  let empty = ElimConstraints.empty, Univ.UnivConstraints.empty
-
-  let union (qcsts,ucsts) (qcsts',ucsts') =
-    ElimConstraints.union qcsts qcsts', UnivConstraints.union ucsts ucsts'
-end
