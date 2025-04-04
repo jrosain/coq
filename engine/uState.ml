@@ -1175,7 +1175,9 @@ let merge_sort_variables ?loc ~sideff uctx qvars csts =
     let qrev = QVar.Set.fold fold qvars (fst (snd uctx.names)) in
     (fst uctx.names, (qrev, snd (snd uctx.names)))
   in
-  let sort_variables = QState.merge_constraints csts sort_variables in
+  let g = QState.elims sort_variables in
+  let g = merge_elim_constraints uctx csts g in
+  let sort_variables = QState.set_elims g sort_variables in
   { uctx with sort_variables; names }
 
 let merge_sort_context ?loc ~sideff rigid uctx ((qvars,levels),csts) =

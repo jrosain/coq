@@ -286,11 +286,11 @@ let explain_elim_arity env sigma ind c okinds =
         let ppt = ppt ~ppunivs:true () in
         hov 0
           (str "the return type has sort" ++ spc () ++ ppt ++ spc () ++
-           str "while it should be in sort quality " ++ pr_evd_qvar sigma squashq ++ str ".") ++
+           str "while it should be in a sort " ++ pr_evd_qvar sigma squashq ++ str " eliminates to.") ++
         fnl () ++
         hov 0
           (str "Elimination of a sort polymorphic inductive object instantiated to a variable sort quality" ++ spc() ++
-           str "is only allowed on a predicate in the same sort quality.")
+           str "is only allowed on itself or with an explicit elimination constraint to the target sort.")
   in
   hov 0 (
     str "Incorrect elimination" ++
@@ -1677,7 +1677,11 @@ let rec vernac_interp_error_handler = function
     UGraph.explain_universe_inconsistency
       Quality.QVar.raw_pr
       UnivNames.pr_level_with_global_universes
-      i ++ str "."
+                  i ++ str "."
+  | QGraph.QualityInconsistency i ->
+     str "Quality inconsistency." ++ spc() ++
+     QGraph.explain_quality_inconsistency
+       Quality.QVar.raw_pr i
   | TypeError(env,te) ->
     let te = of_type_error te in
     explain_type_error env (Evd.from_env env) te
