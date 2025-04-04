@@ -84,12 +84,12 @@ end
 val eq_sizes : int * int -> int * int -> bool
 (** Convenient function to compare the result of Instance.length, UContext.size etc *)
 
-type 'a quconstraint_function = 'a -> 'a -> Sorts.QUConstraints.t -> Sorts.QUConstraints.t
+type 'a poly_constraint_function = 'a -> 'a -> PolyConstraints.t -> PolyConstraints.t
 
-val enforce_eq_instances : Instance.t quconstraint_function
+val enforce_eq_instances : Instance.t poly_constraint_function
 
-val enforce_eq_variance_instances : Variance.t array -> Instance.t quconstraint_function
-val enforce_leq_variance_instances : Variance.t array -> Instance.t quconstraint_function
+val enforce_eq_variance_instances : Variance.t array -> Instance.t poly_constraint_function
+val enforce_leq_variance_instances : Variance.t array -> Instance.t poly_constraint_function
 
 type 'a puniverses = 'a * Instance.t
 val out_punivs : 'a puniverses -> 'a

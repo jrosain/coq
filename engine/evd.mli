@@ -579,9 +579,9 @@ val set_elim_to_prop : evar_map -> Quality.t -> evar_map
 val check_eq : evar_map -> esorts -> esorts -> bool
 val check_leq : evar_map -> esorts -> esorts -> bool
 
-val check_constraints : evar_map -> Univ.UnivConstraints.t -> bool
+val check_univ_constraints : evar_map -> Univ.UnivConstraints.t -> bool
 val check_elim_constraints : evar_map -> Quality.ElimConstraints.t -> bool
-val check_quconstraints : evar_map -> Sorts.QUConstraints.t -> bool
+val check_constraints : evar_map -> PolyConstraints.t -> bool
 
 val ustate : evar_map -> UState.t
 val elim_graph : evar_map -> QGraph.t
