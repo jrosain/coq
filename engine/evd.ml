@@ -1203,14 +1203,14 @@ let check_leq evd s s' =
   let univs = UState.ugraph ustate in
   UGraph.check_leq_sort quals univs (UState.nf_sort ustate s) (UState.nf_sort ustate s')
 
-let check_constraints evd csts =
+let check_univ_constraints evd csts =
   UGraph.check_constraints csts (UState.ugraph evd.universes)
 
 let check_elim_constraints evd csts =
   UState.check_elim_constraints evd.universes csts
 
-let check_quconstraints evd (qcsts,ucsts) =
-  check_elim_constraints evd qcsts && check_constraints evd ucsts
+let check_constraints evd (qcsts,ucsts) =
+  check_elim_constraints evd qcsts && check_univ_constraints evd ucsts
 
 let fix_undefined_variables evd =
   { evd with universes = UState.fix_undefined_variables evd.universes }
