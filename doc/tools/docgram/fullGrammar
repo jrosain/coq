@@ -38,6 +38,13 @@ sort_quality_or_set: [
 | "Type"
 ]
 
+sort_quality_var: [
+| "Prop"
+| "SProp"
+| "Type"
+| reference
+]
+
 universe_increment: [
 | "+" natural
 |
@@ -897,7 +904,7 @@ gallina: [
 | "Universes" LIST1 identref
 | "Sort" LIST1 identref
 | "Sorts" LIST1 identref
-| "Constraint" LIST1 univ_constraint SEP ","
+| "Constraint" LIST1 poly_constraint SEP ","
 | "Rewrite" "Rule" identref ":=" OPT "|" LIST1 rewrite_rule SEP "|"
 | "Rewrite" "Rules" identref ":=" OPT "|" LIST1 rewrite_rule SEP "|"
 ]
@@ -944,18 +951,19 @@ inline: [
 |
 ]
 
-univ_constraint: [
-| universe_name [ "<" | "=" | "<=" ] universe_name
+poly_constraint: [
+| test_univ_cst universe_name [ "<" | "=" | "<=" ] universe_name
+| sort_quality_var "~>" sort_quality_var
 ]
 
-univ_decl_constraints: [
-| "|" LIST0 univ_constraint SEP "," [ "+" | ] "}"
+poly_decl_constraints: [
+| "|" LIST0 poly_constraint SEP "," [ "+" | ] "}"
 | [ "}" | bar_cbrace ]
 ]
 
-univ_decl: [
-| "@{" test_univ_decl LIST0 identref "|" LIST0 identref [ "+" | ] univ_decl_constraints
-| "@{" LIST0 identref [ "+" | ] univ_decl_constraints
+poly_decl: [
+| "@{" test_poly_decl LIST0 identref "|" LIST0 identref [ "+" | ] poly_decl_constraints
+| "@{" LIST0 identref [ "+" | ] poly_decl_constraints
 ]
 
 variance: [
@@ -969,17 +977,17 @@ variance_identref: [
 | test_variance_ident variance identref
 ]
 
-cumul_univ_decl: [
-| "@{" test_cumul_univ_decl LIST0 identref "|" LIST0 variance_identref [ "+" | ] univ_decl_constraints
-| "@{" LIST0 variance_identref [ "+" | ] univ_decl_constraints
+cumul_poly_decl: [
+| "@{" test_cumul_poly_decl LIST0 identref "|" LIST0 variance_identref [ "+" | ] poly_decl_constraints
+| "@{" LIST0 variance_identref [ "+" | ] poly_decl_constraints
 ]
 
 ident_decl: [
-| identref OPT univ_decl
+| identref OPT poly_decl
 ]
 
 cumul_ident_decl: [
-| identref OPT cumul_univ_decl
+| identref OPT cumul_poly_decl
 ]
 
 inductive_token: [
@@ -1059,7 +1067,7 @@ rw_pattern: [
 ]
 
 rewrite_rule: [
-| OPT [ univ_decl "|-" ] rw_pattern "=>" lconstr
+| OPT [ poly_decl "|-" ] rw_pattern "=>" lconstr
 ]
 
 scheme: [
@@ -1151,9 +1159,9 @@ gallina_ext: [
 | "Transparent" OPT "!" LIST1 smart_global
 | "Opaque" OPT "!" LIST1 smart_global
 | "Strategy" LIST1 [ strategy_level "[" LIST1 smart_global "]" ]
-| "Canonical" OPT "Structure" global OPT [ OPT univ_decl def_body ]
+| "Canonical" OPT "Structure" global OPT [ OPT poly_decl def_body ]
 | "Canonical" OPT "Structure" by_notation
-| "Coercion" global OPT [ OPT univ_decl def_body ]
+| "Coercion" global OPT [ OPT poly_decl def_body ]
 | "Identity" "Coercion" identref ":" coercion_class ">->" coercion_class
 | "Coercion" global ":" coercion_class ">->" coercion_class
 | "Coercion" by_notation ":" coercion_class ">->" coercion_class
@@ -1251,7 +1259,7 @@ module_expr_atom: [
 ]
 
 with_declaration: [
-| "Definition" fullyqualid OPT univ_decl ":=" Constr.lconstr
+| "Definition" fullyqualid OPT poly_decl ":=" Constr.lconstr
 | "Module" fullyqualid ":=" qualid
 ]
 
