@@ -112,11 +112,13 @@ let v_blk = Valexpr.make_block
 let of_relevance = function
   | Sorts.Relevant -> ValInt 0
   | Sorts.Irrelevant -> ValInt 1
+  | Sorts.CIrrelevant -> ValInt 2
   | Sorts.RelevanceVar q -> ValBlk (0, [|of_qvar q|])
 
 let to_relevance = function
   | ValInt 0 -> Sorts.Relevant
   | ValInt 1 -> Sorts.Irrelevant
+  | ValInt 2 -> Sorts.CIrrelevant
   | ValBlk (0, [|qvar|]) ->
     let qvar = to_qvar qvar in
     Sorts.RelevanceVar qvar

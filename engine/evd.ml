@@ -844,7 +844,7 @@ let mkLEvar sigma (evk, args) =
 let is_relevance_irrelevant sigma r =
   match UState.nf_relevance sigma.universes r with
   | Irrelevant -> true
-  | Relevant | RelevanceVar _ -> false
+  | Relevant | CIrrelevant | RelevanceVar _ -> false
 
 let evar_handler sigma =
   let evar_expand ev = existential_expand_value0 sigma ev in

@@ -182,12 +182,15 @@ let pr_sort_name_expr = function
   | CSProp -> str "SProp"
   | CProp -> str "Prop"
   | CSet -> str "Set"
+  | CGhost s -> str "Ghost" ++ Univ.Level.raw_pr s
   | CType qid -> pr_qualid qid
   | CRawType s -> Univ.Level.raw_pr s
 
 let pr_univ_level_expr = function
   | UNamed s -> tag_type (pr_sort_name_expr s)
-  | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
+  | UAnonymous {ghost;rigid=UnivRigid} ->
+     tag_type (if ghost then str "Ghost"
+               else str "Type")
   | UAnonymous {rigid=UnivFlexible b} -> assert (not b); tag_type (str "_")
 
 let pr_univ_expr (u,n) =
@@ -197,7 +200,9 @@ let pr_univ l =
   match l with
   | UNamed [x] -> pr_univ_expr x
   | UNamed l -> str"max(" ++ prlist_with_sep (fun () -> str",") pr_univ_expr l ++ str")"
-  | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
+  | UAnonymous {ghost;rigid=UnivRigid} ->
+     tag_type (if ghost then str "Ghost"
+               else str "Type")
   | UAnonymous {rigid=UnivFlexible _} -> tag_type (str "_")
 
 let pr_qvar_expr = function
@@ -208,6 +213,7 @@ let pr_qvar_expr = function
 let pr_relevance = function
   | CRelevant -> str "Relevant"
   | CIrrelevant -> str "Irrelevant"
+  | CCIrrelevant -> str "CIrrelevant"
   | CRelevanceVar q -> pr_qvar_expr q
 
 let pr_relevance_info = function
@@ -228,8 +234,10 @@ let pr_sort_expr : sort_expr -> Pp.t = function
   | None, UNamed [CSProp, 0] -> tag_type (str "SProp")
   | None, UNamed [CProp, 0] -> tag_type (str "Prop")
   | None, UNamed [CSet, 0] -> tag_type (str "Set")
-  | None, UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
-  | u -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_quality_univ u)
+  | None, UAnonymous {ghost : bool;rigid=UnivRigid} ->
+     tag_type (if ghost then str "Ghost"
+               else str "Type")
+  | u -> hov 0 (tag_type (str "Type/Ghost") ++ pr_univ_annot pr_quality_univ u)
 
 let pr_qualid sp =
   let (sl, id) = repr_qualid sp in

@@ -91,7 +91,7 @@ let check_quality_mask env qmask lincheck =
   let open Quality in
   match qmask with
   | PQConstant QSProp -> if Environ.sprop_allowed env then lincheck else Type_errors.error_disallowed_sprop env
-  | PQConstant (QProp | QType) -> lincheck
+  | PQConstant (QProp | QGhost | QType) -> lincheck
   | PQVar qio -> Partial_subst.maybe_add_quality qio () lincheck
 
 let check_instance_mask env udecl umask lincheck =

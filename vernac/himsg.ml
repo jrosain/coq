@@ -256,11 +256,12 @@ let explain_elim_arity env sigma ind c okinds =
            str "is not allowed on a predicate in sort " ++ ppt ++ fnl () ++
            str "because" ++ spc () ++
            str "strong elimination on non-small inductive types leads to paradoxes.")
-      | SquashToQuality (QConstant (QSProp | QProp as squashq)) ->
+      | SquashToQuality (QConstant (QSProp | QProp | QGhost as squashq)) ->
         let ppt = ppt () in
         let inds, sorts, explain = match squashq with
           | QSProp -> "SProp", "SProp", "strict proofs can be eliminated only to build strict proofs"
           | QProp -> "Prop", "SProp or Prop", "proofs can be eliminated only to build proofs"
+          | QGhost -> "Ghost", "Ghost", "ghost content can only be eliminated to produce ghost content"
           | QType -> assert false
         in
         hov 0
@@ -901,6 +902,7 @@ let pr_relevance sigma r =
   match r with
   | Sorts.Relevant -> str "relevant"
   | Sorts.Irrelevant -> str "irrelevant"
+  | Sorts.CIrrelevant -> str "computationally irrelevant"
   | Sorts.RelevanceVar q -> str "a variable " ++ (* TODO names *) Quality.QVar.raw_pr q
 
 let pr_binder env sigma = function

@@ -325,7 +325,7 @@ let is_impredicative_set env = env.env_typing_flags.impredicative_set
 let is_impredicative_sort env = function
   | Sorts.SProp | Sorts.Prop -> true
   | Sorts.Set -> is_impredicative_set env
-  | Sorts.Type _ | Sorts.QSort _ -> false
+  | Sorts.Ghost _ | Sorts.Type _ | Sorts.QSort _ -> false
 
 let type_in_type env = not (typing_flags env).check_universes
 let deactivated_guard env = not (typing_flags env).check_guarded

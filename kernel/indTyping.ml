@@ -95,7 +95,7 @@ let compute_elim_squash ?(is_real_arg=false) env u info =
     else match info.record_arg_info with
       | HasRelevantArg -> info
       | NoRelevantArg -> match u with
-        | Sorts.SProp -> info
+        | Sorts.SProp | Sorts.Ghost _ -> info
         | QSort (q,_) ->
            if Environ.Internal.eliminates_to_prop env q
               || equal (QVar q) (Sorts.quality info.ind_univ)
@@ -429,7 +429,7 @@ let get_template (mie:mutual_inductive_entry) = match mie.mind_entry_universes w
       (* typechecking will fail with "unbound qvar" if the quality isn't in template_qvars *)
       check_no_increment ~template_univs u;
       ()
-    | Type u ->
+    | Type u | Ghost u ->
       check_no_increment ~template_univs u;
       ()
     in

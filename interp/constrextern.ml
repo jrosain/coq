@@ -871,6 +871,7 @@ let extern_glob_sort_name uvars = function
   | GSProp -> CSProp
   | GProp -> CProp
   | GSet -> CSet
+  | GGhost u -> CGhost u
   | GLocalUniv u -> CType (qualid_of_lident u)
   | GRawUniv u -> CRawType u
   | GUniv u -> begin match UnivNames.qualid_of_level uvars u with
@@ -887,6 +888,7 @@ let extern_glob_qvar = function
 let extern_relevance = function
   | GRelevant -> CRelevant
   | GIrrelevant -> CIrrelevant
+  | GCIrrelevant -> CCIrrelevant
   | GRelevanceVar q -> CRelevanceVar (extern_glob_qvar q)
 
 let extern_relevance_info = Option.map extern_relevance
@@ -904,11 +906,16 @@ let extern_glob_sort uvars (s:glob_sort) =
   let really_extern = !print_universes || Option.has_some (fst s) || match snd s with
     | UNamed [s, 0] -> begin match s with
         | GSet | GProp | GSProp -> true
-        | GUniv _ | GLocalUniv _ | GRawUniv _ -> false
+        | GGhost _ | GUniv _ | GLocalUniv _ | GRawUniv _ -> false
       end
     | _ -> false
   in
+  let is_ghost = match snd s with
+    | UAnonymous {ghost;rigid} -> ghost
+    | _ -> false
+  in
   if really_extern then extern_glob_sort uvars s
+  else if is_ghost then Constrexpr_ops.expr_Ghost_sort
   else Constrexpr_ops.expr_Type_sort
 
 let extern_instance uvars = function
@@ -1610,6 +1617,7 @@ let rec glob_of_pat
           Array.map (fun (_,bd,_) -> bd) v)
   | PSort (Qual (QConstant QSProp)) -> GSort Glob_ops.glob_SProp_sort
   | PSort (Qual (QConstant QProp)) -> GSort Glob_ops.glob_Prop_sort
+  | PSort (Qual (QConstant QGhost)) -> GSort Glob_ops.glob_Ghost_sort
   | PSort (Qual (QConstant QType | QVar _)) -> GSort Glob_ops.glob_Type_sort
   | PSort Set -> GSort Glob_ops.glob_Set_sort
   | PInt i -> GInt i

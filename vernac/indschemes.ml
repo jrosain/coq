@@ -227,6 +227,7 @@ let declare_one_induction_scheme ?loc ind =
     then kelim
     else List.filter (fun s -> not (UnivGen.QualityOrSet.is_sprop s)) kelim
   in
+  let kelim = List.filter (fun s -> not (UnivGen.QualityOrSet.is_ghost s)) kelim in
   let elims =
     List.filter (fun (sort,_) -> List.mem_f UnivGen.QualityOrSet.equal sort kelim)
       (* NB: the order is important, it makes it so that _rec is
@@ -420,7 +421,7 @@ let do_mutual_induction_scheme ?(force_mutual=false) env ?(isrec=true) l =
       else match sort with
         | Qual (QConstant QType) -> Some (if dep then case_dep else case_nodep)
         | Qual (QConstant QProp) -> Some (if dep then casep_dep else casep_nodep)
-        | Set | Qual (QConstant QSProp | QVar _) ->
+        | Set | Qual (QConstant QSProp | QConstant QGhost | QVar _) ->
           (* currently we don't have standard scheme kinds for this *)
           None
     in

@@ -688,6 +688,7 @@ let rec glob_of_token token_kind ?loc env sigma c = match TokenValue.kind c with
   | TSort Sorts.Prop -> DAst.make ?loc (Glob_term.GSort Glob_ops.glob_Prop_sort)
   | TSort Sorts.Set -> DAst.make ?loc (Glob_term.GSort Glob_ops.glob_Set_sort)
   | TSort (Sorts.Type _ | Sorts.QSort _) -> DAst.make ?loc (Glob_term.GSort Glob_ops.glob_Type_sort)
+  | TSort (Sorts.Ghost _) -> DAst.make ?loc (Glob_term.GSort Glob_ops.glob_Ghost_sort)
   | TOther ->
     let c = TokenValue.repr c in
     Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedTerm c))

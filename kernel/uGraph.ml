@@ -275,6 +275,7 @@ let explain_universe_inconsistency default_prq default_prl (printers, (o,u,v,p) 
   | Sorts.Prop -> str "Prop"
   | Sorts.SProp -> str "SProp"
   | Sorts.Type u -> Universe.pr prl u
+  | Sorts.Ghost u -> Universe.pr prl u
   | Sorts.QSort (q, u) -> str "Type@{" ++ prq q ++ str " | " ++ Universe.pr prl u ++ str"}"
   in
   let pr_rel = function

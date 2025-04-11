@@ -16,6 +16,7 @@ open Libnames
 (** Universes *)
 type sort_name_expr =
   | CSProp | CProp | CSet
+  | CGhost of Univ.Level.t
   | CType of qualid
   | CRawType of Univ.Level.t (** Universes like "foo.1" have no qualid form *)
 
@@ -31,7 +32,7 @@ type quality_expr =
   | CQualVar of qvar_expr
 
 type relevance_expr =
-  | CRelevant | CIrrelevant
+  | CRelevant | CIrrelevant | CCIrrelevant
   | CRelevanceVar of qvar_expr
 
 type relevance_info_expr = relevance_expr option

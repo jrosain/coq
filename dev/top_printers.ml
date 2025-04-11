@@ -275,6 +275,7 @@ let ppesorts s = pp (Sorts.debug_print (Evd.MiniEConstr.ESorts.unsafe_to_sorts s
 let pprelevance (r:Sorts.relevance) = match r with
   | Relevant -> pp (str "Relevant")
   | Irrelevant -> pp (str "Irrelevant")
+  | CIrrelevant -> pp (str "CIrrelevant")
   | RelevanceVar q -> pp (surround (str "RelevanceVar " ++ spc() ++ Quality.QVar.raw_pr q))
 let pperelevance r = pprelevance (EConstr.Unsafe.to_relevance r)
 
@@ -417,6 +418,8 @@ let constr_display csr =
     | Prop -> "Prop"
     | Type u -> univ_display u;
         "Type("^(string_of_int !cnt)^")"
+    | Ghost u -> univ_display u;
+        "Ghost("^(string_of_int !cnt)^")"
     | QSort (q, u) -> univ_display u; Printf.sprintf "QSort(%s, %i)" (Quality.QVar.to_string q) !cnt
 
   and universes_display l =
@@ -579,6 +582,8 @@ let print_pure_constr csr =
     | Prop -> print_string "Prop"
     | Type u -> open_hbox();
         print_string "Type("; pp (Universe.raw_pr u); print_string ")"; close_box()
+    | Ghost u -> open_hbox();
+        print_string "Ghost("; pp (Universe.raw_pr u); print_string ")"; close_box()
     | QSort (q, u) -> open_hbox();
         print_string "QSort("; pp (Quality.QVar.raw_pr q); print_string ", "; pp (Universe.raw_pr u); print_string ")"; close_box()
 

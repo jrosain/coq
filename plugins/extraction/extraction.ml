@@ -71,7 +71,7 @@ type flag = info * scheme
   Really important function. *)
 
 let info_of_quality = let open Quality in function
-  | QConstant (QSProp | QProp) -> Logic
+  | QConstant (QSProp | QProp | QGhost) -> Logic
   | QConstant QType | Quality.QVar _ -> Info
 
 let info_of_sort s = info_of_quality (Sorts.quality s)
@@ -249,7 +249,7 @@ let check_sort_poly sigma gr u =
   let qs, _ = UVars.Instance.to_array u in
   if Array.exists (function
       | Quality.QConstant (QSProp|QProp) -> true
-      | QConstant QType | Quality.QVar _ -> false)
+      | QConstant (QType|QGhost) | Quality.QVar _ -> false)
       qs
   then CErrors.user_err
       Pp.(str "Cannot extract nontrivial sort polymorphism" ++ spc()

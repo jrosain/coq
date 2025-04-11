@@ -727,6 +727,7 @@ let elimination_suffix =
   | Qual (QConstant QProp) -> "_ind"
   | Qual (QConstant QType) -> "_rect"
   | Qual (QVar _) -> "_elim"
+  | Qual (QConstant QGhost) -> assert false
   | Set -> "_rec"
 
 let case_suffix = "_case"

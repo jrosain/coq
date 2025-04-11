@@ -28,7 +28,7 @@ type glob_qvar =
   | GRawQVar of Quality.QVar.t (* hack for funind *)
 
 type glob_relevance =
-  | GRelevant | GIrrelevant
+  | GRelevant | GIrrelevant | GCIrrelevant
   | GRelevanceVar of glob_qvar
 
 type glob_quality =
@@ -39,6 +39,7 @@ type glob_sort_name =
   | GSProp (** representation of [SProp] literal *)
   | GProp (** representation of [Prop] level *)
   | GSet  (** representation of [Set] level *)
+  | GGhost of Univ.Level.t
   | GUniv of Univ.Level.t
   | GLocalUniv of lident (** Locally bound universes (may also be nonstrict declaration) *)
   | GRawUniv of Univ.Level.t
@@ -48,7 +49,7 @@ type glob_sort_name =
       is OK, just don't try to reinterp it. *)
 
 type 'a glob_sort_gen =
-  | UAnonymous of { rigid : UState.rigid } (** not rigid = unifiable by minimization *)
+  | UAnonymous of { ghost: bool; rigid : UState.rigid } (** not rigid = unifiable by minimization *)
   | UNamed of 'a
 
 (** levels, occurring in universe instances *)

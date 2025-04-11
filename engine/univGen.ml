@@ -58,6 +58,10 @@ module QualityOrSet = struct
     | Set -> false
     | Qual q -> Quality.is_qsprop q
 
+  let is_ghost q = match q with
+    | Set -> false
+    | Qual q -> Quality.is_qghost q
+
   let pr prv q = match q with
     | Set -> Pp.str"Set"
     | Qual q -> Quality.pr prv q
@@ -194,7 +198,7 @@ let fresh_sort_quality =
   | Qual (QConstant QSProp) -> Sorts.sprop, empty_sort_context
   | Qual (QConstant QProp) -> Sorts.prop, empty_sort_context
   | Set -> Sorts.set, empty_sort_context
-  | Qual (QConstant QType | QVar _ (* Treat as Type *)) ->
+  | Qual (QConstant QType | QConstant QGhost | QVar _ (* Treat as Type *)) ->
      let u = fresh_level () in
      sort_of_univ (Univ.Universe.make u), ((Quality.QVar.Set.empty,Level.Set.singleton u), PolyConstraints.empty)
 

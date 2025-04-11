@@ -151,6 +151,7 @@ let pp_sort s =
   | Type u -> Pp.(str "Type@{" ++ Univ.Universe.raw_pr u ++ str "}")
   | QSort (q, u) ->
     Pp.(str "QSort@{" ++ (Quality.QVar.raw_pr q) ++ strbrk ", " ++ Univ.Universe.raw_pr u ++ str "}")
+  | Ghost u -> Pp.(str "Ghost@{" ++ Univ.Universe.raw_pr u ++ str "}")
 
 let pp_struct_const = function
   | Const_sort s -> pp_sort s

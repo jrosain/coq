@@ -1224,6 +1224,7 @@ let intern_sort_name ~local_univs = function
   | CProp -> GProp
   | CSet -> GSet
   | CRawType u -> GRawUniv u
+  | CGhost u -> GGhost u
   | CType qid ->
     let is_id = qualid_is_ident qid in
     let local = if not is_id then None
@@ -1391,6 +1392,8 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
         | _ -> err ()
         end
       | Some ([],[s]), GSort gs when Glob_ops.(glob_sort_eq glob_Type_sort gs) ->
+        DAst.make ?loc @@ GSort (glob_sort_of_level s)
+      | Some ([],[s]), GSort gs when Glob_ops.(glob_sort_eq glob_Ghost_sort gs) ->
         DAst.make ?loc @@ GSort (glob_sort_of_level s)
       | Some ([],[_old_level]), GSort _new_sort ->
         (* TODO: add old_level and new_sort to the error message *)
@@ -2937,6 +2940,7 @@ let known_glob_level evd = function
   | GSProp | GProp ->
     CErrors.user_err (Pp.str "Universe constraints cannot mention Prop or SProp.")
   | GSet -> Univ.Level.set
+  | GGhost u -> u
   | GUniv u -> u
   | GRawUniv u -> anomaly Pp.(str "Raw universe in known_glob_level.")
   | GLocalUniv lid ->

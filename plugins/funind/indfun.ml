@@ -63,7 +63,7 @@ let functional_induction with_clean c princl pat =
             match elimination_sort_of_goal gl with
             | QConstant QSProp -> finfo.sprop_lemma
             | QConstant QProp -> finfo.prop_lemma
-            | QConstant QType | Quality.QVar _ -> finfo.rect_lemma
+            | QConstant QType | QConstant QGhost | Quality.QVar _ -> finfo.rect_lemma
           in
           let sigma, princ =
             (* then we get the principle *)

@@ -1087,12 +1087,13 @@ let is_template_polymorphic_ind env sigma f =
 
 let base_sort_cmp pb s0 s1 =
   match (s0,s1) with
-  | SProp, SProp | Prop, Prop | Set, Set | Type _, Type _ -> true
+  | SProp, SProp | Prop, Prop | Set, Set | Type _, Type _ | Ghost _, Ghost _ -> true
   | QSort (q1, _), QSort (q2, _) -> Quality.QVar.equal q1 q2
   | QSort _, _ | _, QSort _ -> false
   | SProp, _ | _, SProp -> false
   | Prop, Set | Prop, Type _ | Set, Type _ -> pb == Conversion.CUMUL
   | Set, Prop | Type _, Prop | Type _, Set -> false
+  | _, Ghost _ | Ghost _, _ -> false
 
 let rec is_Prop sigma c = match EConstr.kind sigma c with
   | Sort u ->

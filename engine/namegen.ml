@@ -145,6 +145,7 @@ let sort_hdchar = function
   | SProp -> "P"
   | Prop -> "P"
   | Set -> "S"
+  | Ghost _ -> "G"
   | Type _ | QSort _ -> "T"
 
 let hdchar env sigma c =

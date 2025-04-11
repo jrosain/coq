@@ -132,7 +132,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
     match EConstr.kind !evdref t with
     | Sort s ->
       begin match ESorts.kind !evdref s with
-      | Type u | QSort (_, u) ->
+      | Ghost u | Type u | QSort (_, u) ->
          (* TODO: check if max(l,u) is not ok as well *)
         (match Univ.Universe.level u with
         | None -> refresh_sort status ~direction s

@@ -59,14 +59,15 @@ let glob_sort_name_eq g1 g2 = match g1, g2 with
   | GSProp, GSProp
   | GProp, GProp
   | GSet, GSet -> true
-  | GUniv u1, GUniv u2 -> Univ.Level.equal u1 u2
+  | GUniv u1, GUniv u2 | GGhost u1, GGhost u2 -> Univ.Level.equal u1 u2
   | GLocalUniv u1, GLocalUniv u2 -> lident_eq u1 u2
   | GRawUniv u1, GRawUniv u2 -> Univ.Level.equal u1 u2
-  | (GSProp|GProp|GSet|GUniv _|GLocalUniv _|GRawUniv _), _ -> false
+  | (GSProp|GProp|GSet|GGhost _|GUniv _|GLocalUniv _|GRawUniv _), _ -> false
 
 exception ComplexSort
 
-let glob_Type_sort = None, UAnonymous {rigid=UnivRigid}
+let glob_Type_sort = None, UAnonymous {ghost=false;rigid=UnivRigid}
+let glob_Ghost_sort = None, UAnonymous {ghost=true;rigid=UnivRigid}
 let glob_SProp_sort = None, UNamed [GSProp, 0]
 let glob_Prop_sort = None, UNamed [GProp, 0]
 let glob_Set_sort = None, UNamed [GSet, 0]
@@ -77,7 +78,7 @@ let map_glob_sort_gen f = function
 
 let glob_sort_gen_eq f u1 u2 =
  match u1, u2 with
-  | UAnonymous {rigid=r1}, UAnonymous {rigid=r2} -> r1 = r2
+  | UAnonymous {ghost=g1;rigid=r1}, UAnonymous {ghost=g2;rigid=r2} -> g1 = g2 && r1 = r2
   | UNamed l1, UNamed l2 -> f l1 l2
   | (UNamed _ | UAnonymous _), _ -> false
 
@@ -97,7 +98,7 @@ let glob_sort_quality s =
           | GSProp -> UnivGen.QualityOrSet.sprop
           | GProp -> UnivGen.QualityOrSet.prop
           | GSet -> UnivGen.QualityOrSet.set
-          | GUniv _ | GLocalUniv _ | GRawUniv _ -> raise ComplexSort
+          | GGhost _ | GUniv _ | GLocalUniv _ | GRawUniv _ -> raise ComplexSort
           end
        | _ -> raise ComplexSort
 
@@ -118,9 +119,9 @@ let binding_kind_eq bk1 bk2 = match bk1, bk2 with
   | (Explicit | NonMaxImplicit | MaxImplicit), _ -> false
 
 let glob_relevance_eq a b = match a, b with
-  | GRelevant, GRelevant | GIrrelevant, GIrrelevant -> true
+  | GRelevant, GRelevant | GIrrelevant, GIrrelevant | GCIrrelevant, GCIrrelevant -> true
   | GRelevanceVar q1, GRelevanceVar q2 -> glob_qvar_eq q1 q2
-  | (GRelevant | GIrrelevant | GRelevanceVar _), _ -> false
+  | (GRelevant | GIrrelevant | GCIrrelevant | GRelevanceVar _), _ -> false
 
 let relevance_info_eq = Option.equal glob_relevance_eq
 

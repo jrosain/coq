@@ -262,6 +262,8 @@ let squash_elim_sort sigma squash rtnsort =
   | SquashToQuality (QConstant QSProp) ->
      add_unif_if_cannot_elim_into Sorts.sprop
      (* Squashed inductive in SProp, return sort must be SProp. *)
+  | SquashToQuality (QConstant QGhost) ->
+     Evd.set_leq_sort sigma (ESorts.make (Sorts.ghost Univ.Universe.type0)) rtnsort
   | SquashToQuality (QConstant QType) ->
      Evd.set_leq_sort sigma ESorts.set rtnsort
      (* Sort poly squash to type *)
@@ -443,7 +445,7 @@ let nf_relevance sigma = function
      if UState.eliminates_to_prop (Evd.ustate sigma) q
      then Sorts.Relevant
      else r
-  | (Sorts.Irrelevant | Sorts.Relevant) as r -> r
+  | (Sorts.CIrrelevant | Sorts.Irrelevant | Sorts.Relevant) as r -> r
 
 let should_invert_case env sigma r (ci : Constr.case_info) =
   Sorts.relevance_equal (nf_relevance sigma r) Sorts.Relevant &&

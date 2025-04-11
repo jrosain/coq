@@ -389,5 +389,6 @@ let decompose_lam_n_decls = decompose_lambda_n_decls
 
 type sorts = Sorts.t = private
   | SProp | Prop | Set
+  | Ghost of Univ.Universe.t
   | Type of Univ.Universe.t  (** Type *)
   | QSort of Quality.QVar.t * Univ.Universe.t
