@@ -147,6 +147,7 @@ let elim_scheme ~dep ~to_kind =
        | QConstant QSProp -> sind_nodep
        | QConstant QProp -> ind_nodep
        | QConstant QType | Quality.QVar _ -> rect_nodep
+       | QConstant QGhost -> assert false
      end
   | Set -> if dep then rec_dep else rec_nodep
 

@@ -461,7 +461,7 @@ let magically_constant_of_fixbody env sigma (reference, params) bd = function
                     let get u = match u with
                     | Sorts.SProp | Sorts.Prop -> assert false
                     | Sorts.Set -> Level.set
-                    | Sorts.Type u | Sorts.QSort (_, u) -> Option.get (Universe.level u)
+                    | Sorts.Type u | Sorts.QSort (_, u) | Sorts.Ghost u -> Option.get (Universe.level u)
                     in
                     addus (get u) (get v) acc)
                 csts UVars.empty_sort_subst

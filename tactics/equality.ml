@@ -327,12 +327,12 @@ let eq_elimination_ref l2r sort =
       match sort with
       | QConstant QProp -> "core.eq.ind_r"
       | QConstant QSProp -> "core.eq.sind_r"
-      | QConstant QType | Quality.QVar _ -> "core.eq.rect_r"
+      | QConstant (QType|QGhost) | Quality.QVar _ -> "core.eq.rect_r"
     else
       match sort with
       | QConstant QProp -> "core.eq.ind"
       | QConstant QSProp -> "core.eq.sind"
-      | QConstant QType | Quality.QVar _ -> "core.eq.rect"
+      | QConstant (QType|QGhost) | Quality.QVar _ -> "core.eq.rect"
   in
   Rocqlib.lib_ref_opt name
 

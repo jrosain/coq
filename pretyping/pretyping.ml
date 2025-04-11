@@ -179,7 +179,7 @@ let universe_level_name evd ({CAst.v=id} as lid) =
 let level_name sigma = function
   | GSProp | GProp -> None
   | GSet -> Some (sigma, Univ.Level.set)
-  | GUniv u -> Some (sigma, u)
+  | GGhost u | GUniv u -> Some (sigma, u)
   | GRawUniv u ->
     let sigma = try Evd.add_forgotten_univ sigma u with UGraph.AlreadyDeclared -> sigma in
     Some (sigma, u)
@@ -292,13 +292,15 @@ let sort ?loc ~flags sigma (q, l) = match l with
     | Some q -> Sorts.qsort q u
   in
   sigma, ESorts.make s
-| UAnonymous {rigid} ->
+| UAnonymous {ghost;rigid} ->
   let sigma, q = glob_opt_qvar ?loc ~flags sigma q in
   let sigma, l = new_univ_level_variable ?loc rigid sigma in
   let u = Univ.Universe.make l in
-  let s = match q with
-    | None -> Sorts.sort_of_univ u
-    | Some q -> Sorts.qsort q u
+  let s =
+    if ghost then Sorts.ghost u
+    else match q with
+         | None -> Sorts.sort_of_univ u
+         | Some q -> Sorts.qsort q u
   in
   sigma, ESorts.make s
 
@@ -925,6 +927,7 @@ struct
         let open Quality in
         match a, b with
         | QConstant QSProp, _ | _, QConstant QSProp -> assert false
+        | QConstant QGhost, _ | _, QConstant QGhost -> assert false
         | QConstant QProp, q | q, QConstant QProp -> Some q
         | (QConstant QType as q), _ | _, (QConstant QType as q) -> Some q
         | Quality.QVar a', Quality.QVar b' ->
@@ -977,7 +980,7 @@ struct
       | Some ubind ->
         let u = match s with
           | SProp | Prop | Set -> Univ.Universe.type0
-          | Type u | QSort (_,u) -> u
+          | Type u | QSort (_,u) | Ghost u -> u
         in
         Int.Map.update ubind (function
             | None -> Some u
@@ -1009,6 +1012,9 @@ struct
 
   let freshen_template sigma = let open Sorts in function
     | SProp | Prop | Set -> assert false
+    | Ghost _ ->
+      let sigma, u = Evd.new_univ_level_variable UState.univ_flexible_alg sigma in
+      sigma, ESorts.make (Sorts.ghost (Univ.Universe.make u))
     | Type _ ->
       let sigma, u = Evd.new_univ_level_variable UState.univ_flexible_alg sigma in
       sigma, ESorts.make (Sorts.sort_of_univ (Univ.Universe.make u))
@@ -1820,7 +1826,7 @@ let path_convertible env sigma cl p q =
       let params = class_nparams cl in
       let clty =
         match cl with
-        | CL_SORT -> mkGSort (None, Glob_term.UAnonymous {rigid=UnivFlexible false})
+        | CL_SORT -> mkGSort (None, Glob_term.UAnonymous {ghost=false;rigid=UnivFlexible false})
         | CL_FUN -> anomaly (str "A source class must not be Funclass.")
         | CL_SECVAR v -> mkGRef (GlobRef.VarRef v)
         | CL_CONST c -> mkGRef (GlobRef.ConstRef c)

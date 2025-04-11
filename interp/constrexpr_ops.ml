@@ -20,7 +20,8 @@ open Constrexpr
 (***********)
 (* Universes *)
 
-let expr_Type_sort = None, UAnonymous {rigid=UnivRigid}
+let expr_Type_sort = None, UAnonymous {ghost=false;rigid=UnivRigid}
+let expr_Ghost_sort = None, UAnonymous {ghost=true;rigid=UnivRigid}
 let expr_SProp_sort = None, UNamed [CSProp, 0]
 let expr_Prop_sort = None, UNamed [CProp, 0]
 let expr_Set_sort = None, UNamed [CSet, 0]
@@ -30,8 +31,9 @@ let sort_name_expr_eq c1 c2 = match c1, c2 with
   | CProp, CProp
   | CSet, CSet -> true
   | CType q1, CType q2 -> Libnames.qualid_eq q1 q2
+  | CGhost u1, CGhost u2
   | CRawType u1, CRawType u2 -> Univ.Level.equal u1 u2
-  | (CSProp|CProp|CSet|CType _|CRawType _), _ -> false
+  | (CSProp|CProp|CSet|CGhost _|CType _|CRawType _), _ -> false
 
 let qvar_expr_eq c1 c2 = match c1, c2 with
   | CQVar q1, CQVar q2 -> Libnames.qualid_eq q1 q2
@@ -45,9 +47,9 @@ let quality_expr_eq q1 q2 = match q1, q2 with
   | (CQConstant _ | CQualVar _), _ -> false
 
 let relevance_expr_eq a b = match a, b with
-  | CRelevant, CRelevant | CIrrelevant, CIrrelevant -> true
+  | CRelevant, CRelevant | CIrrelevant, CIrrelevant | CCIrrelevant, CCIrrelevant -> true
   | CRelevanceVar q1, CRelevanceVar q2 -> qvar_expr_eq q1 q2
-  | (CRelevant | CIrrelevant | CRelevanceVar _), _ -> false
+  | (CRelevant | CIrrelevant | CCIrrelevant | CRelevanceVar _), _ -> false
 
 let relevance_info_expr_eq = Option.equal relevance_expr_eq
 

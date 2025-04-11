@@ -68,7 +68,7 @@ module RelDecl = Context.Rel.Declaration
 let hid = Id.of_string "H"
 let xid = Id.of_string "X"
 let default_id_of_sort = let open Quality in function
-    | QConstant QSProp | QConstant QProp -> hid
+    | QConstant (QSProp|QProp|QGhost) -> hid
     | QConstant QType | Quality.QVar _ -> xid
 let fresh env id avoid =
   let freshid = next_global_ident_away id avoid in

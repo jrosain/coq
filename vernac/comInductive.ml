@@ -119,8 +119,8 @@ let rec check_type_conclusion ind =
 let rec make_anonymous_conclusion_flexible ind =
   let open Glob_term in
   match DAst.get ind with
-  | GSort (None, UAnonymous {rigid=UnivRigid}) ->
-    Some (DAst.make ?loc:ind.loc (GSort (None, UAnonymous {rigid=UnivFlexible true})))
+  | GSort (None, UAnonymous {ghost;rigid=UnivRigid}) ->
+    Some (DAst.make ?loc:ind.loc (GSort (None, UAnonymous {ghost;rigid=UnivFlexible true})))
   | GSort _ -> None
   | GProd (a, b, c, d, e) -> begin match make_anonymous_conclusion_flexible e with
       | None -> None
@@ -213,7 +213,7 @@ let compute_constructor_levels env evd sign =
 
 let is_flexible_sort evd s = match ESorts.kind evd s with
 | Set | Prop | SProp -> false
-| Type u | QSort (_, u) ->
+| Type u | QSort (_, u) | Ghost u ->
   match Univ.Universe.level u with
   | Some l -> Evd.is_flexible_level evd l
   | None -> false
@@ -243,7 +243,7 @@ let prop_lowering_candidates evd ~arities_explicit inds =
       (List.for_all (fun s -> match ESorts.kind evd s with
            | SProp | Prop -> true
            | Set -> false
-           | Type _ | QSort _ ->
+           | Type _ | QSort _ | Ghost _ ->
              not (Evd.check_leq evd ESorts.set s)
              && in_candidates s candidates))
       (Option.List.cons indices ctors)
@@ -273,7 +273,7 @@ let include_constructor_argument evd ~poly ~ctor_sort ~inductive_sort =
       match ESorts.kind evd s with
       | SProp | Prop -> None
       | Set -> Some Univ.Universe.type0
-      | Type u | QSort (_,u) -> Some u
+      | Type u | QSort (_,u) | Ghost u -> Some u
     in
     match univ_of_sort ctor_sort, univ_of_sort inductive_sort with
     | _, None ->
@@ -286,8 +286,23 @@ let include_constructor_argument evd ~poly ~ctor_sort ~inductive_sort =
   else
     match ESorts.kind evd ctor_sort with
     | SProp | Prop -> evd
-    | Set | Type _ | QSort _ ->
-      Evd.set_leq_sort evd ctor_sort inductive_sort
+    | Set ->
+       begin
+         match ESorts.kind evd inductive_sort with
+         | Ghost _ ->
+            Evd.set_leq_sort evd (ESorts.make (Sorts.ghost Univ.Universe.type0)) inductive_sort
+         | SProp | Prop | Set | Type _ | QSort _ ->
+            Evd.set_leq_sort evd ctor_sort inductive_sort
+       end
+    | Ghost u -> begin
+       match ESorts.kind evd inductive_sort with
+       | QSort _ ->
+          Evd.set_leq_sort evd (ESorts.make (Sorts.sort_of_univ u)) inductive_sort
+       | _ ->
+          Evd.set_leq_sort evd ctor_sort inductive_sort
+       end
+    | Type _ | QSort _ ->
+       Evd.set_leq_sort evd ctor_sort inductive_sort
 
 type default_dep_elim = DeclareInd.default_dep_elim = DefaultElim | PropButDepElim
 
@@ -415,7 +430,7 @@ let non_template_levels sigma ~params ~arity ~constructors =
   (* levels with nonzero increment in the conclusion may not be template
      (until constraint checking can handle arbitrary +k, cf #19230) *)
   let concl_univs = match ESorts.kind sigma u with
-    | QSort (_,u) | Sorts.Type u -> Univ.Universe.repr u
+    | QSort (_,u) | Sorts.Type u | Ghost u -> Univ.Universe.repr u
     | SProp | Prop | Set -> []
   in
   let ulevels =
@@ -445,7 +460,7 @@ let pseudo_sort_poly ~non_template_qvars ~template_univs sigma params arity =
            u
       then Some q
       else None
-    | Type u -> None
+    | Type u | Ghost u -> None
 
 let unbounded_from_below u cstrs =
   let open Univ in

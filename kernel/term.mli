@@ -193,6 +193,7 @@ val isArity : types -> bool
 
 type sorts = Sorts.t = private
   | SProp | Prop | Set
+  | Ghost of Univ.Universe.t
   | Type of Univ.Universe.t  (** Type *)
   | QSort of Quality.QVar.t * Univ.Universe.t
 [@@ocaml.deprecated "(8.8) Alias for Sorts.t"]

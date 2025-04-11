@@ -171,7 +171,7 @@ let bind_template bind_sort s (qsubst,usubst) =
     | Some ubind ->
       let u = match s with
         | SProp | Prop | Set -> Univ.Universe.type0
-        | Type u | QSort (_,u) -> u
+        | Type u | QSort (_,u) | Ghost u -> u
       in
       Int.Map.update ubind (function
           | None -> Some u
@@ -288,6 +288,7 @@ let retype ?metas ?(polyprop=true) sigma =
     | Sort s ->
       begin match ESorts.kind sigma s with
       | SProp | Prop | Set -> ESorts.type1
+      | Ghost u -> ESorts.make (Sorts.ghost (Univ.Universe.super u))
       | Type u | QSort (_, u) -> ESorts.make (Sorts.sort_of_univ (Univ.Universe.super u))
       end
     | Prod (name,t,c2) ->

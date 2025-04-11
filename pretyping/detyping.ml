@@ -392,6 +392,10 @@ let detype_sort sigma = function
       (if !print_universes
        then None, detype_universe sigma u
        else glob_Type_sort)
+  | Ghost u ->
+      (if !print_universes
+       then None, detype_universe sigma u
+       else glob_Ghost_sort)
   | QSort (q, u) ->
     if !print_universes then
       let q = if print_sort_quality () || Evd.is_rigid_qvar sigma q then
@@ -400,7 +404,7 @@ let detype_sort sigma = function
       in
       q, detype_universe sigma u
     else if Evd.is_rigid_qvar sigma q then
-      Some (detype_qvar sigma q), UAnonymous {rigid=UState.univ_flexible}
+      Some (detype_qvar sigma q), UAnonymous {ghost=false;rigid=UState.univ_flexible}
     else glob_Type_sort
 
 let detype_relevance_info sigma na =
@@ -408,6 +412,7 @@ let detype_relevance_info sigma na =
   else match ERelevance.kind sigma na.binder_relevance with
     | Relevant -> Some GRelevant
     | Irrelevant -> Some GIrrelevant
+    | CIrrelevant -> Some GCIrrelevant
     | RelevanceVar q -> Some (GRelevanceVar (detype_qvar sigma q))
 
 (* Auxiliary function for MutCase printing *)

@@ -14,6 +14,7 @@ type t = private
   | SProp
   | Prop
   | Set
+  | Ghost of Univ.Universe.t
   | Type of Univ.Universe.t
   | QSort of Quality.QVar.t * Univ.Universe.t
 
@@ -22,6 +23,7 @@ val set  : t
 val prop : t
 val type1  : t
 val qsort : Quality.QVar.t -> Univ.Universe.t -> t
+val ghost : Univ.Universe.t -> t
 val make : Quality.t -> Univ.Universe.t -> t
 
 val equal : t -> t -> bool
@@ -47,7 +49,7 @@ val subst_fn : (Quality.QVar.t -> Quality.t) * (Univ.Universe.t -> Univ.Universe
 
 (** On binders: is this variable proof relevant *)
 (* TODO put in submodule or new file *)
-type relevance = Relevant | Irrelevant | RelevanceVar of Quality.QVar.t
+type relevance = Relevant | CIrrelevant | Irrelevant | RelevanceVar of Quality.QVar.t
 
 val relevance_hash : relevance -> int
 
@@ -63,6 +65,7 @@ val raw_pr : t -> Pp.t
 
 type pattern =
   | PSProp | PSSProp | PSSet | PSType of int option | PSQSort of int option * int option
+  | PSGhost of int option
 
 val pattern_match : pattern -> t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t -> ('t, Quality.t, Univ.Level.t) Partial_subst.t option
 

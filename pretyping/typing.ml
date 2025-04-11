@@ -56,7 +56,7 @@ let fresh_template_context env0 sigma ind (mib, _ as spec) args =
             args
         | Sorts.Prop -> TemplateProp
         | Sorts.Set -> TemplateUniv Univ.Universe.type0
-        | Sorts.Type u | Sorts.QSort (_, u) -> TemplateUniv u
+        | Sorts.Type u | Sorts.QSort (_, u) | Ghost u -> TemplateUniv u
         in
         sigma, LocalAssum (na, t), s
       | None ->
@@ -242,8 +242,9 @@ let type_case_branches env sigma (ind,largs) specif pj c =
 
 let unify_relevance sigma r1 r2 =
   match ERelevance.kind sigma r1, ERelevance.kind sigma r2 with
-  | Relevant, Relevant | Irrelevant, Irrelevant -> Some sigma
-  | Relevant, Irrelevant | Irrelevant, Relevant -> None
+  | Relevant, Relevant | Irrelevant, Irrelevant | CIrrelevant, CIrrelevant -> Some sigma
+  | Relevant, (Irrelevant | CIrrelevant) | (Irrelevant | CIrrelevant), Relevant -> None
+  | Irrelevant, CIrrelevant | CIrrelevant, Irrelevant -> None
   | Irrelevant, RelevanceVar q | RelevanceVar q, Irrelevant ->
     let sigma =
       Evd.add_poly_constraints sigma
@@ -255,6 +256,13 @@ let unify_relevance sigma r1 r2 =
     let sigma =
       Evd.add_poly_constraints sigma
         (Quality.ElimConstraints.singleton (QVar q, ElimTo, Quality.qprop),
+         Univ.UnivConstraints.empty)
+    in
+    Some sigma
+  | CIrrelevant, RelevanceVar q | RelevanceVar q, CIrrelevant ->
+    let sigma =
+      Evd.add_poly_constraints sigma
+        (Quality.ElimConstraints.singleton (QVar q, ElimTo, Quality.qghost),
          Univ.UnivConstraints.empty)
     in
     Some sigma
@@ -364,7 +372,7 @@ let judge_of_sort s =
   let open Sorts in
   let u = match s with
   | Prop | SProp | Set -> Univ.Universe.type1
-  | Type u | QSort (_, u) -> Univ.Universe.super u
+  | Ghost u | Type u | QSort (_, u) -> Univ.Universe.super u
   in
   { uj_val = EConstr.mkSort (ESorts.make s); uj_type = EConstr.mkType u }
 
@@ -493,16 +501,19 @@ type relevance_preunify =
 
 let check_binder_relevance env sigma s decl =
   let preunify = match ESorts.kind sigma s, ERelevance.kind sigma (get_relevance decl) with
-    | (Prop | Set | Type _), Relevant -> Trivial
-    | (Prop | Set | Type _), Irrelevant -> Impossible
+    | (Prop | Set | Type _), Relevant | Ghost _, CIrrelevant -> Trivial
+    | (Prop | Set | Type _), CIrrelevant -> Impossible
+    | Ghost _, Relevant -> Impossible
+    | (Prop | Set | Type _ | Ghost _), Irrelevant -> Impossible
     | SProp, Irrelevant -> Trivial
-    | SProp, Relevant -> Impossible
+    | SProp, (Relevant | CIrrelevant) -> Impossible
     | QSort (_,l), RelevanceVar q' -> DummySort (ESorts.make (Sorts.qsort q' l))
     | (SProp | Prop | Set), RelevanceVar q ->
       DummySort (ESorts.make (Sorts.qsort q Univ.Universe.type0))
-    | Type l, RelevanceVar q -> DummySort (ESorts.make (Sorts.qsort q l))
+    | (Type l | Ghost l), RelevanceVar q -> DummySort (ESorts.make (Sorts.qsort q l))
     | QSort (_,l), Relevant -> DummySort (ESorts.make (Sorts.sort_of_univ l))
     | QSort _, Irrelevant -> DummySort ESorts.sprop
+    | QSort (_,l), CIrrelevant -> DummySort (ESorts.make (Sorts.ghost l))
   in
   let unify = match preunify with
     | Trivial -> Some sigma
@@ -592,6 +603,7 @@ let rec execute env sigma cstr =
         | Prop -> sigma, judge_of_prop
         | Set -> sigma, judge_of_set
         | Type u -> sigma, judge_of_type u
+        | Ghost u -> sigma, judge_of_type u
         | QSort _ as s -> sigma, judge_of_sort s
       end
 

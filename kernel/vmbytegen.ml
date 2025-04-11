@@ -578,6 +578,8 @@ let rec compile_lam env cenv lam sz cont =
     | Sorts.Set | Sorts.Prop | Sorts.SProp -> false
     | Sorts.Type u ->
       Univ.Universe.exists (fun (l, _) -> Option.has_some (Univ.Level.var_index l)) u
+    | Sorts.Ghost u ->
+      Univ.Universe.exists (fun (l, _) -> Option.has_some (Univ.Level.var_index l)) u
     | Sorts.QSort (q, u) ->
       Option.has_some (Quality.QVar.var_index q)
       || Univ.Universe.exists (fun (l, _) -> Option.has_some (Univ.Level.var_index l)) u

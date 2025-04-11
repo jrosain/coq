@@ -334,7 +334,7 @@ let is_irrelevant info r = match info.i_cache.i_mode with
 | Conversion -> match r with
   | Sorts.Irrelevant -> true
   | Sorts.RelevanceVar q -> info.i_cache.i_sigma.qvar_irrelevant q
-  | Sorts.Relevant -> false
+  | Sorts.Relevant | Sorts.CIrrelevant -> false
 
 (************************************************************************)
 

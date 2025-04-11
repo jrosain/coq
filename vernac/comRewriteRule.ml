@@ -137,6 +137,12 @@ let universe_level_subst_var_index usubst u =
 let safe_sort_pattern_of_sort ~loc evd (qsubst, usubst) (st, sq, su as state) s =
   let open Sorts in
   match s with
+  | Ghost u ->
+      begin match universe_level_subst_var_index usubst u with
+      | None -> state, PSGhost None
+      | Some (lvlold, lvl) ->
+        (st, sq, update_invtblu1 ~loc evd lvlold lvl su), PSGhost (Some lvl)
+      end
   | Type u ->
       begin match universe_level_subst_var_index usubst u with
       | None -> state, PSType None
@@ -244,6 +250,7 @@ and safe_pattern_of_constr ~loc env evd usubst depth state t =
   | Sorts.Irrelevant -> warn_irrelevant_pattern ?loc ()
   | Sorts.RelevanceVar _ -> () (* FIXME *)
   | Sorts.Relevant -> ()
+  | Sorts.CIrrelevant -> ()
   end;
   safe_pattern_of_constr_aux ~loc env evd usubst depth state t
 

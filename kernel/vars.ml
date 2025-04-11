@@ -490,6 +490,8 @@ let univs_and_qvars_visitor =
   let visit_sort (qs,us as acc) = function
     | Sorts.Type u ->
       qs, Universe.levels ~init:us u
+    | Sorts.Ghost u ->
+      qs, Universe.levels ~init:us u
     | Sorts.QSort (q,u) ->
       Quality.QVar.Set.add q qs, Universe.levels ~init:us u
     | Sorts.(SProp | Prop | Set) -> acc
@@ -507,7 +509,7 @@ let univs_and_qvars_visitor =
     qs, us
   in
   let visit_relevance (qs,us as acc) = let open Sorts in function
-      | Irrelevant | Relevant -> acc
+      | Irrelevant | Relevant | CIrrelevant -> acc
       | RelevanceVar q -> Quality.QVar.Set.add q qs, us
   in
   {

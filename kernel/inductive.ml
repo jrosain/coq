@@ -135,6 +135,7 @@ let max_template_quality a b =
   | QConstant QSProp, _ | _, QConstant QSProp -> assert false
   | QConstant QProp, q | q, QConstant QProp -> q
   | (QConstant QType as q), _ | _, (QConstant QType as q) -> q
+  | (QConstant QGhost as q), _ | _, (QConstant QGhost as q) -> q
   | QVar a', QVar b' ->
     if Quality.QVar.equal a' b' then a
     else qtype
@@ -150,7 +151,7 @@ let univ_bind_kind u =
 
 let bind_kind = let open Sorts in function
   | SProp | Prop | Set -> assert false
-  | Type u ->
+  | Type u | Ghost u ->
     let u = univ_bind_kind u in
     assert (Option.has_some u);
     None, u
@@ -245,6 +246,8 @@ let template_subst_sort (subst : template_subst) = function
 | Sorts.Prop | Sorts.Set | Sorts.SProp as s -> s
 | Sorts.Type u ->
   Sorts.sort_of_univ (template_subst_universe subst u)
+| Sorts.Ghost u ->
+  Sorts.ghost (template_subst_universe subst u)
 | Sorts.QSort (q,u) ->
   let q = match Quality.QVar.var_index q with
     | None -> Quality.QVar q
@@ -430,7 +433,7 @@ let allowed_elimination_gen g indsort_to_quality squashed_to_quality actions spe
   | Some SquashToSet ->
     begin match s with
       | SProp|Prop|Set -> actions.squashed_to_set_below
-      | QSort _ | Type _ -> actions.squashed_to_set_above
+      | Ghost _ | QSort _ | Type _ -> actions.squashed_to_set_above
     end
   | Some (SquashToQuality indq) -> actions.squashed_to_quality indq
 
@@ -1656,6 +1659,7 @@ let inductive_of_mutfix ?evars env ((nvect,bodynum),(names,types,bodies as recde
           | Irrelevant -> Sorts.sprop
           | Relevant when Universe.is_type0 u -> Sorts.set
           | Relevant -> Sorts.make Quality.qtype u
+          | CIrrelevant -> Sorts.ghost u
           | RelevanceVar q -> Sorts.qsort q u in
         let elim_to = match evars with
           | Some evars -> CClosure.elim_to evars

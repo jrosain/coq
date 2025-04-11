@@ -375,6 +375,7 @@ let of_kind = function
 (* Construct a type *)
 let mkType u = of_kind @@ Sort (Sorts.sort_of_univ u)
 let mkSort s = of_kind @@ Sort s
+let mkGhost u = of_kind @@ Sort (Sorts.ghost u)
 
 (* Constructs the product (x:t1)t2 *)
 let mkProd (x,t1,t2) = of_kind @@ Prod (x,t1,t2)

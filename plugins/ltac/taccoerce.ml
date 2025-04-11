@@ -271,6 +271,7 @@ let coerce_to_ident_not_fresh sigma v =
             | Sorts.SProp -> Label.to_id (Label.make "SProp")
             | Sorts.Prop -> Label.to_id (Label.make "Prop")
             | Sorts.Set -> Label.to_id (Label.make "Set")
+            | Sorts.Ghost _ -> Label.to_id (Label.make "Ghost")
             | Sorts.Type _ | Sorts.QSort _ -> Label.to_id (Label.make "Type")
           end
        | _ -> fail()

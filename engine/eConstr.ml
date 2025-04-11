@@ -891,14 +891,14 @@ let add_relevance sigma (qs,us as v) r =
   let open Sorts in
   (* NB this normalizes above_prop to Relevant which makes it disappear *)
   match ERelevance.kind sigma r with
-  | Irrelevant | Relevant -> v
+  | Irrelevant | Relevant | CIrrelevant -> v
   | RelevanceVar q -> Quality.QVar.Set.add q qs, us
 
 let univs_and_qvars_visitor sigma =
   let open Univ in
   let visit_sort (qs,us as acc) s =
     match ESorts.kind sigma s with
-    | Sorts.Type u ->
+    | Sorts.Type u | Sorts.Ghost u ->
       qs, Universe.levels ~init:us u
     | Sorts.QSort (q,u) ->
       Quality.QVar.Set.add q qs, Universe.levels ~init:us u

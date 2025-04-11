@@ -83,7 +83,7 @@ struct
   module Map = CMap.Make(Self)
 end
 
-type constant = QProp | QSProp | QType
+type constant = QProp | QSProp | QType | QGhost
 type t = QVar of QVar.t | QConstant of constant
 type quality = t
 
@@ -95,8 +95,8 @@ let var_index = function
 
 module Constants = struct
   let equal a b = match a, b with
-    | QProp, QProp | QSProp, QSProp | QType, QType -> true
-    | (QProp | QSProp | QType), _ -> false
+    | QProp, QProp | QSProp, QSProp | QType, QType | QGhost, QGhost -> true
+    | (QProp | QSProp | QType | QGhost), _ -> false
 
   let compare a b = match a, b with
     | QSProp, QSProp -> 0
@@ -105,12 +105,16 @@ module Constants = struct
     | QProp, QProp -> 0
     | QProp, _ -> -1
     | _, QProp -> 1
+    | QGhost, QGhost -> 0
+    | QGhost, _ -> -1
+    | _, QGhost -> 1
     | QType, QType -> 0
 
   let to_string = function
     | QProp -> "Prop"
     | QSProp -> "SProp"
     | QType -> "Type"
+    | QGhost -> "Ghost"
 
   let pr q = str (to_string q)
 
@@ -118,6 +122,7 @@ module Constants = struct
     | QSProp -> 0
     | QProp -> 1
     | QType -> 2
+    | QGhost -> 3
 end
 
 let equal a b = match a, b with
@@ -125,6 +130,7 @@ let equal a b = match a, b with
   | QConstant a, QConstant b -> Constants.equal a b
   | (QVar _ | QConstant _), _ -> false
 
+let is_qghost s = equal s (QConstant QGhost)
 let is_qsprop s = equal s (QConstant QSProp)
 let is_qprop s = equal s (QConstant QProp)
 let is_qtype s = equal s (QConstant QType)
@@ -137,7 +143,7 @@ let compare a b = match a, b with
   | _, QVar _ -> 1
   | QConstant a, QConstant b -> Constants.compare a b
 
-let all_constants = [QConstant QSProp; QConstant QProp; QConstant QType]
+let all_constants = [QConstant QSProp; QConstant QProp; QConstant QType; QConstant QGhost]
 let all = var 0 :: all_constants
 
 let pr prv = function
@@ -186,6 +192,7 @@ let hcons = Hashcons.simple_hcons Hasher.generate Hasher.hcons ()
 let qsprop = snd @@ hcons (QConstant QSProp)
 let qprop = snd @@ hcons (QConstant QProp)
 let qtype = snd @@ hcons (QConstant QType)
+let qghost = snd @@ hcons (QConstant QGhost)
 
 module Self = struct type nonrec t = t let compare = compare end
 module Set = CSet.Make(Self)

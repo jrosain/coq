@@ -93,8 +93,8 @@ let force_univ_level ?loc = function
   | SProp -> UNamed CSProp
   | Prop -> UNamed CProp
   | Set -> UNamed CSet
-  | Type -> UAnonymous {rigid=UnivRigid}
-  | Anon _ -> UAnonymous {rigid=UnivFlexible false}
+  | Type -> UAnonymous {ghost=false;rigid=UnivRigid}
+  | Anon _ -> UAnonymous {ghost=false;rigid=UnivFlexible false}
   | Global qid -> UNamed (CType qid)
 
 let force_quality ?loc = function
@@ -137,8 +137,9 @@ GRAMMAR EXTEND Gram
     [ [ "Set"  -> { None, UNamed [CSet, 0] }
       | "Prop" -> { None, UNamed [CProp, 0] }
       | "SProp" -> { None, UNamed [CSProp, 0] }
-      | "Type" -> { None, UAnonymous {rigid=UnivRigid} }
-      | "Type"; "@{"; "_"; "}" -> { None, UAnonymous {rigid=UnivFlexible false} }
+      | "Ghost" -> { None, UAnonymous {ghost=true;rigid=UnivRigid} }
+      | "Type" -> { None, UAnonymous {ghost=false;rigid=UnivRigid} }
+      | "Type"; "@{"; "_"; "}" -> { None, UAnonymous {ghost=false;rigid=UnivFlexible false} }
       | "Type"; "@{"; test_sort_qvar; q = reference; "|"; u = universe; "}" ->
         { Some (CQVar q), u }
       | "Type"; "@{"; u = universe; "}" -> { None, u } ] ]
@@ -169,7 +170,7 @@ GRAMMAR EXTEND Gram
   ;
   universe:
     [ [ IDENT "max"; "("; ids = LIST1 universe_expr SEP ","; ")" -> { UNamed ids }
-      | "_" -> { UAnonymous { rigid = UnivFlexible false } }
+      | "_" -> { UAnonymous { ghost=false;rigid = UnivFlexible false } }
       | u = universe_expr -> { UNamed [u] } ] ]
   ;
   lconstr:

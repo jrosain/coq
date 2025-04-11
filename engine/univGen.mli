@@ -34,6 +34,7 @@ module QualityOrSet : sig
   val is_set : t -> bool
   val is_prop : t -> bool
   val is_sprop : t -> bool
+  val is_ghost : t -> bool
 
   val pr : (Quality.QVar.t -> Pp.t) -> t -> Pp.t
   val raw_pr : t -> Pp.t

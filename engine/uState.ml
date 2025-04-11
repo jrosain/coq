@@ -119,6 +119,7 @@ let set_elim_to_prop q m =
 
 let unify_quality ~fail c q1 q2 local = match q1, q2 with
 | QConstant QType, QConstant QType
+| QConstant QGhost, QConstant QGhost
 | QConstant QProp, QConstant QProp
 | QConstant QSProp, QConstant QSProp -> local
 | QConstant QProp, QVar q when c == Conversion.CUMUL ->
@@ -132,20 +133,21 @@ let unify_quality ~fail c q1 q2 local = match q1, q2 with
       | Some local -> local
       | None -> fail ()
   end
-| QVar q, (QConstant (QType | QProp | QSProp) as qv)
-| (QConstant (QType | QProp | QSProp) as qv), QVar q ->
+| QVar q, (QConstant (QType | QProp | QSProp | QGhost) as qv)
+| (QConstant (QType | QProp | QSProp | QGhost) as qv), QVar q ->
   begin match set q qv local with
   | Some local -> local
   | None -> fail ()
   end
-| (QConstant QType, QConstant (QProp | QSProp)) -> fail ()
+| (QConstant QType, QConstant (QProp | QSProp | QGhost)) -> fail ()
 | (QConstant QProp, QConstant QType) ->
   begin match c with
   | CONV -> fail ()
   | CUMUL -> local
   end
-| (QConstant QSProp, QConstant (QType | QProp)) -> fail ()
-| (QConstant QProp, QConstant QSProp) -> fail ()
+| (QConstant QSProp, QConstant (QType | QProp | QGhost)) -> fail ()
+| (QConstant QProp, QConstant (QSProp | QGhost)) -> fail ()
+| (QConstant QGhost, QConstant (QSProp|QProp|QType)) -> fail ()
 
 let nf_quality m = function
   | QConstant _ as q -> q
@@ -500,10 +502,11 @@ let nf_sort uctx s =
   Sorts.subst_fn (qnormalize, normalize) s
 
 let nf_relevance uctx r = match r with
-| Relevant | Irrelevant -> r
+| Relevant | Irrelevant | CIrrelevant -> r
 | RelevanceVar q ->
   match nf_qvar uctx q with
   | QConstant QSProp -> Sorts.Irrelevant
+  | QConstant QGhost -> Sorts.CIrrelevant
   | QConstant QProp | QConstant QType -> Sorts.Relevant
   | QVar q' ->
     (* XXX currently not used in nf_evars_and_universes_opt_subst
@@ -537,7 +540,7 @@ let classify s = match s with
 | Prop -> USmall UProp
 | SProp -> USmall USProp
 | Set -> USmall USet
-| Type u | QSort (_, u) ->
+| Ghost u | Type u | QSort (_, u) ->
   if Universe.is_levels u then match Universe.level u with
   | None -> UMax (u, Universe.levels u)
   | Some u -> ULevel u

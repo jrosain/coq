@@ -17,6 +17,9 @@ module ElimTable = struct
     | QType, _ -> true
     | QProp, (QProp | QSProp) -> true
     | QSProp, QSProp -> true
+    | QGhost, QGhost -> true
+    | QGhost, _ -> false
+    | (QSProp | QProp), QGhost -> false
     | _ -> false
 
   let eliminates_to q q' =

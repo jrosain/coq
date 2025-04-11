@@ -44,7 +44,7 @@ sig
   module Map : CMap.ExtS with type key = t and module Set := Set
 end
 
-type constant = QProp | QSProp | QType
+type constant = QProp | QSProp | QType | QGhost
 type t = QVar of QVar.t | QConstant of constant
 
 type quality = t
@@ -59,6 +59,7 @@ end
 val qprop : t
 val qsprop : t
 val qtype : t
+val qghost : t
 
 val var : int -> t
 (** [var i] is [QVar (QVar.make_var i)] *)
@@ -67,6 +68,7 @@ val var_index : t -> int option
 
 val equal : t -> t -> bool
 
+val is_qghost : t -> bool
 val is_qsprop : t -> bool
 val is_qprop : t -> bool
 val is_qtype : t -> bool
