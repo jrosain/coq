@@ -348,8 +348,6 @@ let named_context_val env = env.env_named_context
 let rel_context env = env.env_rel_context.env_rel_ctx
 let rel_context_val env = env.env_rel_context
 
-let qualities env = env.env_qualities
-
 let empty_context env =
   match env.env_rel_context.env_rel_ctx, env.env_named_context.env_named_ctx with
   | [], [] -> true
@@ -493,19 +491,19 @@ let add_universes_set ~strict ctx g =
             (PolyConstraints.ContextSet.levels ctx) g
   in UGraph.merge_constraints (PolyConstraints.ContextSet.univ_constraints ctx) g
 
-let push_context_set ?(strict=false) ctx env =
-  map_universes (add_universes_set ~strict ctx) env
+let add_quality_set src ctx g =
+  let cstrs = PolyConstraints.ContextSet.elim_constraints ctx in
+  QGraph.merge_constraints src cstrs g
+
+let push_context_set ?(strict=false) src ctx env =
+  map_qualities (add_quality_set src ctx) @@
+    map_universes (add_universes_set ~strict ctx) env
 
 let push_quality_set qs env =
   assert Quality.QVar.Set.(is_empty @@ inter qs (QGraph.qvar_domain env.env_qualities));
   let g = Quality.QVar.Set.fold
             (fun v -> QGraph.add_quality (Quality.QVar v)) qs env.env_qualities in
   set_qualities g env
-
-let set_quality_set qs env =
-  let g = QGraph.initial_graph in
-  let g = Quality.QVar.Set.fold (fun v -> QGraph.add_quality (Quality.QVar v)) qs g in
-  { env with env_qualities = g }
 
 let push_subgraph (levels,(_, univ_csts)) env =
   let add_subgraph g =

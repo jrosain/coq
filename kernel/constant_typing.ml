@@ -267,7 +267,7 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let env, univs = match univs with
     | Monomorphic ->
        assert (UVars.is_empty_sort_subst usubst);
-       push_context_set uctx env, Opaqueproof.PrivateMonomorphic uctx
+       push_context_set QGraph.Static uctx env, Opaqueproof.PrivateMonomorphic uctx
     | Polymorphic _ ->
        assert (Int.equal valid_signatures 0);
        push_subgraph uctx env,

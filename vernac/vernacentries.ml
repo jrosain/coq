@@ -2176,7 +2176,7 @@ let check_may_eval env sigma redexp rc =
     else
       let env = Evarutil.nf_env_evar sigma env in
       let env = Environ.push_quality_set qs env in
-      let env = Environ.push_context_set (us,csts) env in
+      let env = Environ.push_context_set QGraph.Static (us,csts) env in
       let c = EConstr.to_constr sigma c in
       (* OK to call kernel which does not support evars *)
       Environ.on_judgment EConstr.of_constr (Arguments_renaming.rename_typing env c)
@@ -2219,7 +2219,7 @@ let vernac_global_check c =
   let sigma = Evd.collapse_sort_variables sigma in
   let senv = Global.safe_env() in
   let uctx = Evd.universe_context_set sigma in
-  let senv = Safe_typing.push_context_set ~strict:false uctx senv in
+  let senv = Safe_typing.push_context_set ~strict:false QGraph.Static uctx senv in
   let c = EConstr.to_constr sigma c in
   let j = Safe_typing.typing senv c in
   Prettyp.print_safe_judgment j ++

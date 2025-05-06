@@ -151,10 +151,10 @@ val add_modtype :
 (** Adding universe constraints *)
 
 val push_context_set :
-  strict:bool -> PolyConstraints.ContextSet.t -> safe_transformer0
+  strict:bool -> QGraph.constraint_source -> PolyConstraints.ContextSet.t -> safe_transformer0
 
 val add_constraints :
-  PolyConstraints.t -> safe_transformer0
+  QGraph.constraint_source -> PolyConstraints.t -> safe_transformer0
 
 (** Adding global sort qualities *)
 
@@ -241,6 +241,7 @@ type compiled_library
 val dirpath_of_library : compiled_library -> DirPath.t
 val module_of_library : compiled_library -> Mod_declarations.module_body
 val univs_of_library : compiled_library -> PolyConstraints.ContextSet.t
+val qualities_of_library : compiled_library -> Quality.QVar.Set.t
 val check_flags_for_library : compiled_library -> safe_transformer0
 
 val start_library : DirPath.t -> ModPath.t safe_transformer

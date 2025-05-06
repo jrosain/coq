@@ -1360,10 +1360,12 @@ let fix_undefined_variables uctx =
   { uctx with univ_variables = UnivFlex.fix_undefined_variables uctx.univ_variables }
 
 let collapse_elim_to_prop_sort_variables ~to_prop uctx =
-  { uctx with sort_variables = QState.collapse_elim_to_prop ~to_prop uctx.sort_variables }
+  let sorts = QState.collapse_elim_to_prop ~to_prop uctx.sort_variables in
+  normalize_quality_variables { uctx with sort_variables = sorts }
 
 let collapse_sort_variables ?except uctx =
-  { uctx with sort_variables = QState.collapse ?except uctx.sort_variables }
+  let sorts = QState.collapse ?except uctx.sort_variables in
+  normalize_quality_variables { uctx with sort_variables = sorts }
 
 let minimize uctx =
   let open UnivMinim in

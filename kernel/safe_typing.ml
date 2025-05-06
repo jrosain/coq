@@ -509,18 +509,18 @@ let get_section = function
   | None -> CErrors.user_err Pp.(str "No open section.")
   | Some s -> s
 
-let push_context_set ~strict cst senv =
+let push_context_set ~strict src cst senv =
   if PolyConstraints.ContextSet.is_empty cst then senv
   else
     let sections = Option.map (Section.push_constraints cst) senv.sections
     in
     { senv with
-      env = Environ.push_context_set ~strict cst senv.env;
+      env = Environ.push_context_set ~strict src cst senv.env;
       univ = PolyConstraints.ContextSet.union cst senv.univ;
       sections }
 
-let add_constraints cst senv =
-  push_context_set ~strict:true cst senv
+let add_constraints src cst senv =
+  push_context_set ~strict:true src cst senv
 
 let push_quality_set qs senv =
   if Quality.QVar.Set.is_empty qs then senv
@@ -655,7 +655,7 @@ let push_section_context uctx senv =
   assert Quality.QVar.Set.(is_empty (inter qualities senv.qualities));
   (* push_context checks freshness *)
   { senv with
-    env = Environ.push_context ~strict:false QGraph.Internal uctx senv.env;
+    env = Environ.push_context ~strict:false QGraph.Rigid uctx senv.env;
     univ = PolyConstraints.ContextSet.union ctx senv.univ ;
     qualities = Quality.QVar.Set.union qualities senv.qualities }
 
@@ -962,7 +962,7 @@ let export_side_effects senv eff =
       | [] -> univs, List.rev acc
       | eff :: rest ->
         let uctx = eff.seff_univs in
-        let env = Environ.push_context_set ~strict:true uctx env in
+        let env = Environ.push_context_set QGraph.Static ~strict:true uctx env in
         let univs = PolyConstraints.ContextSet.union uctx univs in
         let env, cb =
           let ce = constant_entry_of_side_effect eff in
@@ -987,7 +987,7 @@ let push_opaque_proof senv =
 
 let export_private_constants eff senv =
   let uctx, exported = export_side_effects senv eff in
-  let senv = push_context_set ~strict:true uctx senv in
+  let senv = push_context_set ~strict:true QGraph.Static uctx senv in
   let map senv (kn, (hbody, c)) = match c.const_body with
   | OpaqueDef body ->
     (* Don't care about the body, it has been checked by {!infer_direct_opaque} *)
@@ -1099,7 +1099,7 @@ let fill_opaque { opq_univs = ctx; opq_handle = i; opq_nonce = n; _ } senv =
   (* TODO: Drop the the monomorphic constraints, they should really be internal
      but the higher levels use them haphazardly. *)
   let senv = match ctx with
-  | Opaqueproof.PrivateMonomorphic ctx -> add_constraints ctx senv
+  | Opaqueproof.PrivateMonomorphic ctx -> add_constraints QGraph.Static ctx senv
   | Opaqueproof.PrivatePolymorphic _ -> senv
   in
   (* Mark the constant as having been checked *)
@@ -1118,7 +1118,7 @@ let check_constraints uctx = function
 
 let add_private_constant l uctx decl senv : (Constant.t * private_constants) * safe_environment =
   let kn = Constant.make2 senv.modpath l in
-  let senv = push_context_set ~strict:true uctx senv in
+  let senv = push_context_set ~strict:true QGraph.Static uctx senv in
     let hbody, cb =
       let sec_univs = Option.map Section.all_poly_univs senv.sections in
       match decl with
@@ -1191,7 +1191,7 @@ let add_mind l mie senv =
     let qs, levels = UVars.Instance.levels u in
     assert (Quality.Set.for_all (fun q -> Quality.is_qtype q) qs);
     let csts = UVars.AbstractContext.instantiate u ctx in
-    push_context_set ~strict:true (levels,csts) senv
+    push_context_set ~strict:true QGraph.Static (levels,csts) senv
   in
   (kn, why_not_prim_record), add_checked_mind kn mib senv
 
@@ -1377,7 +1377,7 @@ let end_module l restype senv =
   let mbids = List.rev_map fst params in
   let mb = build_module_body params restype senv in
   let newenv = Environ.set_universes (Environ.universes senv.env) oldsenv.env in
-  let newenv = Environ.set_quality_set (Environ.qvars senv.env) newenv in
+  let newenv = Environ.set_qualities (Environ.qualities senv.env) newenv in
   let newenv = if Environ.rewrite_rules_allowed senv.env then Environ.allow_rewrite_rules newenv else newenv in
   let newenv = Environ.set_vm_library (Environ.vm_library senv.env) newenv in
   let senv' = propagate_loads { senv with env = newenv } in
@@ -1459,6 +1459,8 @@ let module_of_library lib = lib.comp_mod
 
 let univs_of_library lib = lib.comp_univs
 
+let qualities_of_library lib = lib.comp_qualities
+
 (** FIXME: MS: remove?*)
 let current_modpath senv = senv.modpath
 let current_dirpath senv = Names.ModPath.dp (current_modpath senv)
@@ -1530,9 +1532,9 @@ let import lib vmtab vodigest senv =
           ++ DirPath.print lib.comp_name ++ str").");
   let mp = MPfile lib.comp_name in
   let mb = lib.comp_mod in
-  let env = Environ.push_context_set ~strict:true lib.comp_univs senv.env in
+  let env = Environ.push_quality_set lib.comp_qualities senv.env in
+  let env = Environ.push_context_set ~strict:true QGraph.Static lib.comp_univs env in
   let env = Environ.link_vm_library vmtab env in
-  let env = Environ.push_quality_set lib.comp_qualities env in
   let env =
     let linkinfo = Nativecode.link_info_of_dirpath lib.comp_name in
     Modops.add_linked_module mp mb linkinfo env
@@ -1592,8 +1594,8 @@ let close_section senv =
       senv (List.rev rev_reimport)
   in
   (* Third phase: replay the discharged section contents *)
-  let senv = push_context_set ~strict:true cstrs senv in
   let senv = push_quality_set qs senv in
+  let senv = push_context_set ~strict:true QGraph.Static cstrs senv in
   let fold entry senv =
     match entry with
   | SecDefinition kn ->
@@ -1761,8 +1763,8 @@ let register_inductive ind prim senv =
   let action = Retroknowledge.Register_ind(prim,ind) in
   add_retroknowledge action senv
 
-let add_constraints c =
-  add_constraints
+let add_constraints src c =
+  add_constraints src
     (PolyConstraints.ContextSet.add_constraints c PolyConstraints.ContextSet.empty)
 
 

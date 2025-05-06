@@ -184,8 +184,9 @@ let v_raw_level = v_sum "raw_level" 1 (* Set *)
 let v_level = v_tuple "level" [|v_int;v_raw_level|]
 let v_expr = v_tuple "levelexpr" [|v_level;v_int|]
 let v_univ = v_list v_expr
+let v_qglobal = v_tuple "Quality.QGlobal.t" [|v_dp;v_id|]
 
-let v_qvar = v_sum "qvar" 0 [|[|v_int|];[|v_string;v_int|]|]
+let v_qvar = v_sum "qvar" 0 [|[|v_int|];[|v_string;v_int|];[|v_qglobal|]|]
 
 let v_constant_quality = v_enum "constant_quality" 3
 
