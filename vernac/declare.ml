@@ -583,14 +583,14 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
         let ubinders = make_ubinders ctx de.proof_entry_universes in
         (* We register the global universes after exporting side-effects, since
            the latter depend on the former. *)
-        let () = Global.push_context_set ctx in
+        let () = Global.push_context_set QGraph.Internal ctx in
         Entries.DefinitionEntry e, false, ubinders, None, ctx
       | Default { body = (body, eff); opaque = Opaque body_uctx } ->
         let body = ((body, body_uctx), eff.Evd.seff_private) in
         let de = { de with proof_entry_body = body } in
         let cd, ctx = cast_opaque_proof_entry ImmediateEffectEntry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
-        let () = Global.push_context_set ctx in
+        let () = Global.push_context_set QGraph.Internal ctx in
         Entries.OpaqueEntry cd, false, ubinders, Some (Future.from_val body, None), ctx
       | DeferredOpaque { body; feedback_id } ->
         let map (body, eff) = body, eff.Evd.seff_private in
@@ -598,12 +598,12 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
         let de = { de with proof_entry_body = body } in
         let cd, ctx = cast_opaque_proof_entry DeferredEffectEntry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
-        let () = Global.push_context_set ctx in
+        let () = Global.push_context_set QGraph.Internal ctx in
         Entries.OpaqueEntry cd, false, ubinders, Some (body, feedback_id), ctx)
     | ParameterEntry e ->
       let univ_entry, ctx = extract_monomorphic (fst e.parameter_entry_universes) in
       let ubinders = make_ubinders ctx e.parameter_entry_universes in
-      let () = Global.push_context_set ctx in
+      let () = Global.push_context_set QGraph.Internal ctx in
       let e = {
         Entries.parameter_entry_secctx = e.parameter_entry_secctx;
         Entries.parameter_entry_type = e.parameter_entry_type;
@@ -619,7 +619,7 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
         let univ_entry, ctx = extract_monomorphic (fst entry_univs) in
         Some (typ, univ_entry), entry_univs, ctx
       in
-      let () = Global.push_context_set ctx in
+      let () = Global.push_context_set QGraph.Internal ctx in
       let e = {
         Entries.prim_entry_type = typ;
         Entries.prim_entry_content = e.prim_entry_content;
@@ -628,7 +628,7 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
       Entries.PrimitiveEntry e, false, ubinders, None, ctx
     | SymbolEntry { symb_entry_type=typ; symb_entry_unfold_fix=un_fix; symb_entry_universes=entry_univs } ->
       let univ_entry, ctx = extract_monomorphic (fst entry_univs) in
-      let () = Global.push_context_set ctx in
+      let () = Global.push_context_set QGraph.Internal ctx in
       let e = {
         Entries.symb_entry_type = typ;
         Entries.symb_entry_unfold_fix = un_fix;
@@ -725,7 +725,7 @@ let declare_variable ~name ~kind ~typing_flags d =
         | UState.Monomorphic_entry uctx ->
           (* XXX [snd univs] is ignored, should we use it? *)
           DeclareUniv.name_mono_section_univs (fst uctx);
-          Global.push_context_set uctx
+          Global.push_context_set QGraph.Static uctx
         | UState.Polymorphic_entry uctx -> Global.push_section_context uctx
       in
       let () = Global.push_named_assum (name,typ) in
@@ -740,7 +740,7 @@ let declare_variable ~name ~kind ~typing_flags d =
       let univs = match fst de.proof_entry_universes with
         | UState.Monomorphic_entry uctx ->
           DeclareUniv.name_mono_section_univs (fst uctx);
-          Global.push_context_set (PolyConstraints.ContextSet.union uctx body_uctx);
+          Global.push_context_set QGraph.Static (PolyConstraints.ContextSet.union uctx body_uctx);
           UState.Monomorphic_entry PolyConstraints.ContextSet.empty, UnivNames.empty_binders
         | UState.Polymorphic_entry uctx ->
           Global.push_section_context uctx;
@@ -1194,7 +1194,7 @@ module ProgramDecl = struct
       else
         (* declare global univs of the main constant before we do obligations *)
         let uctx = UState.collapse_sort_variables uctx in
-        let () = Global.push_context_set (UState.context_set uctx) in
+        let () = Global.push_context_set QGraph.Static (UState.context_set uctx) in
         let cst = Constant.make2 (Lib.current_mp()) (Label.of_id cinfo.CInfo.name) in
         let () = DeclareUniv.declare_univ_binders (ConstRef cst)
             (UState.univ_entry ~poly:false uctx)

@@ -78,7 +78,6 @@ val set_qualities : QGraph.t -> env -> env
 
 val qualities : env -> QGraph.t
 val qvars : env -> Quality.QVar.Set.t
-val set_quality_set : Quality.QVar.Set.t -> env -> env
 
 val typing_flags    : env -> typing_flags
 val is_impredicative_set : env -> bool
@@ -340,11 +339,11 @@ val check_constraints : PolyConstraints.t -> env -> bool
 (** Check constraints are satifiable in the environment. *)
 
 val push_context : ?strict:bool -> QGraph.constraint_source -> UContext.t -> env -> env
-(** [push_context ?(strict=false) ctx env] pushes the universe context to the environment.
+(** [push_context ?(strict=false) src ctx env] pushes the universe context to the environment.
     @raise UGraph.AlreadyDeclared if one of the universes is already declared. *)
 
-val push_context_set : ?strict:bool -> ContextSet.t -> env -> env
-(** [push_context_set ?(strict=false) ctx env] pushes the universe
+val push_context_set : ?strict:bool -> QGraph.constraint_source -> ContextSet.t -> env -> env
+(** [push_context_set ?(strict=false) src ctx env] pushes the universe
     context set to the environment. It does not fail even if one of the
     universes is already declared. *)
 
