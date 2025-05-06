@@ -568,7 +568,7 @@ let add_rewrite_hint ~locality ~poly bases ort t lcsr =
       if poly then ctx
       else (* This is a global universe context that shouldn't be
               refreshed at every use of the hint, declare it globally. *)
-        (Global.push_context_set ctx;
+        (Global.push_context_set QGraph.Static ctx;
          PolyConstraints.ContextSet.empty)
     in
     CAst.make ?loc:(Constrexpr_ops.constr_loc ce) ((c, ctx), ort, t) in
