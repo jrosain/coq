@@ -42,7 +42,7 @@ module QState : sig
   val add : check_fresh:bool -> rigid:bool -> elt -> t -> t
   val repr : elt -> t -> Quality.t
   val is_rigid : t -> QVar.t -> bool
-  val unify_quality : fail:(unit -> t) -> Conversion.conv_pb -> Quality.t -> Quality.t -> t -> t
+  val unify_quality : fail:(unit -> t) -> ?rigid:bool -> Conversion.conv_pb -> Quality.t -> Quality.t -> t -> t
   val eliminates_to_prop : elt -> t -> bool
   val undefined : t -> QVar.Set.t
   val collapse_elim_to_prop : to_prop:bool -> t -> t
@@ -88,23 +88,26 @@ let eliminates_to_prop q m = QGraph.eliminates_to_prop m.elims (QVar q)
 
 let is_rigid m q = QSet.mem q m.rigid
 
-let set q qv m =
+let set ?rigid q qv m =
   let q = repr q m in
   let q = match q with QVar q -> q | QConstant _ -> assert false in
   let qv = match qv with QVar qv -> repr qv m | (QConstant _ as qv) -> qv in
   match q, qv with
   | q, QVar qv ->
-    if QVar.equal q qv then Some m
-    else
-    if QSet.mem q m.rigid && not @@ QGraph.eliminates_to m.elims (QVar q) (QVar qv) then None
-    else
-      let elims =
-        if eliminates_to_prop q m
-        then QGraph.enforce_eq (QVar qv) (QVar q) m.elims
-        else m.elims
-      in
-      Some { rigid = m.rigid; qmap = QMap.add q (Some (QVar qv)) m.qmap; elims
-             ; initial_elims = m.initial_elims }
+     let isrigid = match rigid with
+       | None | Some false -> QSet.mem q m.rigid
+       | Some true -> QSet.mem q m.rigid || QSet.mem qv m.rigid in
+     if QVar.equal q qv then Some m
+     else
+       if isrigid && not @@ QGraph.eliminates_to m.elims (QVar q) (QVar qv) then None
+       else
+         let elims =
+           if eliminates_to_prop q m
+           then QGraph.enforce_eq (QVar qv) (QVar q) m.elims
+           else m.elims
+         in
+         Some { rigid = m.rigid; qmap = QMap.add q (Some (QVar qv)) m.qmap; elims
+                ; initial_elims = m.initial_elims }
   | q, (QConstant qc as qv) ->
     if qc == QSProp && eliminates_to_prop q m then None
     else if QSet.mem q m.rigid && not @@ QGraph.eliminates_to m.elims (QVar q) qv then None
@@ -122,7 +125,7 @@ let set_elim_to_prop q m =
            elims = QGraph.enforce_eliminates_to QGraph.Internal (QVar q) qprop m.elims;
            initial_elims = m.initial_elims }
 
-let unify_quality ~fail c q1 q2 local = match q1, q2 with
+let unify_quality ~fail ?rigid c q1 q2 local = match q1, q2 with
 | QConstant QType, QConstant QType
 | QConstant QProp, QConstant QProp
 | QConstant QSProp, QConstant QSProp -> local
@@ -131,9 +134,9 @@ let unify_quality ~fail c q1 q2 local = match q1, q2 with
   | Some local -> local
   | None -> fail ()
   end
-| QVar qv1, QVar qv2 -> begin match set qv1 q2 local with
+| QVar qv1, QVar qv2 -> begin match set ?rigid qv1 q2 local with
     | Some local -> local
-    | None -> match set qv2 q1 local with
+    | None -> match set ?rigid qv2 q1 local with
       | Some local -> local
       | None -> fail ()
   end
@@ -584,16 +587,16 @@ let get_constraint = function
 | Conversion.CONV -> UnivConstraint.Eq
 | Conversion.CUMUL -> UnivConstraint.Le
 
-let unify_quality univs c s1 s2 l =
+let unify_quality ?rigid univs c s1 s2 l =
   let fail () = if UGraph.type_in_type univs then l.local_sorts
     else sort_inconsistency (get_constraint c) s1 s2
   in
   { l with
-    local_sorts = QState.unify_quality ~fail
+    local_sorts = QState.unify_quality ~fail ?rigid
         c (Sorts.quality s1) (Sorts.quality s2) l.local_sorts;
   }
 
-let process_constraints uctx cstrs =
+let process_constraints ?rigid uctx cstrs =
   let open UnivSubst in
   let open UnivProblem in
   let univs = uctx.universes in
@@ -696,7 +699,7 @@ let process_constraints uctx cstrs =
          with _ -> local'
        end
     | ULe (l, r) ->
-      let local = unify_quality univs CUMUL l r local in
+      let local = unify_quality ?rigid univs CUMUL l r local in
       let l = normalize_sort local.local_sorts l in
       let r = normalize_sort local.local_sorts r in
       begin match classify r with
@@ -786,9 +789,9 @@ let process_constraints uctx cstrs =
   let extra = { UnivMinim.above_prop = local.local_above_prop; UnivMinim.weak_constraints = local.local_weak } in
   !vars, extra, local.local_cst, local.local_sorts
 
-let add_constraints src uctx cstrs =
+let add_constraints ?rigid src uctx cstrs =
   let univs, local = uctx.local in
-  let vars, extra, local', sorts = process_constraints uctx cstrs in
+  let vars, extra, local', sorts = process_constraints ?rigid uctx cstrs in
   { uctx with
     local = (univs, PolyConstraints.union local local');
     univ_variables = vars;

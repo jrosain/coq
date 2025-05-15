@@ -132,7 +132,7 @@ val sorts_for_schemes : mind_specif -> UnivGen.QualityOrSet.t list
 
 val is_squashed : evar_map -> (mind_specif * EInstance.t) -> Inductive.squash option
 
-val squash_elim_sort : evar_map -> Inductive.squash -> ESorts.t -> evar_map
+val squash_elim_sort : ?rigid:bool -> evar_map -> Inductive.squash -> ESorts.t -> evar_map
 (** Take into account elimination constraints. When there is an
     elimination constraint and the predicate is underspecified, i.e. a
     QSort, we make a non-canonical choice for the return type.
