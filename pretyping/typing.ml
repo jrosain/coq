@@ -503,7 +503,13 @@ let check_binder_relevance env sigma s decl =
     | (SProp | Prop | Set), RelevanceVar q ->
       DummySort (ESorts.make (Sorts.qsort q Univ.Universe.type0))
     | Type l, RelevanceVar q -> DummySort (ESorts.make (Sorts.qsort q l))
-    | QSort (_,l), Relevant -> DummySort (ESorts.make (Sorts.sort_of_univ l))
+    | QSort (_,l), Relevant ->
+       begin
+         match ERelevance.kind sigma (ESorts.relevance_of_sort s) with
+         | Irrelevant -> Impossible
+         | Relevant -> Trivial
+         | RelevanceVar _ -> DummySort (ESorts.make (Sorts.sort_of_univ l))
+       end
     | QSort _, Irrelevant -> DummySort ESorts.sprop
   in
   let unify = match preunify with
