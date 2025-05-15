@@ -173,6 +173,9 @@ let initial_graph =
   let (g,p) = List.fold_left fold (g,RigidPaths.empty) @@ non_refl_pairs Quality.all_constants in
   (g,p,Quality.all_constants)
 
+let update_rigids (_,p,_) (g',_,dom) =
+  (g',p,dom)
+
 let eliminates_to (g,_,_) q q' =
   check_func ElimConstraint.ElimTo g q q'
 

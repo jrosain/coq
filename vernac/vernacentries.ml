@@ -1413,7 +1413,7 @@ let vernac_sort ~poly l =
 let vernac_constraint ~poly l =
   if poly && not (Lib.sections_are_opened ()) then
     user_err
-                 (str"Polymorphic universe constraints can only be declared"
+                 (str"Polymorphic constraints can only be declared"
                   ++ str " inside sections, use Monomorphic Constraint instead.");
   DeclareUniv.do_constraint ~poly l
 
