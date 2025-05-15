@@ -2175,7 +2175,7 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
       let sigma, rtnsort = Evd.new_sort_variable univ_flexible sigma in
       let sigma, predcclj = typing_fun (Some (mkSort rtnsort)) envar sigma rtntyp in
       let check_elim_sort sigma squash =
-        try Inductiveops.squash_elim_sort sigma squash rtnsort
+        try Inductiveops.squash_elim_sort ~rigid:true sigma squash rtnsort
         with UGraph.UniverseInconsistency _ ->
           (* Incompatible constraints are ignored and handled later
              when typing the pattern-matching. *)

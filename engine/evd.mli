@@ -455,7 +455,7 @@ val pr_shelf : evar_map -> Pp.t
 
 exception UniversesDiffer
 
-val add_constraints : evar_map -> UnivProblem.Set.t -> evar_map
+val add_constraints : ?rigid:bool -> evar_map -> UnivProblem.Set.t -> evar_map
 (** Add the given universe unification constraints to the evar map.
     @raise UniversesDiffer in case a first-order unification fails.
     @raise UniverseInconsistency .
@@ -566,7 +566,7 @@ val is_flexible_level : evar_map -> Univ.Level.t -> bool
 
 val normalize_universe_instance : evar_map -> UVars.Instance.t -> UVars.Instance.t
 
-val set_leq_sort : evar_map -> esorts -> esorts -> evar_map
+val set_leq_sort : ?rigid:bool -> evar_map -> esorts -> esorts -> evar_map
 val set_eq_sort : evar_map -> esorts -> esorts -> evar_map
 val set_eq_level : evar_map -> Univ.Level.t -> Univ.Level.t -> evar_map
 val set_leq_level : evar_map -> Univ.Level.t -> Univ.Level.t -> evar_map

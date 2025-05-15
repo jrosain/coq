@@ -245,7 +245,7 @@ let inductive_has_local_defs env ind =
   let l2 = mib.mind_nparams + mip.mind_nrealargs in
   not (Int.equal l1 l2)
 
-let squash_elim_sort sigma squash rtnsort =
+let squash_elim_sort ?rigid sigma squash rtnsort =
   let open Inductive in
   let add_unif_if_cannot_elim_into starget =
     let q = Sorts.quality starget in
@@ -266,7 +266,7 @@ let squash_elim_sort sigma squash rtnsort =
      Evd.set_leq_sort sigma ESorts.set rtnsort
      (* Sort poly squash to type *)
   | SquashToQuality (QVar q) ->
-     Evd.set_leq_sort sigma (ESorts.make (Sorts.qsort q Univ.Universe.type0)) rtnsort
+     Evd.set_leq_sort ?rigid sigma (ESorts.make (Sorts.qsort q Univ.Universe.type0)) rtnsort
 
 (* [s] is the sort of an inductive definition. *)
 let loc_indsort_to_quality sigma u s =

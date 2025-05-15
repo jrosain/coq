@@ -130,7 +130,7 @@ val add_poly_constraints : QGraph.constraint_source -> t -> PolyConstraints.t ->
   @raise UniversesDiffer when universes differ
 *)
 
-val add_constraints : QGraph.constraint_source -> t -> UnivProblem.Set.t -> t
+val add_constraints : ?rigid:bool -> QGraph.constraint_source -> t -> UnivProblem.Set.t -> t
 (**
   @raise UniversesDiffer when universes differ
 *)

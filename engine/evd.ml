@@ -872,8 +872,8 @@ let add_univ_constraints d c =
 let add_poly_constraints src d c =
   { d with universes = UState.add_poly_constraints src d.universes c }
 
-let add_constraints d c =
-  { d with universes = UState.add_constraints QGraph.Internal d.universes c }
+let add_constraints ?rigid d c =
+  { d with universes = UState.add_constraints ?rigid QGraph.Internal d.universes c }
 
 (*** /Lifting... ***)
 
@@ -1174,14 +1174,14 @@ let set_eq_instances ?(flex=false) d u1 u2 =
   add_constraints d
     (UnivProblem.enforce_eq_instances_univs flex u1 u2 UnivProblem.Set.empty)
 
-let set_leq_sort evd s1 s2 =
+let set_leq_sort ?rigid evd s1 s2 =
   let s1 = normalize_sort evd s1
   and s2 = normalize_sort evd s2 in
   match is_eq_sort s1 s2 with
   | None -> evd
   | Some (u1, u2) ->
      if not (UGraph.type_in_type (UState.ugraph evd.universes)) then
-       add_constraints evd @@
+       add_constraints ?rigid evd @@
          UnivProblem.Set.singleton (UnivProblem.ULe (u1,u2))
      else evd
 
