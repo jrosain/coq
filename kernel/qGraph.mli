@@ -76,6 +76,8 @@ val initial_graph : t
 (** Graph with the constant quality elimination constraints found in
     [Quality.Constants.eliminates_to]. *)
 
+val update_rigids : t -> t -> t
+
 val eliminates_to : t -> Quality.t -> Quality.t -> bool
 val eliminates_to_prop : t -> Quality.t -> bool
 val sort_eliminates_to : t -> Sorts.t -> Sorts.t -> bool

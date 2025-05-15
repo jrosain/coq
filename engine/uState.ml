@@ -220,6 +220,7 @@ let of_elims elims =
   let qs = QGraph.qvar_domain elims in
   let initial_elims =
     QVar.Set.fold (fun v -> QGraph.add_quality (QVar v)) qs QGraph.initial_graph in
+  let initial_elims = QGraph.update_rigids elims initial_elims in
   { empty with rigid = qs; elims; initial_elims }
 
 (* XXX what about qvars in the elimination graph? *)
