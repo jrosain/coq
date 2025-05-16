@@ -51,7 +51,7 @@ end
 
 module RigidPaths = Set.Make(RigidPath)
 
-type t = G.t * RigidPaths.t
+type t = G.t * RigidPaths.t * Quality.t list
 
 type path_explanation = G.explanation Lazy.t
 
@@ -102,52 +102,53 @@ let non_refl_pairs l =
     List.fold_right (fun y acc -> if x <> y then (x,y) :: acc else acc) l in
   List.fold_right fold l []
 
-let get_new_rigid_path g p =
-  let dom = List.of_seq @@ Quality.Set.to_seq
-              (Quality.Set.filter (fun q -> Quality.is_qconst q || Quality.is_qglobal q) @@ G.domain g) in
-  let forbidden = List.filter (fun u -> not (RigidPaths.mem u p)) @@ non_refl_pairs dom in
-  let witness = List.filter (fun (q,q') -> check_func ElimConstraint.ElimTo g q q') forbidden in
-  match witness with
-  | [] -> None
-  | x :: _ -> Some x
+let get_new_rigid_path g p dom =
+  let n = List.length dom in
+  if RigidPaths.cardinal p = n*(n+1)/2 then None
+  else
+    let forbidden = List.filter (fun u -> not (RigidPaths.mem u p)) @@ non_refl_pairs dom in
+    let witness = List.filter (fun (q,q') -> check_func ElimConstraint.ElimTo g q q') forbidden in
+    match witness with
+    | [] -> None
+    | x :: _ -> Some x
 
 let add_transitive_rigid_paths q1 q2 p =
   let transitive_set = RigidPaths.filter (fun (q,_) -> Quality.equal q2 q) p in
   RigidPaths.fold (fun (_,q) p -> RigidPaths.add (q1,q) p) transitive_set p
 
-let enforce_constraint src (q1,k,q2) (g,p) =
+let enforce_constraint src (q1,k,q2) (g,p,dom) =
   match enforce_func k q1 q2 g with
   | None ->
      let e = lazy (G.get_explanation (q1,to_graph_cstr k,q2) g) in
      raise @@ EliminationError (QualityInconsistency (None, (k, q1, q2, Some (Path e))))
   | Some g' ->
      match src with
-     | Static -> (g',p)
+     | Static -> (g',p,dom)
      | Rigid ->
         if (Quality.is_qconst q1 && Quality.is_qconst q2) ||
              (Quality.is_qsprop q1 && not (Quality.is_qsprop q2))
         then raise (EliminationError IllegalConstraint)
-        else (g', RigidPaths.add (q1,q2) @@ add_transitive_rigid_paths q1 q2 p)
+        else (g', RigidPaths.add (q1,q2) @@ add_transitive_rigid_paths q1 q2 p,dom)
      | Internal ->
-        match get_new_rigid_path g' p with
-        | None -> (g',p)
+        match get_new_rigid_path g' p dom with
+        | None -> (g',p,dom)
         | Some (q1,q2) -> raise (EliminationError (CreatesForbiddenPath (q1, q2)))
 
 let merge_constraints src csts g = ElimConstraints.fold (enforce_constraint src) csts g
 
-let check_constraint (g,_) (q1, k, q2) = check_func k g q1 q2
+let check_constraint (g,_,_) (q1, k, q2) = check_func k g q1 q2
 
 let check_constraints csts g = ElimConstraints.for_all (check_constraint g) csts
 
 exception AlreadyDeclared = G.AlreadyDeclared
 
-let add_quality q (g,p) =
+let add_quality q (g,p,dom) =
   let g = G.add q g in
-  let (g,p) = enforce_constraint Static (Quality.qtype, ElimConstraint.ElimTo, q) (g,p) in
-  let p = if Quality.is_qglobal q
-          then RigidPaths.add (Quality.qtype, q) p
-          else p in
-  (g,p)
+  let (g,p,dom) = enforce_constraint Static (Quality.qtype, ElimConstraint.ElimTo, q) (g,p,dom) in
+  let (p,dom) = if Quality.is_qglobal q
+                then (RigidPaths.add (Quality.qtype, q) p, q :: dom)
+                else (p,dom) in
+  (g,p,dom)
 
 let enforce_eliminates_to src s1 s2 g =
   enforce_constraint src (s1, ElimConstraint.ElimTo, s2) g
@@ -163,24 +164,27 @@ let initial_graph =
      otherwise the [Option.get] will fail). *)
   let fold (g,p) (q,q') =
     if ElimTable.eliminates_to q q'
-    then (Option.get @@ G.enforce_lt q q' g, RigidPaths.add (q, q') p)
+    then (Option.get @@ G.enforce_lt q q' g, RigidPaths.add (q', q) (RigidPaths.add (q, q') p))
+                    (* we also add (q', q) as this check is never needed: inserting in the graph
+                       with Lt ensures that a path between q' and q will be detected as forbidden *)
     else (g,p)
   in
-  List.fold_left fold (g,RigidPaths.empty) @@ non_refl_pairs Quality.all_constants
+  let (g,p) = List.fold_left fold (g,RigidPaths.empty) @@ non_refl_pairs Quality.all_constants in
+  (g,p,Quality.all_constants)
 
-let eliminates_to (g,_) q q' =
+let eliminates_to (g,_,_) q q' =
   check_func ElimConstraint.ElimTo g q q'
 
 let sort_eliminates_to g s1 s2 =
   eliminates_to g (quality s1) (quality s2)
 
-let check_eq (g,_) = G.check_eq g
+let check_eq (g,_,_) = G.check_eq g
 
 let check_eq_sort g s s' = check_eq g (quality s) (quality s')
 
 let eliminates_to_prop g q = eliminates_to g q Quality.qprop
 
-let domain (g,_) = G.domain g
+let domain (g,_,_) = G.domain g
 
 let qvar_domain g =
   Quality.Set.fold
