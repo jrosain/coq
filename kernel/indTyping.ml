@@ -111,9 +111,15 @@ let compute_elim_squash ?(is_real_arg=false) env u info =
       then f info
       else { info with missing = u :: info.missing } in
     if Inductive.eliminates_to (Environ.qualities env) (Sorts.quality indu) (Sorts.quality u) then
-      check_univ_consistency (fun x -> x)
-        (Sorts.univ_of_sort indu)
-        (Sorts.univ_of_sort u)
+          if Quality.is_impredicative (Sorts.quality indu)
+          then
+            match u with
+            | Type _ | Set -> { info with ind_squashed = Some AlwaysSquashed }
+            | QSort (q, _) -> add_squash (QVar q) info
+            | SProp | Prop -> info
+          else check_univ_consistency (fun x -> x)
+                 (Sorts.univ_of_sort indu)
+                 (Sorts.univ_of_sort u)
     else
       let check_univ_consistency_squash quality =
         check_univ_consistency (add_squash quality) in
