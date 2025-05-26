@@ -91,6 +91,7 @@ val is_qtype : t -> bool
 val is_qvar : t -> bool
 val is_qconst : t -> bool
 val is_qglobal : t -> bool
+val is_impredicative : t -> bool
 
 val compare : t -> t -> int
 
