@@ -1662,8 +1662,7 @@ let inductive_of_mutfix ?evars ?elim_to env ((nvect,bodynum),(names,types,bodies
            fixpoints on [Prop] so we always return the [Type] variant. *)
         let bsort = match names.(i).Context.binder_relevance with
           | Irrelevant -> Sorts.sprop
-          | Relevant when Universe.is_type0 u -> Sorts.set
-          | Relevant -> Sorts.make Quality.qtype u
+          | Relevant -> Sorts.prop
           | RelevanceVar q -> Sorts.qsort q u in
         let elim_to = match elim_to with
           | Some f -> f

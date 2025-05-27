@@ -1595,7 +1595,8 @@ let close_section senv =
   in
   (* Third phase: replay the discharged section contents *)
   let senv = push_quality_set qs senv in
-  let senv = push_context_set ~strict:true QGraph.Static cstrs senv in
+  let cstrs = PolyConstraints.ContextSet.filter_out_constant_qualities cstrs in
+  let senv = push_context_set ~strict:true QGraph.Rigid cstrs senv in
   let fold entry senv =
     match entry with
   | SecDefinition kn ->

@@ -53,6 +53,9 @@ let diff (qc, lc) (qc', lc') =
 let elements (qc, lc) =
   (ElimConstraints.elements qc, UnivConstraints.elements lc)
 
+let filter_qualities f (qc, lc) =
+  make (ElimConstraints.filter f qc) lc
+
 let filter_univs f (qc, lc) =
   make qc @@ UnivConstraints.filter f lc
 
@@ -140,6 +143,12 @@ module ContextSet = struct
 
   let add_elim_constraints cst' (univs, cst) =
     union (univs, cst) (Level.Set.empty, of_qualities cst')
+
+  let filter_out_constant_qualities (univs, csts) =
+    let csts = filter_qualities
+                 (fun (q1,_,q2) -> not (Quality.is_qconst q1 && Quality.is_qconst q2))
+                 csts in
+        (univs, csts)
 
   let pr prv prl (univs, cst as ctx) =
     let open Pp in

@@ -44,6 +44,7 @@ val diff : t -> t -> t
 
 val elements : t -> ElimConstraint.t list * UnivConstraint.t list
 
+val filter_qualities : (ElimConstraints.elt -> bool) -> t -> t
 val filter_univs : (UnivConstraints.elt -> bool) -> t -> t
 
 val pr : (QVar.t -> Pp.t) -> (Level.t -> Pp.t) -> t -> Pp.t
@@ -96,6 +97,7 @@ sig
   val add_constraints : poly_constraints -> t -> t
   val add_univ_constraints : UnivConstraints.t -> t -> t
   val add_elim_constraints : ElimConstraints.t -> t -> t
+  val filter_out_constant_qualities : t -> t
 
   val constraints : t -> poly_constraints
   val univ_constraints : t -> UnivConstraints.t

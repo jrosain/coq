@@ -583,14 +583,16 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
         let ubinders = make_ubinders ctx de.proof_entry_universes in
         (* We register the global universes after exporting side-effects, since
            the latter depend on the former. *)
-        let () = Global.push_context_set QGraph.Internal ctx in
+                let ctx = PolyConstraints.ContextSet.filter_out_constant_qualities ctx in
+        let () = Global.push_context_set QGraph.Rigid ctx in
         Entries.DefinitionEntry e, false, ubinders, None, ctx
       | Default { body = (body, eff); opaque = Opaque body_uctx } ->
         let body = ((body, body_uctx), eff.Evd.seff_private) in
         let de = { de with proof_entry_body = body } in
         let cd, ctx = cast_opaque_proof_entry ImmediateEffectEntry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
-        let () = Global.push_context_set QGraph.Internal ctx in
+                let ctx = PolyConstraints.ContextSet.filter_out_constant_qualities ctx in
+        let () = Global.push_context_set QGraph.Rigid ctx in
         Entries.OpaqueEntry cd, false, ubinders, Some (Future.from_val body, None), ctx
       | DeferredOpaque { body; feedback_id } ->
         let map (body, eff) = body, eff.Evd.seff_private in
@@ -598,7 +600,8 @@ let declare_constant ~loc ?(local = Locality.ImportDefaultBehavior) ~name ~kind 
         let de = { de with proof_entry_body = body } in
         let cd, ctx = cast_opaque_proof_entry DeferredEffectEntry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
-        let () = Global.push_context_set QGraph.Internal ctx in
+                let ctx = PolyConstraints.ContextSet.filter_out_constant_qualities ctx in
+        let () = Global.push_context_set QGraph.Rigid ctx in
         Entries.OpaqueEntry cd, false, ubinders, Some (body, feedback_id), ctx)
     | ParameterEntry e ->
       let univ_entry, ctx = extract_monomorphic (fst e.parameter_entry_universes) in
